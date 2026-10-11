@@ -60,6 +60,14 @@ export async function listRequirements() {
   return unwrap(await supabase.from("requirements").select("*"));
 }
 
+export async function listPrograms() {
+  return unwrap(await supabase.from("programs").select("*").order("code"));
+}
+
+export async function listAdvisors() {
+  return unwrap(await supabase.from("advisors").select("*").order("kode_dosen"));
+}
+
 export async function getStudent(id) {
   return unwrap(
     await supabase
@@ -101,6 +109,10 @@ export async function loadStudentBundle(id) {
 
 export async function updateStudent(id, patch) {
   return unwrap(await supabase.from("students").update(patch).eq("id", id).select().single());
+}
+
+export async function insertStudent(row) {
+  return unwrap(await supabase.from("students").insert(row).select().single());
 }
 
 export async function upsertFailedCourse(row) {

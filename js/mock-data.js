@@ -323,6 +323,16 @@ export async function listRequirements() {
   return load()?.requirements || [];
 }
 
+export async function listPrograms() {
+  await delay();
+  return (load()?.programs || PROGRAMS).map((p) => ({ ...p }));
+}
+
+export async function listAdvisors() {
+  await delay();
+  return (load()?.advisors || ADVISORS).map((a) => ({ ...a }));
+}
+
 export async function getStudent(id) {
   await delay();
   const db = load();
@@ -362,6 +372,27 @@ export async function updateStudent(id, patch) {
   const student = db.students.find((s) => s.id === id);
   if (!student) fail("Student not found.");
   Object.assign(student, patch, { updated_at: nowIso() });
+  persist(db);
+  return withRelations(db, student);
+}
+
+export async function insertStudent(row) {
+  const db = load();
+  if (!db) fail("No dummy data loaded. Click 'Generate dummy data' first.");
+  if (db.students.some((s) => s.nim === row.nim)) fail(`NIM ${row.nim} already exists.`);
+  const student = {
+    id: `stu-manual-${Date.now()}`,
+    status: "aktif",
+    total_sks_passed: 0,
+    comserv_hours: 0,
+    sat_hours: 0,
+    belingua_status: "belum_ambil",
+    belingua_score: null,
+    created_at: nowIso(),
+    updated_at: nowIso(),
+    ...row,
+  };
+  db.students.push(student);
   persist(db);
   return withRelations(db, student);
 }

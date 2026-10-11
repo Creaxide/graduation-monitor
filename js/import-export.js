@@ -1,8 +1,9 @@
 import { initLayout } from "./ui.js";
 import {
   loadDashboard, listFailedCourses, listCertifications,
-  studentIdsByNim, updateStudent, insertFailedCourses, insertCertifications,
-  logAudit,
+  studentIdsByNim, updateStudent, insertStudent,
+  listPrograms, listAdvisors,
+  insertFailedCourses, insertCertifications, logAudit,
 } from "./data.js";
 import { evaluateStudent, STATUS_LABEL } from "./engine.js";
 import {
@@ -11,9 +12,9 @@ import {
 
 const TEMPLATES = {
   students: {
-    headers: ["nim", "name", "current_semester", "status", "total_sks_passed", "comserv_hours", "sat_hours", "belingua_status", "belingua_score"],
-    sample: [["2702314920", "Andi Pratama", "6", "aktif", "126", "26", "20", "proses", "480"]],
-    hint: "Required: nim + at least one data column. Existing NIMs are updated.",
+    headers: ["nim", "name", "program_code", "advisor_kode", "angkatan", "current_semester", "status", "total_sks_passed", "comserv_hours", "sat_hours", "belingua_status", "belingua_score"],
+    sample: [["2702314920", "Andi Pratama", "CS", "D001", "2023", "6", "aktif", "126", "26", "20", "proses", "480"]],
+    hint: "Required for new students: nim + name. Existing NIMs are updated. program_code defaults to the first program.",
   },
   failed_courses: {
     headers: ["nim", "kode_mk", "nama_mk", "sks", "nilai", "semester_taken"],
@@ -27,7 +28,19 @@ const TEMPLATES = {
   },
 };
 
-let state = { students: [], requirements: [], selectedFile: null, canEditRequirements: false };
+let state = { students: [], requirements: [], programs: [], advisors: [], selectedFile: null, canEditRequirements: false };
+
+function resolveProgram(code) {
+  if (!code) return null;
+  const c = String(code).trim().toLowerCase();
+  return state.programs.find((p) => p.code.toLowerCase() === c) || null;
+}
+
+function resolveAdvisor(kode) {
+  if (!kode) return null;
+  const k = String(kode).trim().toLowerCase();
+  return state.advisors.find((a) => a.kode_dosen.toLowerCase() === k) || null;
+}
 
 // ---------------------------------------------------------------- parsing ---
 
@@ -99,7 +112,7 @@ async function runImport() {
         const r = records[i];
         const line = i + 2;
         if (!r.nim) { errors.push([line, "Missing 'nim' column value"]); continue; }
-        if (!nimMap[r.nim]) { errors.push([line, `NIM ${r.nim} not found in master data`]); continue; }
+
         const patch = {};
         if (r.current_semester) patch.current_semester = clampInt(r.current_semester, 1, 14);
         if (r.status) patch.status = r.status;
@@ -108,16 +121,45 @@ async function runImport() {
         if (r.sat_hours) patch.sat_hours = toNum(r.sat_hours);
         if (r.belingua_status) patch.belingua_status = r.belingua_status;
         if (r.belingua_score) patch.belingua_score = toNum(r.belingua_score);
-        if (!Object.keys(patch).length) { errors.push([line, "No updatable columns provided"]); continue; }
-        try { await updateStudent(nimMap[r.nim], patch); ok.push(line); }
-        catch (e) { errors.push([line, e.message]); }
+        if (r.angkatan) patch.angkatan = toInt(r.angkatan);
+
+        const program = resolveProgram(r.program_code);
+        const advisor = resolveAdvisor(r.advisor_kode);
+        if (r.program_code && !program) { errors.push([line, `Unknown program_code '${r.program_code}'`]); continue; }
+        if (r.advisor_kode && !advisor) { errors.push([line, `Unknown advisor_kode '${r.advisor_kode}'`]); continue; }
+        if (program) patch.program_id = program.id;
+        if (advisor) patch.advisor_id = advisor.id;
+
+        if (nimMap[r.nim]) {
+          if (!Object.keys(patch).length) { errors.push([line, "No updatable columns provided"]); continue; }
+          try { await updateStudent(nimMap[r.nim], patch); ok.push(line); }
+          catch (e) { errors.push([line, e.message]); }
+        } else {
+          if (!r.name) { errors.push([line, "New student requires a 'name'"]); continue; }
+          const row = {
+            nim: r.nim,
+            name: r.name,
+            program_id: program ? program.id : state.programs[0]?.id || null,
+            advisor_id: advisor ? advisor.id : state.advisors[0]?.id || null,
+            angkatan: patch.angkatan ?? null,
+            current_semester: patch.current_semester ?? 1,
+            status: patch.status || "aktif",
+            total_sks_passed: patch.total_sks_passed ?? 0,
+            comserv_hours: patch.comserv_hours ?? 0,
+            sat_hours: patch.sat_hours ?? 0,
+            belingua_status: patch.belingua_status || "belum_ambil",
+            belingua_score: patch.belingua_score ?? null,
+          };
+          try { await insertStudent(row); ok.push(line); }
+          catch (e) { errors.push([line, e.message]); }
+        }
       }
     } else if (entity === "failed_courses") {
       const rows = [];
       for (let i = 0; i < records.length; i++) {
         const r = records[i]; const line = i + 2;
         if (!r.nim || !r.kode_mk || !r.nama_mk) { errors.push([line, "nim, kode_mk and nama_mk are required"]); continue; }
-        if (!nimMap[r.nim]) { errors.push([line, `NIM ${r.nim} not found`]); continue; }
+        if (!nimMap[r.nim]) { errors.push([line, `NIM ${r.nim} not found. Import the student first.`]); continue; }
         rows.push({
           student_id: nimMap[r.nim], kode_mk: r.kode_mk, nama_mk: r.nama_mk,
           sks: toInt(r.sks), nilai: r.nilai || null,
@@ -131,7 +173,7 @@ async function runImport() {
       for (let i = 0; i < records.length; i++) {
         const r = records[i]; const line = i + 2;
         if (!r.nim || !r.name) { errors.push([line, "nim and name are required"]); continue; }
-        if (!nimMap[r.nim]) { errors.push([line, `NIM ${r.nim} not found`]); continue; }
+        if (!nimMap[r.nim]) { errors.push([line, `NIM ${r.nim} not found. Import the student first.`]); continue; }
         rows.push({
           student_id: nimMap[r.nim], name: r.name,
           is_required: r.is_required === "" ? true : truthy(r.is_required),
@@ -350,6 +392,9 @@ function setFile(file) {
     const { students, requirements } = await loadDashboard();
     state.students = students;
     state.requirements = requirements;
+    const [programs, advisors] = await Promise.all([listPrograms(), listAdvisors()]);
+    state.programs = programs;
+    state.advisors = advisors;
     populateExportFilters();
     renderSettings();
   } catch (err) {
