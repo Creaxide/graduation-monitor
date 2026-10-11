@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in - Graduation Monitor</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="brand">
+        <div class="logo">SM</div>
+        <div>
+          <h1>Graduation Monitor</h1>
+          <small>Student Graduation Monitoring System</small>
+        </div>
+      </div>
+
+      <div id="alert" class="hidden"></div>
+
+      <form id="login-form">
+        <div class="field">
+          <label for="email">Campus Email</label>
+          <input type="email" id="email" autocomplete="username" placeholder="name@binus.ac.id" required />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required />
+        </div>
+        <button type="submit" class="btn primary" id="submit-btn" style="width:100%;justify-content:center">
+          Sign in
+        </button>
+      </form>
+
+      <p class="small muted mt-16" style="text-align:center" id="login-note">
+        Access is restricted to Academic Advisors and authorized staff.
+        Accounts are managed through campus SSO / Supabase Auth.
+      </p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getSession, signIn, isMock } from "./js/data.js";
+    import { setBusy } from "./js/utils.js";
+
+    const form = document.getElementById("login-form");
+    const alertBox = document.getElementById("alert");
+
+    function showAlert(message, type = "error") {
+      alertBox.className = `alert ${type}`;
+      alertBox.textContent = message;
+    }
+
+    if (isMock) {
+      document.getElementById("email").value = "advisor@binus.ac.id";
+      document.getElementById("password").value = "demo1234";
+      document.getElementById("login-note").innerHTML =
+        '<span class="badge info">Demo mode</span> Running on local dummy data. Any password works &mdash; sign in, then use <strong>Generate dummy data</strong> in the sidebar.';
+    }
+
+    (async () => {
+      const session = await getSession();
+      if (session && session.user) window.location.replace("dashboard.html");
+    })();
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      alertBox.classList.add("hidden");
+      const btn = document.getElementById("submit-btn");
+      setBusy(btn, true, "Signing in...");
+      try {
+        await signIn(
+          document.getElementById("email").value.trim(),
+          document.getElementById("password").value
+        );
+        window.location.replace("dashboard.html");
+      } catch (err) {
+        showAlert(err.message || "Sign in failed. Please check your credentials.");
+        setBusy(btn, false);
+      }
+    });
+  </script>
+</body>
+</html>

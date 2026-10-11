@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Detail - Graduation Monitor</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="main">
+      <header class="topbar">
+        <button class="btn ghost menu-toggle" style="display:none">&#9776;</button>
+        <div class="page-title"><h1>Loading...</h1></div>
+        <div class="flex gap-8 wrap no-print">
+          <a class="btn" href="dashboard.html">&larr; Back</a>
+          <button class="btn" id="copy-btn">Copy Recommendation</button>
+          <button class="btn primary" id="print-btn">Print Summary</button>
+        </div>
+      </header>
+      <main class="content" id="report">
+        <div id="alert" class="hidden"></div>
+        <div id="host"><div class="spinner"></div></div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/student.js"></script>
+</body>
+</html>

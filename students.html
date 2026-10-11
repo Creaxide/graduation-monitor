@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Students - Graduation Monitor</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="main">
+      <header class="topbar">
+        <button class="btn ghost menu-toggle" style="display:none">&#9776;</button>
+        <div class="page-title"><h1>Loading...</h1></div>
+      </header>
+      <main class="content">
+        <div id="alert" class="hidden"></div>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>Student Master Data</h2>
+          </div>
+          <div class="toolbar mb-16">
+            <div class="field search" style="min-width:220px;flex:1">
+              <label for="q">Search</label>
+              <input type="text" id="q" placeholder="Name or NIM..." />
+            </div>
+            <div class="field" style="min-width:150px">
+              <label for="f-semester">Semester</label>
+              <select id="f-semester"><option value="">All</option></select>
+            </div>
+          </div>
+          <div id="table-host"><div class="spinner"></div></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/students.js"></script>
+</body>
+</html>
