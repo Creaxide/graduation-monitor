@@ -5,6 +5,7 @@ import { el, escapeHtml, formatNumber, toast, printNode } from "./utils.js";
 
 const params = new URLSearchParams(window.location.search);
 const studentId = params.get("id");
+let current = null;
 
 function statusId(status) {
   const map = { safe: "AMAN", warn: "PERHATIAN", danger: "MENDESAK" };
