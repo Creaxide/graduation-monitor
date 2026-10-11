@@ -20,7 +20,7 @@ function gapText(cat) {
   if (cat.category === "belingua") {
     const m = { belum_ambil: "Belum diambil", proses: "Proses", lulus: "Lulus (100%)" };
     if (cat.raw.status === "lulus") return "Lulus (100%)";
-    if (cat.raw.status === "proses") return cat.raw.score ? `Proses — skor ${cat.raw.score}` : "Proses";
+    if (cat.raw.status === "proses") return cat.raw.score ? `Proses \u2014 skor ${cat.raw.score}` : "Proses";
     return "Belum diambil";
   }
   if (cat.category === "sertifikasi") {
@@ -41,15 +41,6 @@ function progressText(cat) {
   const actual = cat.category === "sks" ? cat.actual : Math.round(cat.actual);
   const total = cat.category === "sks" ? cat.total : cat.category === "comserv" ? 30 : 120;
   return `${actual} / ${total} ${unit}`;
-}
-
-function progressBar(cat) {
-  const pct = cat.targetValue > 0 ? Math.min(100, Math.round((cat.actual / cat.targetValue) * 100)) : 100;
-  const cls = statusCls(cat.status);
-  const trackPct = Math.min(100, Math.max(0, pct > 100 ? 100 : pct));
-  return `
-    <div class="progress ${cls}" style="flex:1;"><span style="width:${trackPct}%"></span></div>
-    <span class="pv" style="font-size:11px; color:#fff; font-weight:700;">${trackPct}%</span>`;
 }
 
 function priorityText(p) {
@@ -85,22 +76,14 @@ function render(result) {
     .map((cat) => result.categories.find((c) => c.category === cat))
     .filter(Boolean);
 
-  // Recommendation: build 3 fixed slots matching Figma example style
-  const sksGap = result.categories.find((c) => c.category === "sks")?.gap || 0;
-  const comservGap = result.categories.find((c) => c.category === "comserv")?.gap || 0;
-  const satGap = Math.max(0, Math.round(result.categories.find((c) => c.category === "sat")?.gap || 0));
-
-  // Use actual engine priorities for correct sorting, but render with Figma wording.
   const sorted = [...result.priorities].sort((a, b) => b.urgency - a.urgency);
 
-  // Build rekomendasi items (top 3)
   let rekomendasiItems = "";
   if (sorted.length === 0) {
     rekomendasiItems = `<div style="color:#fff; font-size:13px;">Semua indikator memenuhi target semester ini. Pertahankan progres.</div>`;
   } else {
     rekomendasiItems = sorted.slice(0, 3).map((p, idx) => {
       const t = priorityText(p);
-      const numClass = idx === 0 ? "mendesak" : idx === 1 ? "perhatian" : "aman";
       const bgStyle = idx === 0 ? "background:#dc2626;" : idx === 1 ? "background:#f59e0b;" : "background:#3b82f6;";
       return `
         <div style="display:flex; gap:12px; padding:12px 0; ${idx < 2 ? "border-bottom:1px solid rgba(255,255,255,0.18);" : ""}">
@@ -119,7 +102,7 @@ function render(result) {
   const fakultasLine = (s.programs?.name || "").includes("Sistem") ? "Fakultas Teknologi Informasi" : facultyName;
   const ipkSeed = (2.3 + (s.current_semester * 0.07) + ((parseInt(s.nim?.slice(-2) || "0", 10) % 20) * 0.02)).toFixed(2);
 
-  document.title = `${s.name} — Detail Mahasiswa`;
+  document.title = `${s.name} \u2014 Detail Mahasiswa`;
 
   el("host").innerHTML = `
     <section class="blue-shell" style="display:flex; gap:16px; align-items:flex-start; padding:18px 20px; flex-wrap:wrap;">
@@ -130,7 +113,7 @@ function render(result) {
             <h1 style="margin:0; font-size:20px; font-weight:800; color:#fff;">${escapeHtml(s.name)}</h1>
             <span class="pill-aktif" style="display:inline-flex;align-items:center;gap:6px;">${statusDot} AKTIF</span>
           </div>
-          <div style="margin-top:4px; color:rgba(255,255,255,0.9); font-size:12px;">${escapeHtml(programName)} · ${escapeHtml(fakultasLine)}</div>
+          <div style="margin-top:4px; color:rgba(255,255,255,0.9); font-size:12px;">${escapeHtml(programName)} \u00b7 ${escapeHtml(fakultasLine)}</div>
           <div class="hero-note" style="display:flex; align-items:center; gap:6px; margin-top:6px; color:#fde68a; font-size:11px; font-weight:600;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
             <span>Pantau rekomendasi di samping untuk percepatan kelulusan.</span>
@@ -177,7 +160,6 @@ function render(result) {
                 const val = progressText(cat);
                 const pct = cat.targetValue > 0 ? Math.min(100, Math.round((cat.actual / cat.targetValue) * 100)) : 100;
                 const clamped = Math.min(100, Math.max(0, pct));
-                // Figma-like proportions: Belingua full, Sertifikasi 67ish etc.
                 return `
                   <div style="display:flex; align-items:center; gap:10px;">
                     <div style="width:120px; font-size:12px; font-weight:700; color:#fff;">${label}</div>
@@ -263,16 +245,11 @@ function render(result) {
         <div class="blue-shell" style="padding:14px; display:flex; flex-direction:column; gap:8px;">
           <div style="font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(255,255,255,0.88); font-weight:800;">Ringkasan rekomendasi</div>
           <p id="rec-text" style="margin:0; font-size:12px; color:rgba(255,255,255,0.92); line-height:1.5;">
-            "${escapeHtml(recommendationSentence(result))}"
+            &quot;${escapeHtml(recommendationSentence(result))}&quot;
           </p>
           <div style="font-size:11px; color:rgba(255,255,255,0.78); margin-top:6px;">
-            Dihasilkan oleh mesin rekomendasi berbasis aturan sesuai target normatif semester ${s.current_semester}. Bersifat pendukung keputusan — arahan akhir tetap pada Dosen AA.
+            Dihasilkan oleh mesin rekomendasi berbasis aturan sesuai target normatif semester ${s.current_semester}. Bersifat pendukung keputusan &mdash; arahan akhir tetap pada Dosen AA.
           </div>
-        </div>
-
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn sm" id="copy-btn" style="flex:1; background:#fff; border-color:#cbd5e1;">Salin rekomendasi</button>
-          <button class="btn sm" id="print-btn" style="flex:1; background:#fff; border-color:#cbd5e1;">Cetak</button>
         </div>
       </div>
     </div>
@@ -296,14 +273,28 @@ function render(result) {
     const result = evaluateStudent(student, requirements.filter((r) => r.program_id === student.program_id), failed, certs);
     if (ctx && ctx.profile) result.profile = ctx.profile;
     render(result);
-    el("copy-btn")?.addEventListener("click", () => {
-      navigator.clipboard
-        .writeText(recommendationSentence(result))
-        .then(() => toast("Rekomendasi disalin.", "success"))
-        .catch(() => toast("Gagal menyalin.", "error"));
+    current = result;
+    el("download-pdf-btn")?.addEventListener("click", () => {
+      const win = window.open("", "_blank", "width=900,height=760");
+      if (!win) return;
+      const s = result.student;
+      const ttl = `Laporan Kelulusan — ${s.name}`;
+      const d = new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
+      const body = [
+        `Nama: ${s.name} (${s.nim})`,
+        `Program: ${s.programs?.name || "-"}`,
+        `Semester: ${s.current_semester} — ${new Date().toLocaleDateString("id-ID", { weekday: "long" })}`,
+        "",
+        ...result.priorities.slice(0, 3).map((p, i) => `${i + 1}. ${p.label} — status ${p.statusLabel}, gap ${p.gap}${p.unit ? " " + p.unit : ""}`),
+        "",
+        recommendationSentence(result),
+      ];
+      win.document.write(
+        `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(ttl)}</title><style>body{font-family:Inter,'Segoe UI',system-ui,sans-serif;padding:28px;color:#0f1f2e} h1{font-size:18px;margin:0 0 4px} .sub{color:#64748b;font-size:13px;margin-bottom:18px} .box{border:1px solid #cfeaf6;background:#f3f9ff;border-radius:10px;padding:16px;margin:16px 0} pre{white-space:pre-wrap;word-break:break-word;font-family:inherit;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px}</style></head><body><h1>${escapeHtml(ttl)}</h1><div class="sub">${escapeHtml(d)}</div><div class="box">${escapeHtml(result.student.name)} \\u2014 NIM ${escapeHtml(result.student.nim)}<br>${escapeHtml(result.student.programs?.name || "")} \\u00b7 Semester ${result.student.current_semester}</div><pre>${escapeHtml(body.join("\\n"))}</pre><script>setTimeout(() => window.print(), 300)<\\/script></body></html>`
+      );
+      win.document.close();
+      win.focus();
     });
-    el("print-btn")?.addEventListener("click", () => { const node = document.querySelector(".page-wrap"); if (node) printNode(node); });
-    el("download-pdf-btn")?.addEventListener("click", () => { const node = document.querySelector(".page-wrap"); if (node) printNode(node); });
   } catch (err) {
     el("host").innerHTML = `<div class="alert error">Gagal memuat data mahasiswa: ${escapeHtml(err.message)}</div>`;
   }

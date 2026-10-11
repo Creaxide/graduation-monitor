@@ -249,9 +249,11 @@ async function runExport() {
 
 async function detailedRows() {
   const { students, requirements } = await loadDashboard();
+  const angkatanFilter = el("x-angkatan")?.value || "";
+  const semesterFilter = el("x-semester")?.value || "";
   const filtered = students.filter((s) => {
-    if (el("x-angkatan").value && String(s.angkatan) !== el("x-angkatan").value) return false;
-    if (el("x-semester").value && String(s.current_semester) !== el("x-semester").value) return false;
+    if (angkatanFilter && String(s.angkatan) !== angkatanFilter) return false;
+    if (semesterFilter && String(s.current_semester) !== semesterFilter) return false;
     return true;
   });
   const detailed = await Promise.all(
@@ -263,7 +265,7 @@ async function detailedRows() {
       return evaluateStudent(s, requirements.filter((r) => r.program_id === s.program_id), failed, certs);
     })
   );
-  const status = el("x-status").value;
+  const status = el("x-status")?.value || "";
   return status ? detailed.filter((r) => r.overall === status) : detailed;
 }
 
@@ -313,6 +315,7 @@ function exportPdf(rows) {
 
 function renderSettings() {
   const host = el("settings-host");
+  if (!host) return;
   const grouped = {};
   for (const r of state.requirements) {
     grouped[r.category] = grouped[r.category] || [];
@@ -340,10 +343,14 @@ function renderSettings() {
 }
 
 function populateExportFilters() {
+  const angkatanEl = el("x-angkatan");
+  const semesterEl = el("x-semester");
   const angkatan = [...new Set(state.students.map((s) => s.angkatan).filter(Boolean))].sort((a, b) => a - b);
   const semester = [...new Set(state.students.map((s) => s.current_semester))].sort((a, b) => a - b);
-  el("x-angkatan").innerHTML = `<option value="">All</option>` + angkatan.map((a) => `<option value="${a}">${a}</option>`).join("");
-  el("x-semester").innerHTML = `<option value="">All</option>` + semester.map((s) => `<option value="${s}">Semester ${s}</option>`).join("");
+  if (angkatanEl) angkatanEl.innerHTML = `<option value="">Semua Angkatan</option>` + angkatan.map((a) => `<option value="${a}">${a}</option>`).join("");
+  if (semesterEl) semesterEl.innerHTML = `<option value="">Semua Semester</option>` + semester.map((s) => `<option value="${s}">Semester ${s}</option>`).join("");
+  const angkatanOpts = angkatan.length ? "" : "<!-- no angkatan -->";
+  void angkatanOpts;
 }
 
 // ---------------------------------------------------------------- helpers ---
