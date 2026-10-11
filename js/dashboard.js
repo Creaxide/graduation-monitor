@@ -1,30 +1,24 @@
 import { initLayout } from "./ui.js";
 import {
-  loadDashboard, listFailedCourses, listCertifications, logAudit,
+  loadDashboard, listFailedCourses, listCertifications,
   isMock, mockHasData, mockAddStudent,
 } from "./data.js";
-import { evaluateStudent, STATUS_LABEL } from "./engine.js";
+import { evaluateStudent } from "./engine.js";
 import {
-  el, escapeHtml, formatNumber, debounce, downloadFile, toCsv, toast,
+  el, escapeHtml, debounce, toast,
 } from "./utils.js";
 
 let state = { rows: [], requirements: [], filter: { q: "", semester: "", status: "" } };
 
-function renderBadge(status) {
-  return `<span class="badge ${status}">${escapeHtml(STATUS_LABEL[status])}</span>`;
-}
+const STATUS_ID = {
+  safe: { label: "AMAN", cls: "safe" },
+  warn: { label: "PERHATIAN", cls: "warn" },
+  danger: { label: "MENDESAK", cls: "danger" },
+};
 
-function categoryPill(cat) {
-  const pct = cat.targetValue > 0 ? Math.min(100, Math.round((cat.actual / cat.targetValue) * 100)) : 100;
-  const unit = cat.unit ? ` ${cat.unit}` : "";
-  return `
-    <div style="margin-bottom:6px">
-      <div class="flex between small" style="margin-bottom:3px">
-        <span>${escapeHtml(cat.label)}</span>
-        <span class="mono muted">${formatNumber(cat.actual)}/${formatNumber(cat.targetValue)}${unit}</span>
-      </div>
-      <div class="progress ${cat.status}"><span style="width:${pct}%"></span></div>
-    </div>`;
+function renderFigmaBadge(statusKey) {
+  const meta = STATUS_ID[statusKey] || { label: statusKey?.toUpperCase() || "-", cls: "neutral" };
+  return `<span class="badge ${meta.cls}">${meta.label}</span>`;
 }
 
 function applyFilters() {
@@ -40,34 +34,32 @@ function applyFilters() {
 
 function renderTable(rows) {
   const host = el("table-host");
+  const countLabel = el("count-label");
+  if (countLabel) countLabel.textContent = `${rows.length} mahasiswa bimbingan ditemukan`;
+
   if (!rows.length) {
-    host.innerHTML = `<div class="empty-state"><div class="big">&#128269;</div>No students match the current filters.</div>`;
+    host.innerHTML = `<div class="empty-state"><div class="big">🔍</div>Tidak ada mahasiswa yang sesuai filter.</div>`;
     return;
   }
+
   const body = rows
     .map((r) => {
       const s = r.student;
-      const top = r.priorities[0];
+      const getCatStatus = (name) => r.categories.find((c) => c.category === name)?.status || "safe";
+
       return `
         <tr data-id="${s.id}">
-          <td>
-            <div style="font-weight:600">${escapeHtml(s.name)}</div>
-            <div class="nim">${escapeHtml(s.nim)}</div>
+          <td class="nim">${escapeHtml(s.nim)}</td>
+          <td style="font-weight:700">${escapeHtml(s.name)}</td>
+          <td style="text-align:center">${s.current_semester}</td>
+          <td>${renderFigmaBadge(getCatStatus("sks"))}</td>
+          <td>${renderFigmaBadge(getCatStatus("comserv"))}</td>
+          <td>${renderFigmaBadge(getCatStatus("sat"))}</td>
+          <td>${renderFigmaBadge(getCatStatus("belingua"))}</td>
+          <td>${renderFigmaBadge(getCatStatus("sertifikasi"))}</td>
+          <td class="text-right">
+            <a class="btn btn-detail" href="student.html?id=${s.id}">Detail</a>
           </td>
-          <td><span class="badge neutral">Sem ${s.current_semester}</span></td>
-          <td>
-            <div class="progress-row">
-              <div class="progress ${r.categories.find((c)=>c.category==='sks').status}">
-                <span style="width:${Math.min(100, Math.round((r.categories.find((c)=>c.category==='sks').actual / (r.categories.find((c)=>c.category==='sks').total||1)) * 100))}%"></span>
-              </div>
-              <span class="pv">${formatNumber(s.total_sks_passed)} SKS</span>
-            </div>
-          </td>
-          <td class="nowrap">
-            ${top ? `<span class="badge ${top.status}">P1: ${escapeHtml(top.label)}</span>` : `<span class="badge safe">All on track</span>`}
-          </td>
-          <td>${renderBadge(r.overall)}</td>
-          <td class="text-right"><a class="btn sm" href="student.html?id=${s.id}">View</a></td>
         </tr>`;
     })
     .join("");
@@ -77,8 +69,15 @@ function renderTable(rows) {
       <table class="data">
         <thead>
           <tr>
-            <th>Student</th><th>Semester</th><th>SKS Progress</th>
-            <th>Top Priority</th><th>Status</th><th></th>
+            <th>NIM</th>
+            <th>NAMA</th>
+            <th style="text-align:center">SEM</th>
+            <th>SKS</th>
+            <th>COMSERV</th>
+            <th>SAT</th>
+            <th>BILINGUA</th>
+            <th>SERTIFIKASI</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>${body}</tbody>
@@ -87,7 +86,7 @@ function renderTable(rows) {
 
   host.querySelectorAll("tbody tr").forEach((tr) => {
     tr.addEventListener("click", (e) => {
-      if (e.target.closest("a")) return;
+      if (e.target.closest("a") || e.target.closest("button")) return;
       window.location.href = `student.html?id=${tr.dataset.id}`;
     });
   });
@@ -95,35 +94,15 @@ function renderTable(rows) {
 
 function updateKpis() {
   const counts = { danger: 0, warn: 0, safe: 0 };
-  state.rows.forEach((r) => (counts[r.overall] += 1));
+  state.rows.forEach((r) => (counts[r.overall] = (counts[r.overall] || 0) + 1));
   el("k-total").textContent = state.rows.length;
-  el("k-danger").textContent = counts.danger;
-  el("k-warn").textContent = counts.warn;
-  el("k-safe").textContent = counts.safe;
-}
-
-function exportCsv() {
-  const rows = applyFilters().map((r) => ({
-    NIM: r.student.nim,
-    Name: r.student.name,
-    Semester: r.student.current_semester,
-    SKS_passed: r.student.total_sks_passed,
-    Comserv_hours: r.student.comserv_hours,
-    SAT_hours: r.student.sat_hours,
-    Belingua: r.student.belingua_status,
-    Overall_status: STATUS_LABEL[r.overall],
-    Priority_1: r.priorities[0]?.label || "-",
-    Priority_2: r.priorities[1]?.label || "-",
-    Priority_3: r.priorities[2]?.label || "-",
-  }));
-  if (!rows.length) return toast("Nothing to export.", "warn");
-  downloadFile(`advisees-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(rows));
-  logAudit({ entity: "students", action: "export_csv", detail: { count: rows.length } });
-  toast("Export ready.", "success");
+  el("k-danger").textContent = counts.danger || 0;
+  el("k-warn").textContent = counts.warn || 0;
+  el("k-safe").textContent = counts.safe || 0;
 }
 
 async function loadAllStudents(students, requirements) {
-  const detailed = await Promise.all(
+  return await Promise.all(
     students.map(async (s) => {
       const [failed, certs] = await Promise.all([
         listFailedCourses(s.id).catch(() => []),
@@ -132,20 +111,18 @@ async function loadAllStudents(students, requirements) {
       return evaluateStudent(s, requirements.filter((r) => r.program_id === s.program_id), failed, certs);
     })
   );
-  return detailed;
 }
 
 function populateSemesterFilter() {
   const semesters = [...new Set(state.rows.map((r) => r.student.current_semester))].sort((a, b) => a - b);
   el("f-semester").innerHTML =
-    `<option value="">All</option>` + semesters.map((s) => `<option value="${s}">Semester ${s}</option>`).join("");
+    `<option value="">Semua Semester</option>` + semesters.map((s) => `<option value="${s}">Semester ${s}</option>`).join("");
 }
 
 function wireFilters() {
   el("q").addEventListener("input", debounce((e) => { state.filter.q = e.target.value; renderTable(applyFilters()); }, 200));
   el("f-semester").addEventListener("change", (e) => { state.filter.semester = e.target.value; renderTable(applyFilters()); });
   el("f-status").addEventListener("change", (e) => { state.filter.status = e.target.value; renderTable(applyFilters()); });
-  el("export-btn").addEventListener("click", exportCsv);
 }
 
 function wireDummyTools() {
@@ -154,18 +131,10 @@ function wireDummyTools() {
   banner.classList.remove("hidden");
   if (!mockHasData()) {
     banner.className = "alert warn";
-    banner.innerHTML =
-      "No dummy data loaded yet. Click <strong>Generate dummy data</strong> in the sidebar, " +
-      "or use the <strong>+ Add student</strong> button above.";
-  } else if (!state.rows.length) {
-    banner.className = "alert warn";
-    banner.innerHTML =
-      "Dummy data is empty. Regenerate it from the sidebar or add a student with <strong>+ Add student</strong>.";
+    banner.innerHTML = "Belum ada data mahasiswa loaded.";
   } else {
     banner.className = "alert info";
-    banner.innerHTML =
-      `<strong>Demo mode.</strong> Showing ${state.rows.length} generated student(s). ` +
-      "Data lives in this browser session only.";
+    banner.innerHTML = `<strong>Mode Demo.</strong> Menampilkan ${state.rows.length} mahasiswa hasil generate. Data tersimpan di sesi browser saat ini.`;
   }
 
   const addBtn = el("add-student-btn");
@@ -190,7 +159,7 @@ function wireDummyTools() {
         sat_hours: Number(el("a-sat").value),
         belingua_status: el("a-belingua").value,
       });
-      toast("Dummy student added.", "success");
+      toast("Mahasiswa berhasil ditambahkan.", "success");
       window.location.href = `student.html?id=${student.id}`;
     } catch (err) {
       toast(err.message, "error");
@@ -199,7 +168,11 @@ function wireDummyTools() {
 }
 
 (async function main() {
-  const session = await initLayout({ active: "dashboard.html", title: "Monitoring Dashboard", subtitle: "Graduation requirements overview" });
+  const session = await initLayout({
+    active: "dashboard.html",
+    title: "Dashboard Mahasiswa Bimbingan",
+    subtitle: "Dr. Ahmad Fauzi, M.T. - Semester Ganjil 2025/2026"
+  });
   if (!session) return;
   wireFilters();
   try {
@@ -214,6 +187,6 @@ function wireDummyTools() {
     el("table-host").innerHTML = "";
     const box = el("alert");
     box.className = "alert error";
-    box.textContent = `Failed to load data: ${err.message}. Check your Supabase config (js/config.js) and schema.`;
+    box.textContent = `Gagal memuat data: ${err.message}`;
   }
 })();

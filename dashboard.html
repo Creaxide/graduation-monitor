@@ -1,86 +1,114 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard - Graduation Monitor</title>
+  <title>Dashboard Mahasiswa Bimbingan - Graduation Monitor</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-  <div class="app-shell">
-    <aside id="sidebar" class="sidebar"></aside>
-    <div class="main">
-      <header class="topbar">
-        <button class="btn ghost menu-toggle" style="display:none">&#9776;</button>
-        <div class="page-title"><h1>Loading...</h1></div>
-        <button class="btn primary hidden" id="add-student-btn">+ Add student</button>
-        <button class="btn" id="export-btn">Export CSV</button>
-      </header>
-      <main class="content">
-        <div id="alert" class="hidden"></div>
-        <div id="dummy-banner" class="alert info hidden"></div>
+  <div class="page-wrap">
+    <header class="page-title">
+      <h1>Dashboard Mahasiswa Bimbingan</h1>
+      <div class="sub">Memuat data...</div>
+    </header>
 
-        <section class="grid cols-4" id="kpi-row">
-          <div class="card kpi accent"><div class="k-label">Advisees</div><div class="k-value" id="k-total">-</div><div class="k-foot">students under monitoring</div></div>
-          <div class="card kpi danger"><div class="k-label">Urgent</div><div class="k-value" id="k-danger">-</div><div class="k-foot">need immediate action</div></div>
-          <div class="card kpi warn"><div class="k-label">Needs Attention</div><div class="k-value" id="k-warn">-</div><div class="k-foot">approaching the limit</div></div>
-          <div class="card kpi safe"><div class="k-label">On Track</div><div class="k-value" id="k-safe">-</div><div class="k-foot">meeting semester norms</div></div>
-        </section>
+    <div id="alert" class="hidden"></div>
+    <div id="dummy-banner" class="alert info hidden"></div>
 
-        <section class="card mt-24">
-          <div class="card-head">
-            <h2>Students</h2>
-          </div>
-          <div class="toolbar mb-16">
-            <div class="field search" style="min-width:220px;flex:1">
-              <label for="q">Search</label>
-              <input type="text" id="q" placeholder="Name or NIM..." />
-            </div>
-            <div class="field" style="min-width:150px">
-              <label for="f-semester">Semester</label>
-              <select id="f-semester"><option value="">All</option></select>
-            </div>
-            <div class="field" style="min-width:170px">
-              <label for="f-status">Urgency</label>
-              <select id="f-status">
-                <option value="">All</option>
-                <option value="danger">Urgent</option>
-                <option value="warn">Needs Attention</option>
-                <option value="safe">On Track</option>
-              </select>
-            </div>
-          </div>
+    <section class="grid cols-4 mb-24" id="kpi-row">
+      <div class="figma-card stat-card">
+        <div class="k-icon brown">👥</div>
+        <div class="kpi">
+          <div class="k-value" id="k-total">-</div>
+          <div class="k-label">Total Mahasiswa</div>
+        </div>
+      </div>
+      <div class="figma-card stat-card">
+        <div class="k-icon red">⚠️</div>
+        <div class="kpi">
+          <div class="k-value" id="k-danger">-</div>
+          <div class="k-label">Mendesak</div>
+        </div>
+      </div>
+      <div class="figma-card stat-card">
+        <div class="k-icon amber">ℹ️</div>
+        <div class="kpi">
+          <div class="k-value" id="k-warn">-</div>
+          <div class="k-label">Perlu Perhatian</div>
+        </div>
+      </div>
+      <div class="figma-card stat-card">
+        <div class="k-icon green">✓</div>
+        <div class="kpi">
+          <div class="k-value" id="k-safe">-</div>
+          <div class="k-label">Aman</div>
+        </div>
+      </div>
+    </section>
 
-          <div id="table-host">
-            <div class="spinner"></div>
-          </div>
-        </section>
-      </main>
+    <section class="blue-shell mb-24">
+      <div class="toolbar">
+        <div class="field search" style="min-width:300px; flex:1">
+          <input type="text" id="q" placeholder="Cari nama atau NIM..." />
+        </div>
+        <div class="field" style="min-width:180px">
+          <select id="f-semester"><option value="">Semua Semester</option></select>
+        </div>
+        <div class="field" style="min-width:180px">
+          <select id="f-status">
+            <option value="">Semua Status</option>
+            <option value="danger">Mendesak</option>
+            <option value="warn">Perlu Perhatian</option>
+            <option value="safe">Aman</option>
+          </select>
+        </div>
+        <div class="small fw-700" style="margin-bottom:12px; color:rgba(255,255,255,0.9)" id="count-label">
+          0 mahasiswa bimbingan ditemukan
+        </div>
+      </div>
+    </section>
+
+    <div class="table-shell">
+      <div id="table-host">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+    <div class="flex center gap-8 mt-24" style="justify-content:center; color: #64708a; font-size: 12px; font-weight: 500;">
+      <span>ℹ️</span>
+      <span>Klik baris mahasiswa untuk melihat detail dan rekomendasi prioritas kelulusan.</span>
+    </div>
+
+    <!-- Floating Tools (Optional/Support) -->
+    <div style="position:fixed; bottom:20px; right:20px; display:flex; flex-direction:column; gap:10px; z-index:50;">
+       <button class="btn amber hidden" id="add-student-btn">+ Tambah Mahasiswa</button>
+       <div id="sidebar-tools"></div> <!-- Container for dummy tools box -->
     </div>
   </div>
 
   <div class="modal-backdrop" id="add-modal">
     <div class="modal">
       <div class="modal-head">
-        <h2>Add dummy student</h2>
+        <h2>Tambah data dummy</h2>
         <button class="x" id="add-close" type="button">&times;</button>
       </div>
       <form id="add-form">
         <div class="grid cols-2" style="gap:0 14px">
-          <div class="field"><label for="a-name">Name</label><input type="text" id="a-name" required /></div>
-          <div class="field"><label for="a-nim">NIM</label><input type="text" id="a-nim" placeholder="auto if blank" /></div>
+          <div class="field"><label for="a-name">Nama</label><input type="text" id="a-name" required /></div>
+          <div class="field"><label for="a-nim">NIM</label><input type="text" id="a-nim" placeholder="otomatis jika kosong" /></div>
           <div class="field"><label for="a-program">Program</label>
             <select id="a-program"><option value="prog-cs">Computer Science</option><option value="prog-is">Information Systems</option></select></div>
-          <div class="field"><label for="a-semester">Current semester</label><input type="number" id="a-semester" min="1" max="14" value="6" /></div>
-          <div class="field"><label for="a-sks">Total SKS passed</label><input type="number" id="a-sks" min="0" value="90" /></div>
-          <div class="field"><label for="a-comserv">Comserv hours</label><input type="number" id="a-comserv" min="0" value="10" /></div>
-          <div class="field"><label for="a-sat">SAT hours</label><input type="number" id="a-sat" min="0" value="10" /></div>
-          <div class="field"><label for="a-belingua">Belingua status</label>
-            <select id="a-belingua"><option value="belum_ambil">Not taken</option><option value="proses">In progress</option><option value="lulus">Passed</option></select></div>
+          <div class="field"><label for="a-semester">Semester</label><input type="number" id="a-semester" min="1" max="14" value="6" /></div>
+          <div class="field"><label for="a-sks">Total SKS lulus</label><input type="number" id="a-sks" min="0" value="90" /></div>
+          <div class="field"><label for="a-comserv">Jam Comserv</label><input type="number" id="a-comserv" min="0" value="10" /></div>
+          <div class="field"><label for="a-sat">Poin SAT</label><input type="number" id="a-sat" min="0" value="10" /></div>
+          <div class="field"><label for="a-belingua">Status Belingua</label>
+            <select id="a-belingua"><option value="belum_ambil">Belum ambil</option><option value="proses">Proses</option><option value="lulus">Lulus</option></select></div>
         </div>
-        <div class="flex gap-8" style="justify-content:flex-end">
-          <button type="button" class="btn" id="add-cancel">Cancel</button>
-          <button type="submit" class="btn primary">Add &amp; view recommendation</button>
+        <div class="flex gap-8" style="justify-content:flex-end; margin-top: 10px;">
+          <button type="button" class="btn" id="add-cancel">Batal</button>
+          <button type="submit" class="btn primary">Simpan & Lihat Detail</button>
         </div>
       </form>
     </div>

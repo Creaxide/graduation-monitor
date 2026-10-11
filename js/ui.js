@@ -5,9 +5,8 @@ import {
 import { escapeHtml, toast, setBusy } from "./utils.js";
 
 const NAV = [
-  { href: "dashboard.html", label: "Dashboard", icon: "\u25A6" },
-  { href: "students.html", label: "Students", icon: "\u2637" },
-  { href: "import-export.html", label: "Import / Export", icon: "\u21C5" },
+  { href: "dashboard.html", label: "Dashboard", id: "dashboard", icon: "" },
+  { href: "import-export.html", label: "Import / Export", id: "import-export", icon: "⇅" },
 ];
 
 export async function initLayout({ active, title, subtitle }) {
@@ -17,60 +16,71 @@ export async function initLayout({ active, title, subtitle }) {
     return null;
   }
   const profile = (await getProfile(user.id)) || {
-    full_name: user.email,
+    full_name: "Dr. Ahmad Fauzi, M.T.",
     role: "dosen_aa",
   };
 
-  renderSidebar(profile, active);
-  const head = document.querySelector(".page-title");
-  if (head && title) {
-    head.innerHTML = `<h1>${escapeHtml(title)}</h1>${
-      subtitle ? `<div class="sub">${escapeHtml(subtitle)}</div>` : ""
-    }`;
-  }
-  wireChrome(profile);
+  renderHeader(profile, active);
+  setPageHeading(title, subtitle);
+  wireChrome();
   return { user, profile };
 }
 
-function renderSidebar(profile, active) {
-  const host = document.querySelector("#sidebar");
-  if (!host) return;
-  const links = NAV.map(
-    (n) =>
-      `<a href="${n.href}" class="${n.href === active ? "active" : ""}">
-         <span class="ico">${n.icon}</span>${n.label}
-       </a>`
-  ).join("");
+function renderHeader(profile, active) {
+  let header = document.querySelector(".site-header");
+  if (!header) {
+    header = document.createElement("header");
+    header.className = "site-header";
+    document.body.prepend(header);
+  }
 
-  const mockBox = `
-    <div class="dummy-box">
-      <div class="dummy-tag">${isMock ? "Demo mode" : "Test data"}</div>
-      <div class="dummy-row">
-        <input type="number" id="dummy-count" min="1" max="100" value="10" />
-        <button class="btn sm dummy-btn" id="dummy-generate">Generate</button>
-      </div>
-      <div class="dummy-note">
-        ${isMock ? "Local only" : "Inserts into Supabase"}
-      </div>
-      ${isMock ? '<button class="dummy-clear" id="dummy-clear">Clear dummy data</button>' : ""}
-    </div>`;
+  const pills = NAV.map((n) => {
+    const isActive = n.href === active || (active && active.startsWith(n.id));
+    return `
+      <a href="${n.href}" class="nav-pill ${isActive ? "active" : ""}">
+        ${n.icon ? `<span class="pill-ico">${n.icon}</span>` : ""}
+        <span>${escapeHtml(n.label)}</span>
+      </a>`;
+  }).join("");
 
-  host.innerHTML = `
-    <div class="brand">
-      <div class="logo">SM</div>
-      <div>
-        Graduation Monitor
-        <small>Advisor Dashboard</small>
+  const name = profile.full_name || "Dr. Ahmad Fauzi, M.T.";
+  const roleLabel = (profile.role === "admin" ? "Admin Akademik" : profile.role === "kaprodi" ? "Kaprodi" : "Dosen AA");
+
+  header.innerHTML = `
+    <div class="header-inner">
+      <div class="binus-logo-wrap">
+        <div class="binus-logo">BINUS<small>UNIVERSITY</small></div>
+        <div class="binus-brand-label">
+          <span>BINUS UNIVERSITY</span>
+          <span>School of Computer Science</span>
+        </div>
       </div>
-    </div>
-    <nav class="nav">${links}</nav>
-    <div class="spacer"></div>
-    ${mockBox}
-    <div class="user-box">
-      <div class="u-name">${escapeHtml(profile.full_name || "User")}</div>
-      <div class="u-role">${escapeHtml((profile.role || "").replace("_", " "))}</div>
-      <button class="btn ghost sm" id="logout-btn" style="margin-top:10px;color:#cfd7ea">Sign out</button>
+      <nav class="nav-pills">${pills}</nav>
+      <div class="header-spacer"></div>
+      <div class="header-user">
+        <div class="u-meta">
+          <div class="u-name">${escapeHtml(name)}</div>
+          <div class="u-role">${escapeHtml(roleLabel)}</div>
+        </div>
+        <button class="btn-keluar" id="logout-btn" title="Keluar dari sistem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Keluar</span>
+        </button>
+      </div>
     </div>`;
+}
+
+function setPageHeading(title, subtitle) {
+  const head = document.querySelector(".page-title");
+  if (head && title) {
+    head.innerHTML = `<h1>${escapeHtml(title)}</h1>${
+      subtitle ? `<div class="page-subtitle">${escapeHtml(subtitle)}</div>` : ""
+    }`;
+  }
 }
 
 function wireChrome() {
@@ -82,49 +92,44 @@ function wireChrome() {
     });
   }
 
-  const toggle = document.querySelector(".menu-toggle");
-  const sidebar = document.querySelector("#sidebar");
-  if (toggle && sidebar) {
-    toggle.addEventListener("click", () => sidebar.classList.toggle("open"));
-  }
-
   const generate = document.getElementById("dummy-generate");
   if (generate) generate.addEventListener("click", () => handleGenerate(generate));
 
   const clear = document.getElementById("dummy-clear");
   if (clear) {
     clear.addEventListener("click", () => {
-      if (!mockHasData()) return toast("No dummy data to clear.", "warn");
-      if (!window.confirm("Delete all dummy data?")) return;
+      if (!mockHasData()) return toast("Tidak ada data dummy untuk dihapus.", "warn");
+      if (!window.confirm("Hapus semua data dummy?")) return;
       mockClear();
-      toast("Dummy data cleared.", "info");
+      toast("Data dummy dibersihkan.", "info");
       setTimeout(() => window.location.reload(), 400);
     });
   }
 }
 
-async function handleGenerate(button) {
-  const count = Math.min(100, Math.max(1, Number(document.getElementById("dummy-count").value) || 10));
+export async function handleGenerate(button) {
+  const countInput = document.getElementById("dummy-count");
+  const count = Math.min(100, Math.max(1, Number(countInput?.value) || 10));
 
   if (isMock) {
-    if (mockHasData() && !window.confirm("Dummy data already exists. Regenerate and replace it?")) return;
-  } else if (!window.confirm(`Insert ${count} random student(s) into Supabase? This writes to the live database.`)) {
+    if (mockHasData() && !window.confirm("Data dummy sudah ada. Hasilkan ulang dan ganti semuanya?")) return;
+  } else if (!window.confirm(`Masukkan ${count} data mahasiswa acak ke Supabase? Tindakan ini menulis ke basis data langsung.`)) {
     return;
   }
 
   setBusy(button, true, "...");
   try {
     const summary = await seedDummyData(count);
-    const parts = [`${summary.students} student(s)`];
-    if (summary.failed) parts.push(`${summary.failed} failed course(s)`);
-    if (summary.certs) parts.push(`${summary.certs} certification(s)`);
-    toast(`Inserted ${parts.join(", ")}.`, "success");
+    const parts = [`${summary.students} mahasiswa`];
+    if (summary.failed) parts.push(`${summary.failed} mata kuliah tidak lulus`);
+    if (summary.certs) parts.push(`${summary.certs} sertifikasi`);
+    toast(`Berhasil memasukkan ${parts.join(", ")}.`, "success");
     if (summary.errors && summary.errors.length) {
-      toast(`${summary.errors.length} item(s) failed — ${summary.errors[0]}`, "warn");
+      toast(`${summary.errors.length} data gagal — ${summary.errors[0]}`, "warn");
     }
     setTimeout(() => window.location.reload(), 800);
   } catch (err) {
-    toast(err.message || "Failed to generate dummy data.", "error");
+    toast(err.message || "Gagal menghasilkan data dummy.", "error");
     setBusy(button, false);
   }
 }

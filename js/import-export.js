@@ -14,17 +14,17 @@ const TEMPLATES = {
   students: {
     headers: ["nim", "name", "program_code", "advisor_kode", "angkatan", "current_semester", "status", "total_sks_passed", "comserv_hours", "sat_hours", "belingua_status", "belingua_score"],
     sample: [["2702314920", "Andi Pratama", "CS", "D001", "2023", "6", "aktif", "126", "26", "20", "proses", "480"]],
-    hint: "Required for new students: nim + name. Existing NIMs are updated. program_code defaults to the first program.",
+    hint: "NIM baru otomatis dibuat. Kolom: nim, name, program_code, advisor_kode, angkatan, current_semester, status, total_sks_passed, comserv_hours, sat_hours, belingua_status, belingua_score.",
   },
   failed_courses: {
     headers: ["nim", "kode_mk", "nama_mk", "sks", "nilai", "semester_taken"],
     sample: [["2702314921", "COMP6047", "Algoritma dan Pemrograman", "4", "D", "2"]],
-    hint: "Required: nim, kode_mk, nama_mk. Courses are appended to the student's record.",
+    hint: "Wajib: nim, kode_mk, nama_mk. Mata kuliah ditambahkan ke riwayat mahasiswa.",
   },
   certifications: {
     headers: ["nim", "name", "is_required", "obtained", "obtained_at"],
     sample: [["2702314920", "Sertifikasi Kompetensi Pemrograman", "true", "true", "2025-06-01"]],
-    hint: "Required: nim, name. is_required/obtained accept true/false or 1/0.",
+    hint: "Wajib: nim, name. is_required/obtained menerima true/false atau 1/0.",
   },
 };
 
@@ -186,6 +186,7 @@ async function runImport() {
     }
 
     logAudit({ entity, action: "import", detail: { success: ok.length, failed: errors.length, file: file.name } });
+    if (ok.length) pushRiwayat(entity);
     showResult(entity, ok.length, errors);
   } catch (err) {
     toast(err.message || "Import failed", "error");
@@ -353,7 +354,7 @@ function clampInt(v, min, max) { return Math.min(max, Math.max(min, toInt(v))); 
 
 function updateTemplateUI() {
   const t = TEMPLATES[el("entity").value];
-  el("template-hint").textContent = `${t.hint} Columns: ${t.headers.join(", ")}`;
+  el("template-hint").textContent = `${t.hint} Kolom: ${t.headers.join(", ")}`;
 }
 
 function wire() {
@@ -383,10 +384,66 @@ function setFile(file) {
   el("import-btn").disabled = false;
 }
 
+function bindExportToggles() {
+  const xlsx = el("fmt-xlsx");
+  const csv = el("fmt-csv");
+  const fmt = el("x-format");
+  const apply = (mode) => {
+    if (!fmt) return;
+    fmt.value = mode;
+    xlsx.style.background = mode === "xlsx" ? "#ffffff" : "#eef6fb";
+    xlsx.style.color = mode === "xlsx" ? "#0c7fae" : "#0c7fae";
+    csv.style.background = mode === "csv" ? "#ffffff" : "#eef6fb";
+    csv.style.color = mode === "csv" ? "#0c7fae" : "#0c7fae";
+    xlsx.style.borderColor = mode === "xlsx" ? "#0c7fae" : "#cbd5e1";
+    csv.style.borderColor = mode === "csv" ? "#0c7fae" : "#cbd5e1";
+    xlsx.style.fontWeight = mode === "xlsx" ? "800" : "600";
+    csv.style.fontWeight = mode === "csv" ? "800" : "600";
+  };
+  xlsx.addEventListener("click", () => apply("xlsx"));
+  csv.addEventListener("click", () => apply("csv"));
+  apply("xlsx");
+}
+
+function renderRiwayat() {
+  const host = el("riwayat-list");
+  const pill = el("riwayat-pill");
+  if (!host) return;
+  const raw = sessionStorage.getItem("riwayat_import");
+  const entries = raw ? JSON.parse(raw) : [];
+  if (pill) pill.textContent = `${entries.length} aktivitas`;
+  if (!entries.length) {
+    host.innerHTML = `<div class="empty-state" style="padding:18px; color:#64748b; font-size:12px;">Belum ada aktivitas import.</div>`;
+    return;
+  }
+  host.innerHTML = entries.slice(-3).reverse().map((e) => `
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; border-bottom:1px solid #e2e8f0;">
+      <div>
+        <div style="font-weight:700; font-size:13px; color:#0f1f2e;">${escapeHtml(e.typeLabel)}</div>
+        <div style="font-size:11px; color:#64748b;">${escapeHtml(e.date)} · ${escapeHtml(e.uploader)}</div>
+      </div>
+      <span class="badge info" style="font-size:10px;">Berhasil</span>
+    </div>`).join("");
+}
+
+function pushRiwayat(entity) {
+  const raw = sessionStorage.getItem("riwayat_import");
+  const entries = raw ? JSON.parse(raw) : [];
+  const now = new Date();
+  const date = now.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const uploader = "Dr. Ahmad Fauzi (demo)";
+  const typeLabelMap = { students: "SKS / MK", certifications: "Sertifikasi", failed_courses: "Nilai Tidak Lulus" };
+  entries.push({ typeLabel: typeLabelMap[entity] || entity, date, uploader });
+  sessionStorage.setItem("riwayat_import", JSON.stringify(entries));
+  renderRiwayat();
+}
+
 (async function main() {
-  const ctx = await initLayout({ active: "import-export.html", title: "Import / Export", subtitle: "Bulk data management" });
+  const ctx = await initLayout({ active: "import-export.html", title: "Import / Export", subtitle: "Unggah dan unduh data kelulusan" });
   if (!ctx) return;
   wire();
+  bindExportToggles();
+  renderRiwayat();
   updateTemplateUI();
   try {
     const { students, requirements } = await loadDashboard();
@@ -400,7 +457,7 @@ function setFile(file) {
   } catch (err) {
     const box = el("alert");
     box.className = "alert error";
-    box.textContent = `Failed to load data: ${err.message}`;
+    box.textContent = `Gagal memuat data: ${err.message}`;
     el("settings-host").innerHTML = "";
   }
 })();

@@ -1,93 +1,147 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Import / Export - Graduation Monitor</title>
+  <title>Import / Export Data - Graduation Monitor</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-  <div class="app-shell">
-    <aside id="sidebar" class="sidebar"></aside>
-    <div class="main">
-      <header class="topbar">
-        <button class="btn ghost menu-toggle" style="display:none">&#9776;</button>
-        <div class="page-title"><h1>Loading...</h1></div>
+  <div class="page-wrap">
+
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <header class="page-title" style="flex:1; min-width:260px;">
+        <h1>Import / Export Data</h1>
+        <div class="sub">Unggah data capaian mahasiswa dan unduh laporan kelulusan.</div>
       </header>
-      <main class="content">
-        <div id="alert" class="hidden"></div>
-
-        <section class="grid cols-2">
-          <div class="card">
-            <div class="card-head"><h2>Import Data</h2></div>
-            <p class="small muted">Upload an Excel (.xlsx) or CSV file using the system template. Required columns are validated before writing.</p>
-            <div class="field">
-              <label for="entity">Data type</label>
-              <select id="entity">
-                <option value="students">Students (SKS, Comserv, SAT, Belingua)</option>
-                <option value="failed_courses">Failed Courses (grades)</option>
-                <option value="certifications">Certifications</option>
-              </select>
-            </div>
-            <div id="template-hint" class="alert info small"></div>
-            <div class="flex gap-8 mb-16 wrap">
-              <button class="btn sm" id="download-template">Download template</button>
-            </div>
-            <div class="dropzone" id="dropzone">
-              <div style="font-size:1.6rem">&#8682;</div>
-              <div class="mt-16">Drag &amp; drop your file here, or click to browse</div>
-              <div class="small mt-16 muted" id="file-name">No file selected</div>
-              <input type="file" id="file-input" accept=".csv,.xlsx,.xls" class="hidden" />
-            </div>
-            <div class="flex gap-8 mt-16" style="justify-content:flex-end">
-              <button class="btn primary" id="import-btn" disabled>Run import</button>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-head"><h2>Export Data</h2></div>
-            <p class="small muted">Download student data including graduation status and priority recommendations.</p>
-            <div class="grid cols-2" style="gap:0 14px">
-              <div class="field"><label for="x-angkatan">Angkatan (year)</label>
-                <select id="x-angkatan"><option value="">All</option></select></div>
-              <div class="field"><label for="x-semester">Semester</label>
-                <select id="x-semester"><option value="">All</option></select></div>
-              <div class="field"><label for="x-status">Urgency</label>
-                <select id="x-status">
-                  <option value="">All</option>
-                  <option value="danger">Urgent</option>
-                  <option value="warn">Needs Attention</option>
-                  <option value="safe">On Track</option>
-                </select></div>
-              <div class="field"><label for="x-format">Format</label>
-                <select id="x-format">
-                  <option value="csv">CSV</option>
-                  <option value="xlsx">Excel (.xlsx)</option>
-                  <option value="pdf">PDF</option>
-                </select></div>
-            </div>
-            <div class="flex gap-8" style="justify-content:flex-end">
-              <button class="btn primary" id="export-btn">Export</button>
-            </div>
-          </div>
-        </section>
-
-        <section class="card mt-24 hidden" id="result-card">
-          <div class="card-head"><h2>Import Result</h2></div>
-          <div id="result-summary" class="grid cols-3 mb-16"></div>
-          <div id="result-detail"></div>
-        </section>
-
-        <section class="card mt-24" id="settings-card">
-          <div class="card-head">
-            <h2>Normative Targets (Semester Config)</h2>
-            <span class="badge info">Read-only unless admin</span>
-          </div>
-          <p class="small muted">Cumulative target fraction per semester for each requirement category. Percentages are relative to the curriculum total.</p>
-          <div id="settings-host"><div class="spinner"></div></div>
-        </section>
-      </main>
+      <div class="badge neutral" style="background:#eaf6ff; border:1.5px solid #bde1f2; color:#0b7fb8; padding:8px 12px; font-size:11px; display:inline-flex; align-items:center; gap:8px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;"></span>
+        <span>Sistem siap menerima data</span>
+      </div>
     </div>
+
+    <div id="alert" class="hidden"></div>
+
+    <section class="grid cols-2" style="align-items:start; gap:18px;">
+      <!-- Left: Import Data -->
+      <div class="blue-shell" style="display:flex; flex-direction:column; gap:14px;">
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.16); display:grid;place-items:center; flex-shrink:0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          </div>
+          <div style="flex:1;">
+            <h2 style="margin:0; font-size:15px; font-weight:800;">Import Data</h2>
+            <div style="font-size:11px; color:rgba(255,255,255,0.88); margin-top:2px;">Unggah berkas data terbaru untuk divalidasi ke sistem.</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="entity">Tipe Data</label>
+          <select id="entity">
+            <option value="students">SKS / Mata Kuliah</option>
+            <option value="failed_courses">Nilai Tidak Lulus</option>
+            <option value="certifications">Sertifikasi</option>
+          </select>
+        </div>
+
+        <div class="field" style="margin:0;">
+          <label for="dropzone">File (.xlsx / .csv)</label>
+          <div class="dropzone" id="dropzone">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+              <div style="width:32px;height:32px;border-radius:8px; background:#fff7ed; border:1px solid #fed7aa; display:grid;place-items:center;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+              </div>
+              <div style="font-weight:700; font-size:12px; color:#334155;">Pilih file untuk diunggah</div>
+              <div class="small muted" style="font-size:11px; color:#64748b;">Klik untuk memilih atau tarik file ke area ini · Maks. 10 MB</div>
+              <div class="small muted" id="file-name" style="margin-top:4px; font-size:11px; color:#0f1f2e; font-weight:600;">Belum ada file dipilih</div>
+            </div>
+            <input type="file" id="file-input" accept=".csv,.xlsx,.xls" class="hidden" />
+          </div>
+        </div>
+
+        <div id="template-hint" class="alert info small" style="font-size:11px; margin:0;"></div>
+
+        <div class="flex gap-8" style="flex-wrap:wrap;">
+          <button class="btn primary" id="import-btn" disabled style="flex:1; justify-content:center; min-width:140px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <span>Unggah &amp; Validasi</span>
+          </button>
+          <button class="btn sm" id="download-template" style="justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Unduh Template</span>
+          </button>
+        </div>
+
+        <div class="alert info" style="margin:0; font-size:11px; background:rgba(234,246,255,0.12); border-color:rgba(255,255,255,0.18); color:rgba(255,255,255,0.95);">ⓘ Sistem akan memeriksa format kolom dan menampilkan ringkasan sebelum data disimpan.</div>
+      </div>
+
+      <!-- Right: Export Laporan -->
+      <div class="blue-shell" style="display:flex; flex-direction:column; gap:14px;">
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.16); display:grid;place-items:center; flex-shrink:0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          </div>
+          <div style="flex:1;">
+            <h2 style="margin:0; font-size:15px; font-weight:800;">Export Laporan</h2>
+            <div style="font-size:11px; color:rgba(255,255,255,0.88); margin-top:2px;">Atur filter dan unduh laporan kelulusan mahasiswa.</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Format File</label>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn sm" id="fmt-xlsx" style="flex:1; justify-content:center;">XLSX</button>
+            <button type="button" class="btn sm" id="fmt-csv" style="flex:1; justify-content:center; background:#fff;">CSV</button>
+          </div>
+        </div>
+
+        <div class="grid cols-2" style="gap:0 10px">
+          <div class="field"><label for="x-angkatan">Angkatan</label>
+            <select id="x-angkatan"><option value="">Semua Angkatan</option></select></div>
+          <div class="field"><label for="x-status">Status Urgensi</label>
+            <select id="x-status">
+              <option value="">Semua Status</option>
+              <option value="danger">Mendesak</option>
+              <option value="warn">Perlu Perhatian</option>
+              <option value="safe">Aman</option>
+            </select></div>
+        </div>
+
+        <select id="x-format" class="hidden"><option value="xlsx">XLSX</option><option value="csv">CSV</option><option value="pdf">PDF</option></select>
+
+        <button class="btn primary" id="export-btn" style="justify-content:center;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>Unduh Laporan</span>
+        </button>
+
+        <section style="margin-top:6px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;">
+            <h3 style="margin:0; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(255,255,255,0.88);">RIWAYAT IMPORT TERAKHIR</h3>
+            <span class="badge info" id="riwayat-pill" style="font-size:10px;">0 aktivitas</span>
+          </div>
+          <div id="riwayat-list" style="background:#fff; border-radius:10px; overflow:hidden;">
+            <div class="empty-state" style="padding:18px; color:#64748b; font-size:12px;">Belum ada aktivitas import.</div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="card mt-24 hidden" id="result-card">
+      <div class="card-head"><h2>Hasil Import</h2></div>
+      <div id="result-summary" class="grid cols-3 mb-16"></div>
+      <div id="result-detail"></div>
+    </section>
+
+    <section class="blue-shell mt-24" id="settings-card">
+      <div class="card-head">
+        <div style="flex:1;">
+          <h2 style="margin:0; font-size:14px; font-weight:800;">Target Normatif (Konfigurasi Semester)</h2>
+          <div style="font-size:11px; color:rgba(255,255,255,0.85); margin-top:4px;">Fraksi kumulatif per semester terhadap total kurikulum.</div>
+        </div>
+        <span class="badge info" style="white-space:nowrap;">Hanya admin</span>
+      </div>
+      <div id="settings-host"><div class="spinner" style="border-color:rgba(255,255,255,0.3); border-top-color:#fff;"></div></div>
+    </section>
   </div>
 
   <script type="module" src="js/import-export.js"></script>

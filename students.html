@@ -1,40 +1,37 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Students - Graduation Monitor</title>
+  <title>Mahasiswa - Graduation Monitor</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-  <div class="app-shell">
-    <aside id="sidebar" class="sidebar"></aside>
-    <div class="main">
-      <header class="topbar">
-        <button class="btn ghost menu-toggle" style="display:none">&#9776;</button>
-        <div class="page-title"><h1>Loading...</h1></div>
-      </header>
-      <main class="content">
-        <div id="alert" class="hidden"></div>
-
-        <section class="card">
-          <div class="card-head">
-            <h2>Student Master Data</h2>
-          </div>
-          <div class="toolbar mb-16">
-            <div class="field search" style="min-width:220px;flex:1">
-              <label for="q">Search</label>
-              <input type="text" id="q" placeholder="Name or NIM..." />
-            </div>
-            <div class="field" style="min-width:150px">
-              <label for="f-semester">Semester</label>
-              <select id="f-semester"><option value="">All</option></select>
-            </div>
-          </div>
-          <div id="table-host"><div class="spinner"></div></div>
-        </section>
-      </main>
+  <div class="page-wrap">
+    <div class="breadcrumb">
+      <a href="dashboard.html">Dashboard</a> &gt; <span class="current">Data Mahasiswa</span>
     </div>
+
+    <header class="page-title">
+      <h1>Data Mahasiswa</h1>
+      <div class="sub">Daftar lengkap mahasiswa bimbingan</div>
+    </header>
+
+    <div id="alert" class="hidden"></div>
+
+    <section class="blue-shell">
+      <div class="toolbar">
+        <div class="field search" style="min-width:260px;flex:1">
+          <input type="text" id="q" placeholder="Cari nama atau NIM..." />
+        </div>
+        <div class="field" style="min-width:180px">
+          <select id="f-semester"><option value="">Semua Semester</option></select>
+        </div>
+      </div>
+      <div class="table-shell" style="margin-top:12px; border:none; box-shadow:none; padding:0;">
+        <div id="table-host"><div class="spinner" style="border-color:rgba(255,255,255,0.35); border-top-color:#fff;"></div></div>
+      </div>
+    </section>
   </div>
 
   <script type="module" src="js/students.js"></script>
