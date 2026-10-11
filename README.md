@@ -27,6 +27,19 @@ when the tab closes. No Supabase project is needed while `USE_MOCK = true`.
 The engine (`js/engine.js`) tests cleanly against the dummy set: priorities are
 always returned in descending urgency order (`evaluateStudent(...).priorities`).
 
+### Generate dummy data against Supabase
+
+The sidebar **Generate** button also works with `USE_MOCK = false`: it creates
+the chosen number of random students (with sample failed courses and
+certifications) and **inserts them into Supabase** through the same API the app
+uses. It reads your existing `programs`, `advisors` and `requirements` to
+produce realistic gaps for the recommendation engine.
+
+You must be signed in with `role = 'admin'` — the `students`/`failed_courses`/
+`certifications` write policies are admin-only. The button appends rows; it never
+deletes existing data.
+
+
 ## Features
 
 - **Login** via Supabase Auth (campus SSO-compatible), role-aware.
@@ -52,6 +65,7 @@ js/
   data.js             Data access layer (auto-selects mock or Supabase)
   supabase-data.js    Supabase implementation
   mock-data.js        In-browser dummy data + generator
+  dummy.js            Shared random data generator (mock + Supabase)
   errors.js           Shared DataError type
   supabase.js         Supabase client (lazy-loaded)
   engine.js           Rule-based recommendation engine

@@ -1,4 +1,5 @@
 import { DataError } from "./errors.js";
+import { generateStudents, generateChildrenFor } from "./dummy.js";
 
 const DB_KEY = "graduation-monitor-mock-db";
 const SESSION_KEY = "graduation-monitor-mock-session";
@@ -44,135 +45,24 @@ const REQUIREMENTS = [
   { id: "req-is-sertifikasi", program_id: "prog-is", category: "sertifikasi", label: "Sertifikasi", unit: "", total_required: 1, targets: CS_TARGETS.sertifikasi },
 ];
 
-const NAMES = [
-  "Andi Pratama", "Bella Kartika", "Chandra Wijaya", "Dewi Anggraini", "Eko Nugroho",
-  "Farah Amelia", "Gilbert Tobing", "Hana Salsabila", "Irfan Maulana", "Joseph Danubio",
-  "Kevin Sanjaya", "Larasati Putri", "Muhammad Rizki", "Nadia Puspita", "Oscar Lim",
-  "Putra Mahendra", "Qanita Zahra", "Rangga Aditya", "Sinta Dewi", "Taufik Hidayat",
-  "Umar Abdullah", "Vina Marlina", "Wahyu Setiawan", "Xavier Lim", "Yulia Rahmawati",
-  "Zaki Firmansyah", "Dian Fitriani", "Bagus Nugraha", "Citra Lestari", "Doni Saputra",
-  "Elsa Permata", "Fajar Ramadhan", "Gita Nirmala", "Hendra Wijaya", "Indah Sari",
-  "Joko Susilo", "Kartika Sari", "Lukman Hakim", "Maya Anggita", "Nanda Pratama",
-];
-
-const BELINGUA_STATES = ["belum_ambil", "proses", "lulus"];
-const STATUS_STATES = ["aktif", "aktif", "aktif", "aktif", "cuti", "do"];
-
-const FAILED_POOL = [
-  ["COMP6047", "Algoritma dan Pemrograman", 4],
-  ["MATH6031", "Kalkulus", 3],
-  ["COMP6123", "Struktur Data", 4],
-  ["COMP6083", "Basis Data", 4],
-  ["SCIE6064", "Fisika Dasar", 3],
-  ["COMP6144", "Jaringan Komputer", 3],
-  ["STAT6150", "Statistika", 3],
-  ["COMP6267", "Pemrograman Web", 4],
-];
-
-const CERT_POOL = [
-  "Sertifikasi Kompetensi Pemrograman",
-  "Sertifikasi Jaringan Dasar",
-  "Sertifikasi Basis Data",
-  "Sertifikasi Manajemen Proyek",
-];
-
 function nowIso() {
   return new Date().toISOString();
 }
 
-function buildRequirementsForProgram(programId) {
-  return REQUIREMENTS.filter((r) => r.program_id === programId).map((r) => ({
-    ...r,
-    targets: { ...r.targets },
+function generateDatabase(count = 40) {
+  const students = generateStudents({
+    count,
+    programs: PROGRAMS,
+    advisors: ADVISORS,
+    requirements: REQUIREMENTS,
+  }).map((s) => ({
+    ...s,
+    id: `stu-${s.nim}`,
+    created_at: nowIso(),
+    updated_at: nowIso(),
   }));
-}
 
-function generateDatabase() {
-  const students = [];
-  const failed = [];
-  const certifications = [];
-  const count = 40;
-
-  for (let i = 0; i < count; i++) {
-    const program = PROGRAMS[i % 2];
-    const advisor = ADVISORS[i % 3];
-    const semester = 1 + ((i * 3) % 8);
-    const angkatan = 2026 - Math.ceil(semester / 2);
-    const name = NAMES[i % NAMES.length];
-    const id = `stu-${String(i + 1).padStart(3, "0")}`;
-
-    const targetSks = CS_TARGETS.sks[semester] * program.total_sks;
-    const targetComserv = CS_TARGETS.comserv[semester] * 40;
-    const targetSat = CS_TARGETS.sat[semester] * 32;
-
-    const sksFactor = 0.55 + Math.random() * 0.55;
-    const comservFactor = 0.45 + Math.random() * 0.65;
-    const satFactor = 0.5 + Math.random() * 0.6;
-
-    const total_sks_passed = Math.max(0, Math.min(program.total_sks, Math.round(targetSks * sksFactor)));
-    const comserv_hours = Math.max(0, Math.round(targetComserv * comservFactor));
-    const sat_hours = Math.max(0, Math.round(targetSat * satFactor));
-
-    const r = Math.random();
-    const belingua_status = semester >= 6 ? (r < 0.45 ? "lulus" : r < 0.8 ? "proses" : "belum_ambil") : BELINGUA_STATES[Math.floor(Math.random() * 3)];
-    const belingua_score = belingua_status === "belum_ambil" ? null : 420 + Math.floor(Math.random() * 200);
-
-    students.push({
-      id,
-      nim: `${2702310000 + i}`,
-      name,
-      program_id: program.id,
-      advisor_id: advisor.id,
-      angkatan,
-      current_semester: semester,
-      status: STATUS_STATES[Math.floor(Math.random() * STATUS_STATES.length)],
-      total_sks_passed,
-      comserv_hours,
-      sat_hours,
-      belingua_status,
-      belingua_score,
-      created_at: nowIso(),
-      updated_at: nowIso(),
-      programs: { code: program.code, name: program.name, total_sks: program.total_sks },
-      advisors: { kode_dosen: advisor.kode_dosen, name: advisor.name },
-    });
-
-    if (Math.random() < 0.6) {
-      const n = 1 + Math.floor(Math.random() * 3);
-      const used = new Set();
-      for (let k = 0; k < n; k++) {
-        const pick = FAILED_POOL[(i + k * 3) % FAILED_POOL.length];
-        if (used.has(pick[0])) continue;
-        used.add(pick[0]);
-        failed.push({
-          id: `fc-${id}-${k}`,
-          student_id: id,
-          kode_mk: pick[0],
-          nama_mk: pick[1],
-          sks: pick[2],
-          nilai: ["D", "E", "C-", "D+"][Math.floor(Math.random() * 4)],
-          semester_taken: Math.max(1, semester - 1 - Math.floor(Math.random() * 2)),
-          created_at: nowIso(),
-        });
-      }
-    }
-
-    const certCount = 2 + Math.floor(Math.random() * 2);
-    for (let c = 0; c < certCount; c++) {
-      const certName = CERT_POOL[c % CERT_POOL.length];
-      const isRequired = c < 2;
-      const obtained = isRequired ? Math.random() < (semester / 9) : Math.random() < 0.5;
-      certifications.push({
-        id: `cert-${id}-${c}`,
-        student_id: id,
-        name: certName,
-        is_required: isRequired,
-        obtained,
-        obtained_at: obtained ? `2025-0${1 + (c % 8)}-15` : null,
-        created_at: nowIso(),
-      });
-    }
-  }
+  const { failedCourses, certifications } = generateChildrenFor(students);
 
   return {
     version: 1,
@@ -183,8 +73,8 @@ function generateDatabase() {
     advisors: ADVISORS,
     requirements: REQUIREMENTS.map((r) => ({ ...r, targets: { ...r.targets } })),
     students,
-    failed_courses: failed,
-    certifications,
+    failed_courses: failedCourses.map((f, i) => ({ id: `fc-${i}`, created_at: nowIso(), ...f })),
+    certifications: certifications.map((c, i) => ({ id: `cert-${i}`, created_at: nowIso(), ...c })),
     audit_log: [],
   };
 }
@@ -219,15 +109,15 @@ export function mockHasData() {
 }
 
 export function mockGenerate({ count } = {}) {
-  const db = generateDatabase();
-  if (Number.isInteger(count) && count > 0) {
-    db.students = db.students.slice(0, count);
-    const ids = new Set(db.students.map((s) => s.id));
-    db.failed_courses = db.failed_courses.filter((f) => ids.has(f.student_id));
-    db.certifications = db.certifications.filter((c) => ids.has(c.student_id));
-  }
+  const db = generateDatabase(Number.isInteger(count) && count > 0 ? count : 40);
   persist(db);
   return { students: db.students.length, failed: db.failed_courses.length, certs: db.certifications.length };
+}
+
+// Shared entry point used by the sidebar button. In mock mode this (re)seeds
+// the whole in-browser database.
+export async function seedDummyData(count = 10) {
+  return mockGenerate({ count: Number(count) || 10 });
 }
 
 export function mockAddStudent(overrides = {}) {

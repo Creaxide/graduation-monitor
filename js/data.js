@@ -53,6 +53,9 @@ export const updateRequirements = required("updateRequirements");
 export const logAudit = required("logAudit");
 export const studentIdsByNim = required("studentIdsByNim");
 
+// Generate + persist random students using the active backend (mock or Supabase).
+export const seedDummyData = required("seedDummyData");
+
 // ---------------------------------------------------- dummy-data controls --
 
 function notAvailable() {

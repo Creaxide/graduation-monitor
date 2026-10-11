@@ -125,6 +125,18 @@ p { margin: 0 0 1em; }
   padding: 2px;
 }
 .dummy-box .dummy-clear:hover { color: #cfd7ea; }
+.dummy-box .dummy-row { display: flex; gap: 6px; }
+.dummy-box .dummy-row input[type="number"] {
+  width: 56px; padding: 6px 8px; text-align: center;
+  background: #0f1626; border: 1px solid #364168; color: #fff;
+  border-radius: var(--radius-sm); font-family: inherit; font-size: .85rem;
+}
+.dummy-box .dummy-row input[type="number"]:focus {
+  outline: none; border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(47, 87, 232, .35);
+}
+.dummy-box .dummy-row .dummy-btn { flex: 1; justify-content: center; }
+.dummy-box .dummy-note { margin-top: 8px; font-size: .7rem; color: #8b97b5; }
 
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .topbar {

@@ -1,5 +1,6 @@
 import { supabase } from "./supabase.js";
 import { DataError } from "./errors.js";
+import { generateStudents, generateChildrenFor } from "./dummy.js";
 
 export { DataError };
 
@@ -113,6 +114,59 @@ export async function updateStudent(id, patch) {
 
 export async function insertStudent(row) {
   return unwrap(await supabase.from("students").insert(row).select().single());
+}
+
+/**
+ * Generate `count` random students and insert them (plus sample failed courses
+ * and certifications) into Supabase. Requires an admin profile (RLS).
+ * Returns a summary of what was written.
+ */
+export async function seedDummyData(count = 10) {
+  const n = Math.min(100, Math.max(1, Number(count) || 10));
+  const [programs, advisors, requirements] = await Promise.all([
+    listPrograms(),
+    listAdvisors(),
+    listRequirements(),
+  ]);
+  if (!programs.length) {
+    throw new DataError("No programs found. Run sql/seed.sql in the Supabase SQL Editor first.");
+  }
+
+  const rows = generateStudents({ count: n, programs, advisors, requirements });
+  const inserted = [];
+  const errors = [];
+
+  for (const row of rows) {
+    try {
+      inserted.push(await insertStudent(row));
+    } catch (e) {
+      errors.push(`${row.nim}: ${e.message}`);
+    }
+  }
+
+  let failed = 0;
+  let certs = 0;
+  if (inserted.length) {
+    const children = generateChildrenFor(inserted);
+    if (children.failedCourses.length) {
+      try {
+        await insertFailedCourses(children.failedCourses);
+        failed = children.failedCourses.length;
+      } catch (e) {
+        errors.push(`failed_courses: ${e.message}`);
+      }
+    }
+    if (children.certifications.length) {
+      try {
+        await insertCertifications(children.certifications);
+        certs = children.certifications.length;
+      } catch (e) {
+        errors.push(`certifications: ${e.message}`);
+      }
+    }
+  }
+
+  return { students: inserted.length, failed, certs, errors };
 }
 
 export async function upsertFailedCourse(row) {

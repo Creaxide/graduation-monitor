@@ -1,5 +1,8 @@
-import { getCurrentUser, getProfile, signOut, isMock, mockHasData, mockGenerate, mockClear } from "./data.js";
-import { escapeHtml, toast } from "./utils.js";
+import {
+  getCurrentUser, getProfile, signOut, isMock,
+  mockHasData, mockClear, seedDummyData,
+} from "./data.js";
+import { escapeHtml, toast, setBusy } from "./utils.js";
 
 const NAV = [
   { href: "dashboard.html", label: "Dashboard", icon: "\u25A6" },
@@ -39,15 +42,18 @@ function renderSidebar(profile, active) {
        </a>`
   ).join("");
 
-  const mockBox = isMock
-    ? `<div class="dummy-box">
-         <div class="dummy-tag">Demo mode</div>
-         <button class="btn sm dummy-btn" id="dummy-generate" style="width:100%;justify-content:center">
-           Generate dummy data
-         </button>
-         <button class="dummy-clear" id="dummy-clear">Clear dummy data</button>
-       </div>`
-    : "";
+  const mockBox = `
+    <div class="dummy-box">
+      <div class="dummy-tag">${isMock ? "Demo mode" : "Test data"}</div>
+      <div class="dummy-row">
+        <input type="number" id="dummy-count" min="1" max="100" value="10" />
+        <button class="btn sm dummy-btn" id="dummy-generate">Generate</button>
+      </div>
+      <div class="dummy-note">
+        ${isMock ? "Local only" : "Inserts into Supabase"}
+      </div>
+      ${isMock ? '<button class="dummy-clear" id="dummy-clear">Clear dummy data</button>' : ""}
+    </div>`;
 
   host.innerHTML = `
     <div class="brand">
@@ -83,19 +89,7 @@ function wireChrome() {
   }
 
   const generate = document.getElementById("dummy-generate");
-  if (generate) {
-    generate.addEventListener("click", () => {
-      if (mockHasData()) {
-        const again = window.confirm(
-          "Dummy data already exists. Regenerate and replace it?"
-        );
-        if (!again) return;
-      }
-      const summary = mockGenerate();
-      toast(`Generated ${summary.students} students, ${summary.failed} failed courses, ${summary.certs} certifications.`, "success");
-      setTimeout(() => window.location.reload(), 500);
-    });
-  }
+  if (generate) generate.addEventListener("click", () => handleGenerate(generate));
 
   const clear = document.getElementById("dummy-clear");
   if (clear) {
@@ -106,5 +100,31 @@ function wireChrome() {
       toast("Dummy data cleared.", "info");
       setTimeout(() => window.location.reload(), 400);
     });
+  }
+}
+
+async function handleGenerate(button) {
+  const count = Math.min(100, Math.max(1, Number(document.getElementById("dummy-count").value) || 10));
+
+  if (isMock) {
+    if (mockHasData() && !window.confirm("Dummy data already exists. Regenerate and replace it?")) return;
+  } else if (!window.confirm(`Insert ${count} random student(s) into Supabase? This writes to the live database.`)) {
+    return;
+  }
+
+  setBusy(button, true, "...");
+  try {
+    const summary = await seedDummyData(count);
+    const parts = [`${summary.students} student(s)`];
+    if (summary.failed) parts.push(`${summary.failed} failed course(s)`);
+    if (summary.certs) parts.push(`${summary.certs} certification(s)`);
+    toast(`Inserted ${parts.join(", ")}.`, "success");
+    if (summary.errors && summary.errors.length) {
+      toast(`${summary.errors.length} item(s) failed — ${summary.errors[0]}`, "warn");
+    }
+    setTimeout(() => window.location.reload(), 800);
+  } catch (err) {
+    toast(err.message || "Failed to generate dummy data.", "error");
+    setBusy(button, false);
   }
 }
