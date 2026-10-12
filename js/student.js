@@ -67,6 +67,7 @@ function priorityText(p) {
 function openStudentReport(result) {
   const s = result.student;
   const win = window.open("", "_blank", "width=900,height=760");
+  const isFirefox = /firefox/i.test(navigator.userAgent || "");
   if (!win) return;
 
   const d = new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
@@ -146,42 +147,47 @@ function openStudentReport(result) {
   win.document.write(
     `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Laporan Kelulusan \u2014 ${escapeHtml(s.name)}</title>
     <style>
-      @page { size: A4; margin: 14mm; }
+      @page { size: A4; margin: 10mm 12mm; }
       * { box-sizing: border-box; }
       body { font-family: "Inter", system-ui, "Segoe UI", Roboto, Arial, sans-serif; color: #0f1f2e; margin: 0; padding: 0; }
-      .sheet { max-width: 760px; margin: 0 auto; padding: 22px 26px 30px; }
-      .brand { display: flex; align-items: center; gap: 12px; border-bottom: 3px solid #1596c9; padding-bottom: 12px; margin-bottom: 18px; }
-      .brand-mark { width: 46px; height: 46px; border-radius: 10px; background: #0b2a4a; color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 11px; line-height: 1.1; text-align: center; }
-      .brand-text h1 { margin: 0; font-size: 17px; font-weight: 800; }
-      .brand-text small { color: #64748b; font-size: 12px; }
-      .meta { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
-      .meta h2 { margin: 0 0 2px; font-size: 15px; }
-      .meta .date { font-size: 12px; color: #64748b; }
-      .identity { display: flex; gap: 16px; align-items: center; background: #1596c9; color: #fff; border-radius: 12px; padding: 14px 16px; margin: 12px 0 16px; }
-      .avatar { width: 52px; height: 52px; border-radius: 50%; background: #0b4a67; display: grid; place-items: center; font-weight: 800; font-size: 16px; flex-shrink: 0; }
-      .who h3 { margin: 0; font-size: 16px; }
-      .who p { margin: 2px 0 0; font-size: 12px; opacity: 0.92; }
-      .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 0 0 18px; }
-      .fact { background: #f3f9ff; border: 1px solid #cfeaf6; border-radius: 10px; padding: 8px 10px; }
-      .fact .k { font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: #0b7fb8; font-weight: 800; }
-      .fact .v { font-size: 15px; font-weight: 800; margin-top: 2px; }
-      h4.sec { margin: 22px 0 8px; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: #0b7fb8; border-bottom: 2px solid #1596c9; padding-bottom: 4px; }
-      table { width: 100%; border-collapse: collapse; font-size: 12px; }
-      thead th { background: #f58220; color: #fff; text-align: left; padding: 8px 10px; font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; }
-      thead th:first-child { border-radius: 8px 0 0 0; }
-      thead th:last-child { border-radius: 0 8px 0 0; }
-      tbody td { padding: 8px 10px; border-bottom: 1px solid #e6edf3; vertical-align: middle; }
+      .sheet { max-width: none; margin: 0 auto; padding: 8px 4px 4px; }
+      .brand { display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #1596c9; padding-bottom: 8px; margin-bottom: 10px; }
+      .brand-mark { width: 38px; height: 38px; border-radius: 8px; background: #0b2a4a; color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 10px; line-height: 1.1; text-align: center; }
+      .brand-text h1 { margin: 0; font-size: 14px; font-weight: 800; }
+      .brand-text small { color: #64748b; font-size: 11px; }
+      .meta { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+      .meta h2 { margin: 0 0 2px; font-size: 13px; }
+      .meta .date { font-size: 11px; color: #64748b; }
+      .identity { display: flex; gap: 12px; align-items: center; background: #1596c9; color: #fff; border-radius: 10px; padding: 9px 12px; margin: 8px 0 10px; }
+      .avatar { width: 42px; height: 42px; border-radius: 50%; background: #0b4a67; display: grid; place-items: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+      .who h3 { margin: 0; font-size: 14px; }
+      .who p { margin: 2px 0 0; font-size: 11px; opacity: 0.92; }
+      .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 10px; }
+      .fact { background: #f3f9ff; border: 1px solid #cfeaf6; border-radius: 8px; padding: 6px 8px; }
+      .fact .k { font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase; color: #0b7fb8; font-weight: 800; }
+      .fact .v { font-size: 13px; font-weight: 800; margin-top: 1px; }
+      h4.sec { margin: 12px 0 6px; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: #0b7fb8; border-bottom: 2px solid #1596c9; padding-bottom: 3px; }
+      table { width: 100%; border-collapse: collapse; font-size: 11px; }
+      thead th { background: #f58220; color: #fff; text-align: left; padding: 5px 8px; font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase; }
+      thead th:first-child { border-radius: 6px 0 0 0; }
+      thead th:last-child { border-radius: 0 6px 0 0; }
+      tbody td { padding: 5px 8px; border-bottom: 1px solid #e6edf3; vertical-align: middle; }
       tbody tr:last-child td { border-bottom: none; }
-      .prio-title { font-weight: 700; }
-      .prio-desc { color: #64748b; font-size: 11px; margin-top: 2px; }
-      .risk { border: 1px solid #cfeaf6; background: #f3f9ff; border-radius: 10px; padding: 12px 14px; margin-top: 16px; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
-      .risk .pill { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 800; color: #fff; background: ${overallColor}; }
-      .foot { margin-top: 22px; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 10px; display: flex; justify-content: space-between; gap: 12px; }
-      .sig { margin-top: 34px; display: flex; justify-content: space-between; font-size: 12px; }
+      .prio-title { font-weight: 700; font-size: 11px; }
+      .prio-desc { color: #64748b; font-size: 10px; margin-top: 1px; }
+      .risk { border: 1px solid #cfeaf6; background: #f3f9ff; border-radius: 8px; padding: 8px 10px; margin-top: 10px; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+      .risk .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 10px; font-weight: 800; color: #fff; background: ${overallColor}; }
+      .foot { margin-top: 12px; font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 8px; display: flex; justify-content: space-between; gap: 10px; }
+      .sig { margin-top: 18px; display: flex; justify-content: space-between; font-size: 11px; page-break-inside: avoid; }
       .sig div { text-align: center; width: 200px; }
-      .sig .line { margin-top: 54px; border-top: 1px solid #0f1f2e; padding-top: 6px; }
-      /* Chrome prints backgrounds only with color-adjust enabled. */
-      *, *::before, *::after { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .sig .line { margin-top: 40px; border-top: 1px solid #0f1f2e; padding-top: 5px; }
+      .nopagebreak { page-break-inside: avoid; }
+      /* Browsers strip backgrounds unless told otherwise (Chrome + Firefox). */
+      *, *::before, *::after {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color-adjust: exact;
+      }
       @media print { .sheet { max-width: none; padding: 0; } }
     </style></head><body>
     <div class="sheet">
@@ -238,6 +244,13 @@ function openStudentReport(result) {
   );
   win.document.close();
   win.focus();
+  if (isFirefox && !sessionStorage.getItem("fx-print-hint")) {
+    sessionStorage.setItem("fx-print-hint", "1");
+    toast(
+      "Di Firefox, centang 'Print backgrounds' pada dialog cetak agar PDF tetap berwarna.",
+      "info"
+    );
+  }
   setTimeout(() => win.print(), 400);
 }
 
