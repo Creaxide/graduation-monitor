@@ -49,7 +49,7 @@ function renderHeader(profile, active) {
   header.innerHTML = `
     <div class="header-inner">
       <div class="binus-logo-wrap">
-        <div class="binus-logo">BINUS<small>UNIVERSITY</small></div>
+        <img class="binus-logo" src="https://media.neliti.com/media/organisations/logo-219-binus.png" alt="BINUS University" />
         <div class="binus-brand-label">
           <span>BINUS UNIVERSITY</span>
           <span>School of Computer Science</span>
