@@ -64,6 +64,181 @@ function priorityText(p) {
   return { title: p.label, desc: priorityReason(p) };
 }
 
+function openStudentReport(result) {
+  const s = result.student;
+  const win = window.open("", "_blank", "width=900,height=760");
+  if (!win) return;
+
+  const d = new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
+  const overallId = result.overall === "danger" ? "MENDESAK" : result.overall === "warn" ? "PERLU PERHATIAN" : "AMAN";
+  const overallColor = result.overall === "danger" ? "#dc2626" : result.overall === "warn" ? "#f59e0b" : "#16a34a";
+
+  const labelMap = { sks: "SKS", comserv: "Community Service", sat: "SAT (Student Activity)", belingua: "Belingua", sertifikasi: "Sertifikasi" };
+  const sertCat = result.categories.find((c) => c.category === "sertifikasi");
+  const valueMap = {
+    sks: `${formatNumber(s.total_sks_passed)} / 144 SKS`,
+    comserv: `${formatNumber(s.comserv_hours)} / 30 Jam`,
+    sat: `${formatNumber(s.sat_hours)} / 120 Point`,
+    belingua: s.belingua_status === "lulus" ? "Lulus (100%)" : s.belingua_status === "proses" ? "Proses" : "Belum diambil",
+    sertifikasi: `${Math.round(sertCat?.actual || 0)} / ${Math.max(1, Math.round(sertCat?.total || 0))} sertifikat`,
+  };
+
+  const catRows = result.categories
+    .map((c) => {
+      const badgeBg = c.status === "danger" ? "#dc2626" : c.status === "warn" ? "#f59e0b" : "#16a34a";
+      const badgeTxt = c.status === "danger" ? "MENDESAK" : c.status === "warn" ? "PERHATIAN" : "AMAN";
+      const pct = c.targetValue > 0 ? Math.min(100, Math.round((c.actual / c.targetValue) * 100)) : 100;
+      const barBg = c.status === "danger" ? "#dc2626" : c.status === "warn" ? "#f59e0b" : "#16a34a";
+      return `
+        <tr>
+          <td><strong>${escapeHtml(labelMap[c.category] || c.label)}</strong></td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="flex:1;height:8px;background:#eef2f7;border-radius:999px;overflow:hidden;">
+                <div style="height:100%;width:${Math.min(100, Math.max(0, pct))}%;background:${barBg};"></div>
+              </div>
+              <span style="font-size:11px;color:#334155;white-space:nowrap;">${escapeHtml(valueMap[c.category] || "")}</span>
+            </div>
+          </td>
+          <td style="text-align:right;"><span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:800;color:#fff;background:${badgeBg};">${badgeTxt}</span></td>
+        </tr>`;
+    })
+    .join("");
+
+  const priorityRows = result.priorities.length
+    ? result.priorities
+        .slice(0, 3)
+        .map((p, i) => {
+          const t = priorityText(p);
+          const numBg = i === 0 ? "#dc2626" : i === 1 ? "#f59e0b" : "#3b82f6";
+          const badgeBg = p.status === "danger" ? "#dc2626" : p.status === "warn" ? "#f59e0b" : "#16a34a";
+          const badgeTxt = p.status === "danger" ? "MENDESAK" : p.status === "warn" ? "PERHATIAN" : "AMAN";
+          return `
+            <tr class="prio">
+              <td class="prio-num"><span style="width:26px;height:26px;border-radius:7px;display:inline-grid;place-items:center;color:#fff;font-weight:800;font-size:12px;background:${numBg};">${i + 1}</span></td>
+              <td>
+                <div class="prio-title">${escapeHtml(t.title)}</div>
+                <div class="prio-desc">${escapeHtml(t.desc)}</div>
+              </td>
+              <td style="text-align:right;white-space:nowrap;"><span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:800;color:#fff;background:${badgeBg};">${badgeTxt}</span></td>
+            </tr>`;
+        })
+        .join("")
+    : `<tr><td colspan="3" style="color:#334155;">Semua indikator memenuhi target semester ini. Pertahankan progres.</td></tr>`;
+
+  const failedRows = result.failed.length
+    ? result.failed
+        .map(
+          (f) => `
+          <tr>
+            <td><strong>${escapeHtml(f.nama_mk)}</strong><br><span style="color:#64748b;font-size:11px;">${escapeHtml(f.kode_mk)}</span></td>
+            <td style="text-align:center;"><span style="display:inline-block;min-width:26px;padding:3px 0;border-radius:7px;background:#dc2626;color:#fff;font-weight:800;font-size:11px;">${escapeHtml(f.nilai || "-")}</span></td>
+            <td style="text-align:center;">${f.semester_taken ? `Sem ${f.semester_taken}` : "-"}</td>
+            <td>Her semester depan</td>
+          </tr>`
+        )
+        .join("")
+    : `<tr><td colspan="4" style="color:#334155;">Tidak ada nilai bermasalah.</td></tr>`;
+
+  const initials = (s.name || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+  const angkatan = s.angkatan || "-";
+
+  win.document.write(
+    `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Laporan Kelulusan \u2014 ${escapeHtml(s.name)}</title>
+    <style>
+      @page { size: A4; margin: 14mm; }
+      * { box-sizing: border-box; }
+      body { font-family: "Inter", system-ui, "Segoe UI", Roboto, Arial, sans-serif; color: #0f1f2e; margin: 0; padding: 0; }
+      .sheet { max-width: 760px; margin: 0 auto; padding: 22px 26px 30px; }
+      .brand { display: flex; align-items: center; gap: 12px; border-bottom: 3px solid #1596c9; padding-bottom: 12px; margin-bottom: 18px; }
+      .brand-mark { width: 46px; height: 46px; border-radius: 10px; background: #0b2a4a; color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 11px; line-height: 1.1; text-align: center; }
+      .brand-text h1 { margin: 0; font-size: 17px; font-weight: 800; }
+      .brand-text small { color: #64748b; font-size: 12px; }
+      .meta { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+      .meta h2 { margin: 0 0 2px; font-size: 15px; }
+      .meta .date { font-size: 12px; color: #64748b; }
+      .identity { display: flex; gap: 16px; align-items: center; background: #1596c9; color: #fff; border-radius: 12px; padding: 14px 16px; margin: 12px 0 16px; }
+      .avatar { width: 52px; height: 52px; border-radius: 50%; background: #0b4a67; display: grid; place-items: center; font-weight: 800; font-size: 16px; flex-shrink: 0; }
+      .who h3 { margin: 0; font-size: 16px; }
+      .who p { margin: 2px 0 0; font-size: 12px; opacity: 0.92; }
+      .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 0 0 18px; }
+      .fact { background: #f3f9ff; border: 1px solid #cfeaf6; border-radius: 10px; padding: 8px 10px; }
+      .fact .k { font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: #0b7fb8; font-weight: 800; }
+      .fact .v { font-size: 15px; font-weight: 800; margin-top: 2px; }
+      h4.sec { margin: 22px 0 8px; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: #0b7fb8; border-bottom: 2px solid #1596c9; padding-bottom: 4px; }
+      table { width: 100%; border-collapse: collapse; font-size: 12px; }
+      thead th { background: #f58220; color: #fff; text-align: left; padding: 8px 10px; font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; }
+      thead th:first-child { border-radius: 8px 0 0 0; }
+      thead th:last-child { border-radius: 0 8px 0 0; }
+      tbody td { padding: 8px 10px; border-bottom: 1px solid #e6edf3; vertical-align: middle; }
+      tbody tr:last-child td { border-bottom: none; }
+      .prio-title { font-weight: 700; }
+      .prio-desc { color: #64748b; font-size: 11px; margin-top: 2px; }
+      .risk { border: 1px solid #cfeaf6; background: #f3f9ff; border-radius: 10px; padding: 12px 14px; margin-top: 16px; display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+      .risk .pill { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 800; color: #fff; background: ${overallColor}; }
+      .foot { margin-top: 22px; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 10px; display: flex; justify-content: space-between; gap: 12px; }
+      .sig { margin-top: 34px; display: flex; justify-content: space-between; font-size: 12px; }
+      .sig div { text-align: center; width: 200px; }
+      .sig .line { margin-top: 54px; border-top: 1px solid #0f1f2e; padding-top: 6px; }
+      @media print { .sheet { max-width: none; padding: 0; } }
+    </style></head><body>
+    <div class="sheet">
+      <div class="brand">
+        <div class="brand-mark">BINUS<small style="display:block;font-size:8px;font-weight:400;">UNIV</small></div>
+        <div class="brand-text">
+          <h1>Sistem Monitoring Kelulusan Mahasiswa</h1>
+          <small>School of Computer Science \u00b7 BINUS University</small>
+        </div>
+      </div>
+      <div class="meta">
+        <div>
+          <h2>Laporan Rekomendasi Prioritas Kelulusan</h2>
+          <div class="date">Dibuat: ${escapeHtml(d)} \u00b7 Semester ${s.current_semester}</div>
+        </div>
+        <div class="pill" style="display:inline-block;padding:5px 14px;border-radius:999px;font-size:11px;font-weight:800;color:#fff;background:${overallColor};">STATUS: ${overallId}</div>
+      </div>
+      <div class="identity">
+        <div class="avatar">${escapeHtml(initials)}</div>
+        <div class="who">
+          <h3>${escapeHtml(s.name)}</h3>
+          <p>NIM ${escapeHtml(s.nim || "-")} \u00b7 ${escapeHtml(s.programs?.name || "Teknik Informatika")} \u00b7 Angkatan ${escapeHtml(String(angkatan))}</p>
+        </div>
+      </div>
+      <div class="facts">
+        <div class="fact"><div class="k">SKS Lulus</div><div class="v">${formatNumber(s.total_sks_passed)} / 144</div></div>
+        <div class="fact"><div class="k">Comserv</div><div class="v">${formatNumber(s.comserv_hours)} / 30 Jam</div></div>
+        <div class="fact"><div class="k">SAT</div><div class="v">${formatNumber(s.sat_hours)} / 120 Point</div></div>
+        <div class="fact"><div class="k">Belingua</div><div class="v">${s.belingua_status === "lulus" ? "Lulus" : s.belingua_status === "proses" ? "Proses" : "Belum"}</div></div>
+      </div>
+      <h4 class="sec">Progress Kelulusan</h4>
+      <table><tbody>${catRows}</tbody></table>
+      <h4 class="sec">Rekomendasi Prioritas</h4>
+      <table><thead><tr><th style="width:34px;">No</th><th>Rekomendasi</th><th style="text-align:right;">Status</th></tr></thead><tbody>${priorityRows}</tbody></table>
+      <h4 class="sec">Riwayat Nilai Bermasalah</h4>
+      <table><thead><tr><th>Mata Kuliah</th><th style="text-align:center;">Nilai</th><th style="text-align:center;">Semester</th><th>Rekomendasi</th></tr></thead><tbody>${failedRows}</tbody></table>
+      <div class="risk">
+        <div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:0.06em;color:#0b7fb8;">ESTIMASI RISIKO</div>
+          <div style="font-size:12px;margin-top:4px;">Berpotensi lulus tepat waktu jika rekomendasi ditindaklanjuti semester ini.</div>
+        </div>
+        <span class="pill">${overallId}</span>
+      </div>
+      <div class="sig">
+        <div>Mengetahui,<br>Dosen Academic Advisor<br><div class="line">${escapeHtml(result.profile?.full_name || "Dr. Ahmad Fauzi, M.T.")}</div></div>
+        <div>Bekasi, ${escapeHtml(d)}<br>Dosen Pembimbing<br><div class="line">&nbsp;</div></div>
+      </div>
+      <div class="foot">
+        <span>Rekomendasi bersifat pendukung keputusan (rule-based, target normatif semester ${s.current_semester}).</span>
+        <span>Halaman 1 dari 1</span>
+      </div>
+    </div>
+    </body></html>`
+  );
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 400);
+}
+
 function render(result) {
   const s = result.student;
   const overallRisk = result.overall === "danger" ? "TINGGI" : result.overall === "warn" ? "SEDANG" : "RENDAH";
@@ -275,27 +450,7 @@ function render(result) {
     if (ctx && ctx.profile) result.profile = ctx.profile;
     render(result);
     current = result;
-    el("download-pdf-btn")?.addEventListener("click", () => {
-      const win = window.open("", "_blank", "width=900,height=760");
-      if (!win) return;
-      const s = result.student;
-      const ttl = `Laporan Kelulusan — ${s.name}`;
-      const d = new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
-      const body = [
-        `Nama: ${s.name} (${s.nim})`,
-        `Program: ${s.programs?.name || "-"}`,
-        `Semester: ${s.current_semester} — ${new Date().toLocaleDateString("id-ID", { weekday: "long" })}`,
-        "",
-        ...result.priorities.slice(0, 3).map((p, i) => `${i + 1}. ${p.label} — status ${p.statusLabel}, gap ${p.gap}${p.unit ? " " + p.unit : ""}`),
-        "",
-        recommendationSentence(result),
-      ];
-      win.document.write(
-        `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(ttl)}</title><style>body{font-family:Inter,'Segoe UI',system-ui,sans-serif;padding:28px;color:#0f1f2e} h1{font-size:18px;margin:0 0 4px} .sub{color:#64748b;font-size:13px;margin-bottom:18px} .box{border:1px solid #cfeaf6;background:#f3f9ff;border-radius:10px;padding:16px;margin:16px 0} pre{white-space:pre-wrap;word-break:break-word;font-family:inherit;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px}</style></head><body><h1>${escapeHtml(ttl)}</h1><div class="sub">${escapeHtml(d)}</div><div class="box">${escapeHtml(result.student.name)} \\u2014 NIM ${escapeHtml(result.student.nim)}<br>${escapeHtml(result.student.programs?.name || "")} \\u00b7 Semester ${result.student.current_semester}</div><pre>${escapeHtml(body.join("\\n"))}</pre><script>setTimeout(() => window.print(), 300)<\\/script></body></html>`
-      );
-      win.document.close();
-      win.focus();
-    });
+    el("download-pdf-btn")?.addEventListener("click", () => openStudentReport(result));
   } catch (err) {
     el("host").innerHTML = `<div class="alert error">Gagal memuat data mahasiswa: ${escapeHtml(err.message)}</div>`;
   }
