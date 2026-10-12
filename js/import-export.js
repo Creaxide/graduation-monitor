@@ -429,6 +429,19 @@ function wire() {
 
   el("import-btn").addEventListener("click", runImport);
   el("export-btn").addEventListener("click", runExport);
+
+  // Kaprodi is read-only: disable every control that writes.
+  if (state.profile?.role === "kaprodi") {
+    el("import-btn").disabled = true;
+    el("save-targets-btn")?.remove();
+    const dzEl = el("dropzone");
+    if (dzEl) dzEl.style.opacity = "0.6";
+    const note = document.createElement("div");
+    note.className = "alert warn";
+    note.style.marginTop = "12px";
+    note.textContent = "Mode baca saja untuk Kaprodi: import data dan konfigurasi semester dinonaktifkan.";
+    dzEl?.parentElement?.appendChild(note);
+  }
 }
 
 function setFile(file) {

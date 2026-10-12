@@ -83,8 +83,13 @@ function setPageHeading(title, subtitle) {
   }
 }
 
-export function mountTestControls() {
+export function mountTestControls(profile) {
   const btn = el("dummy-btn");
+  // Kaprodi is read-only: hide every control that writes.
+  if (profile?.role === "kaprodi") {
+    el("test-controls")?.classList.add("hidden");
+    return;
+  }
   const clear = el("dummy-clear");
   const note = el("dummy-note");
   if (!btn) return;

@@ -177,7 +177,7 @@ function wireDummyTools() {
   });
   if (!session) return;
   wireFilters();
-  mountTestControls();
+  mountTestControls(session.profile);
   try {
     const { students, requirements } = await loadDashboard();
     state.requirements = requirements;
