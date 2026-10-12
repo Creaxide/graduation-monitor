@@ -123,16 +123,21 @@ export async function insertStudent(row) {
  */
 export async function seedDummyData(count = 10) {
   const n = Math.min(100, Math.max(1, Number(count) || 10));
-  const [programs, advisors, requirements] = await Promise.all([
+  const [programs, advisors, requirements, profileRows] = await Promise.all([
     listPrograms(),
     listAdvisors(),
     listRequirements(),
+    getProfile((await getCurrentUser())?.id),
   ]);
   if (!programs.length) {
     throw new DataError("No programs found. Run sql/seed.sql in the Supabase SQL Editor first.");
   }
 
-  const rows = generateStudents({ count: n, programs, advisors, requirements });
+  // New advisees must be visible to *this* dosen afterwards, so pin them to the
+  // dosen's own advisor instead of a random one.
+  const mine = advisors.find((a) => a.id === profileRows?.advisor_id) || advisors[0] || null;
+
+  const rows = generateStudents({ count: n, programs, advisors: mine ? [mine] : advisors, requirements });
   const inserted = [];
   const errors = [];
 

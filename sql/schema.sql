@@ -23,6 +23,8 @@ create table if not exists advisors (
   created_at  timestamptz default now()
 );
 
+-- NOTE: the table-level check is applied at the end of this file so that
+-- re-running the schema migrates existing 'admin' rows first.
 create table if not exists profiles (
   id           uuid primary key references auth.users (id) on delete cascade,
   full_name    text,
@@ -149,10 +151,10 @@ create policy reference_admin_advisors on advisors for all
 create policy reference_admin_requirements on requirements for all
   using (public.current_role() = 'dosen_aa') with check (public.current_role() = 'dosen_aa');
 
--- students: kaprodi reads all, dosen reads own advisees; only dosen writes
+-- students: dosen sees own advisees; kaprodi sees all (read-only); only dosen writes
 create policy students_read on students for select
   using (
-    public.current_role() in ('dosen_aa','kaprodi')
+    public.current_role() = 'kaprodi'
     or advisor_id = public.current_advisor()
   );
 create policy students_write on students for all
@@ -162,14 +164,14 @@ create policy students_write on students for all
 -- child tables follow the parent student visibility
 create policy failed_courses_read on failed_courses for select using (
   exists (select 1 from students s where s.id = failed_courses.student_id
-    and (public.current_role() in ('dosen_aa','kaprodi') or s.advisor_id = public.current_advisor()))
+    and (public.current_role() = 'kaprodi' or s.advisor_id = public.current_advisor()))
 );
 create policy failed_courses_write on failed_courses for all
   using (public.current_role() = 'dosen_aa') with check (public.current_role() = 'dosen_aa');
 
 create policy certifications_read on certifications for select using (
   exists (select 1 from students s where s.id = certifications.student_id
-    and (public.current_role() in ('dosen_aa','kaprodi') or s.advisor_id = public.current_advisor()))
+    and (public.current_role() = 'kaprodi' or s.advisor_id = public.current_advisor()))
 );
 create policy certifications_write on certifications for all
   using (public.current_role() = 'dosen_aa') with check (public.current_role() = 'dosen_aa');
