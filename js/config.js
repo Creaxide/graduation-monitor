@@ -10,5 +10,5 @@
 
 export const USE_MOCK = false;
 
-export const SUPABASE_URL = "https://otmwtrgbbqhdvhsplfuq.supabase.co";
-export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90bXd0cmdiYnFoZHZoc3BsZnVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MDAwMjcsImV4cCI6MjEwNzI3NjAyN30.vbN8S1zc3C0q04GkUQw6QnYXe0LwZWLxeZVwFQWCSxA";
+export const SUPABASE_URL = "https://ygbetsdjzjutehfjwauz.supabase.co";
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnYmV0c2Rqemp1dGVoZmp3YXV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3ODc3MDcsImV4cCI6MjEwNzM2MzcwN30.fwUaN2aNzUDlZoUjZV2YSAi1tzlRnw9cwkCT3fzQXDI";
