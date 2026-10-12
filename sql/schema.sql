@@ -27,7 +27,7 @@ create table if not exists profiles (
   id           uuid primary key references auth.users (id) on delete cascade,
   full_name    text,
   role         text not null default 'dosen_aa'
-                 check (role in ('dosen_aa','admin','kaprodi')),
+                 check (role in ('dosen_aa','kaprodi')),
   advisor_id   uuid references advisors (id) on delete set null,
   created_at   timestamptz default now()
 );
@@ -109,7 +109,8 @@ create table if not exists audit_log (
 
 -- ---------------------------------------------------------------------------
 -- 2. Row Level Security
---    Dosen AA: read own advisees. Admin: full access. Kaprodi: read all.
+--    Dosen AA: full read + write (own advisees' students + all title/master data).
+--    Kaprodi: read-only across the program.
 -- ---------------------------------------------------------------------------
 
 create or replace function public.current_role()
@@ -131,50 +132,50 @@ alter table failed_courses  enable row level security;
 alter table certifications  enable row level security;
 alter table audit_log       enable row level security;
 
--- profiles: user can read own; admin reads all
+-- profiles: user can read own; dosen can read all (for display)
 create policy profiles_self_read on profiles for select
-  using (id = auth.uid() or public.current_role() = 'admin');
+  using (id = auth.uid() or public.current_role() = 'dosen_aa');
 create policy profiles_self_update on profiles for update
-  using (id = auth.uid() or public.current_role() = 'admin');
+  using (id = auth.uid() or public.current_role() = 'dosen_aa');
 
--- reference tables: everyone authenticated can read; admin manages
+-- reference tables: everyone authenticated can read; dosen manages
 create policy programs_read on programs for select using (auth.uid() is not null);
 create policy advisors_read on advisors for select using (auth.uid() is not null);
 create policy requirements_read on requirements for select using (auth.uid() is not null);
 create policy reference_admin_programs on programs for all
-  using (public.current_role() = 'admin') with check (public.current_role() = 'admin');
+  using (public.current_role() = 'dosen_aa') with check (public.current_role() = 'dosen_aa');
 create policy reference_admin_advisors on advisors for all
-  using (public.current_role() = 'admin') with check (public.current_role() = 'admin');
+  using (public.current_role() = 'dosen_aa') with check (public.current_role() = 'dosen_aa');
 create policy reference_admin_requirements on requirements for all
-  using (public.current_role() = 'admin') with check (public.current_role() = 'admin');
+  using (public.current_role() = 'dosen_aa') with check (public.current_role() = 'dosen_aa');
 
--- students: admin/kaprodi read all, dosen reads own advisees
+-- students: kaprodi reads all, dosen reads own advisees; only dosen writes
 create policy students_read on students for select
   using (
-    public.current_role() in ('admin','kaprodi')
+    public.current_role() in ('dosen_aa','kaprodi')
     or advisor_id = public.current_advisor()
   );
 create policy students_write on students for all
-  using (public.current_role() = 'admin')
-  with check (public.current_role() = 'admin');
+  using (public.current_role() = 'dosen_aa')
+  with check (public.current_role() = 'dosen_aa');
 
 -- child tables follow the parent student visibility
 create policy failed_courses_read on failed_courses for select using (
   exists (select 1 from students s where s.id = failed_courses.student_id
-    and (public.current_role() in ('admin','kaprodi') or s.advisor_id = public.current_advisor()))
+    and (public.current_role() in ('dosen_aa','kaprodi') or s.advisor_id = public.current_advisor()))
 );
 create policy failed_courses_write on failed_courses for all
-  using (public.current_role() = 'admin') with check (public.current_role() = 'admin');
+  using (public.current_role() = 'dosen_aa') with check (public.current_role() = 'dosen_aa');
 
 create policy certifications_read on certifications for select using (
   exists (select 1 from students s where s.id = certifications.student_id
-    and (public.current_role() in ('admin','kaprodi') or s.advisor_id = public.current_advisor()))
+    and (public.current_role() in ('dosen_aa','kaprodi') or s.advisor_id = public.current_advisor()))
 );
 create policy certifications_write on certifications for all
-  using (public.current_role() = 'admin') with check (public.current_role() = 'admin');
+  using (public.current_role() = 'dosen_aa') with check (public.current_role() = 'dosen_aa');
 
 create policy audit_read on audit_log for select using (
-  public.current_role() in ('admin','kaprodi')
+  public.current_role() in ('dosen_aa','kaprodi')
 );
 create policy audit_insert on audit_log for insert with check (auth.uid() is not null);
 

@@ -44,7 +44,7 @@ function renderHeader(profile, active) {
   }).join("");
 
   const name = profile.full_name || "Dr. Ahmad Fauzi, M.T.";
-  const roleLabel = (profile.role === "admin" ? "Admin Akademik" : profile.role === "kaprodi" ? "Kaprodi" : "Dosen AA");
+  const roleLabel = profile.role === "kaprodi" ? "Kaprodi" : "Dosen AA";
 
   header.innerHTML = `
     <div class="header-inner">

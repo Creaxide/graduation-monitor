@@ -118,7 +118,7 @@ export async function insertStudent(row) {
 
 /**
  * Generate `count` random students and insert them (plus sample failed courses
- * and certifications) into Supabase. Requires an admin profile (RLS).
+ * and certifications) into Supabase. Requires a dosen_aa profile (RLS).
  * Returns a summary of what was written.
  */
 export async function seedDummyData(count = 10) {

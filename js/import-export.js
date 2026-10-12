@@ -2,7 +2,7 @@ import { initLayout } from "./ui.js";
 import {
   loadDashboard, listFailedCourses, listCertifications,
   studentIdsByNim, updateStudent, insertStudent,
-  listPrograms, listAdvisors,
+  listPrograms, listAdvisors, listRequirements, updateRequirements,
   insertFailedCourses, insertCertifications, logAudit,
 } from "./data.js";
 import { evaluateStudent, STATUS_LABEL } from "./engine.js";
@@ -28,7 +28,7 @@ const TEMPLATES = {
   },
 };
 
-let state = { students: [], requirements: [], programs: [], advisors: [], selectedFile: null, canEditRequirements: false };
+let state = { students: [], requirements: [], programs: [], advisors: [], selectedFile: null, profile: null, canEditRequirements: false };
 
 function resolveProgram(code) {
   if (!code) return null;
@@ -313,9 +313,14 @@ function exportPdf(rows) {
 
 // --------------------------------------------------------------- settings ---
 
+function canEditTargets() {
+  return state.profile?.role !== "kaprodi";
+}
+
 function renderSettings() {
   const host = el("settings-host");
   if (!host) return;
+  const editable = canEditTargets();
   const grouped = {};
   for (const r of state.requirements) {
     grouped[r.category] = grouped[r.category] || [];
@@ -328,18 +333,60 @@ function renderSettings() {
       <tbody>
         ${Object.values(grouped).map((rows) => {
           const r = rows[0];
-          return `<tr>
+          return `<tr data-req="${r.id}">
             <td><strong>${escapeHtml(r.label)}</strong>${r.unit ? ` <span class="muted small">(${r.unit})</span>` : ""}</td>
-            <td class="mono">${formatNumber(r.total_required)}</td>
+            <td class="mono">${
+              editable
+                ? `<input type="number" step="any" min="0" data-req="${r.id}" data-field="total" value="${formatNumber(r.total_required)}" style="width:84px;text-align:right;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px;" />`
+                : formatNumber(r.total_required)
+            }</td>
             ${semesters.map((s) => {
               const frac = Number(r.targets?.[s] || 0);
-              const abs = Math.round(frac * r.total_required * 100) / 100;
-              return `<td class="mono">${frac > 0 ? `${Math.round(frac * 100)}% <span class="muted">(${formatNumber(abs)})</span>` : '<span class="muted">-</span>'}</td>`;
+              return editable
+                ? `<td><input type="number" step="any" min="0" max="1" data-req="${r.id}" data-sem="${s}" value="${frac}" style="width:64px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px;" title="fraksi 0..1" /></td>`
+                : `<td class="mono">${frac > 0 ? `${Math.round(frac * 100)}% <span class="muted">(${formatNumber(Math.round(frac * r.total_required * 100) / 100)})</span>` : '<span class="muted">-</span>'}</td>`;
             }).join("")}
           </tr>`;
         }).join("")}
       </tbody>
-    </table></div>`;
+    </table></div>
+    <div class="mt-16" style="display:flex; gap:8px; justify-content:flex-end;">
+      ${editable ? `<button class="btn primary sm" id="save-targets-btn" type="button">Simpan konfigurasi</button>` : ""}
+    </div>`;
+
+  const saveBtn = el("save-targets-btn");
+  if (saveBtn) saveBtn.addEventListener("click", saveSettings);
+}
+
+async function saveSettings() {
+  const btn = el("save-targets-btn");
+  setBusy(btn, true, "Menyimpan...");
+  try {
+    const byId = {};
+    for (const r of state.requirements) {
+      byId[r.id] = { id: r.id, total_required: r.total_required, targets: { ...(r.targets || {}) } };
+    }
+    document.querySelectorAll("#settings-host input[data-req]").forEach((input) => {
+      const id = input.dataset.req;
+      const row = byId[id];
+      if (!row) return;
+      const v = parseFloat(String(input.value).replace(",", "."));
+      if (input.dataset.field === "total") {
+        if (!Number.isNaN(v) && v > 0) row.total_required = v;
+      } else if (input.dataset.sem) {
+        if (!Number.isNaN(v) && v >= 0 && v <= 1) row.targets[input.dataset.sem] = v;
+      }
+    });
+    await updateRequirements(Object.values(byId));
+    const reqs = await listRequirements();
+    state.requirements = reqs;
+    renderSettings();
+    toast("Konfigurasi semester tersimpan.", "success");
+  } catch (err) {
+    toast(err.message || "Gagal menyimpan konfigurasi.", "error");
+  } finally {
+    setBusy(btn, false);
+  }
 }
 
 function populateExportFilters() {
@@ -448,6 +495,7 @@ function pushRiwayat(entity) {
 (async function main() {
   const ctx = await initLayout({ active: "import-export.html", title: "Import / Export", subtitle: "Unggah dan unduh data kelulusan" });
   if (!ctx) return;
+  state.profile = ctx.profile || null;
   wire();
   bindExportToggles();
   renderRiwayat();

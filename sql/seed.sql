@@ -98,5 +98,5 @@ join (values
 --   update profiles set role = 'dosen_aa',
 --          advisor_id = (select id from advisors where kode_dosen = 'D001')
 --    where id = '<auth-user-uuid>';
---   update profiles set role = 'admin' where id = '<admin-uuid>';
+--   update profiles set role = 'kaprodi' where id = '<kaprodi-uuid>';
 -- =============================================================================

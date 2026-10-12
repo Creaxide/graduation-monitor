@@ -45,9 +45,9 @@ certifications) and **inserts them into Supabase** through the same API the app
 uses. It reads your existing `programs`, `advisors` and `requirements` to
 produce realistic gaps for the recommendation engine.
 
-You must be signed in with `role = 'admin'` — the `students`/`failed_courses`/
-`certifications` write policies are admin-only. The button appends rows; it never
-deletes existing data.
+You must be signed in as a Dosen AA — the `students`/`failed_courses`/
+`certifications` write policies are dosen-only (Kaprodi is read-only). The
+button appends rows; it never deletes existing data.
 
 
 ## Features
@@ -58,8 +58,9 @@ deletes existing data.
   priority recommendations with reasons, failed-course retake plan, certifications.
 - **Import / Export** — CSV/XLSX import with row-level validation report;
   CSV / Excel / PDF export with filters (angkatan, semester, urgency).
-- **RBAC + RLS** — Academic Advisors see only their advisees; admins manage
-  master data and normative targets; Kaprodi (read-only) sees the whole program.
+- **RBAC + RLS** — Dosen AA have full read + write (their advisees' students plus
+  all master data and normative targets); Kaprodi is read-only across the
+  program. There is no separate admin role.
 
 ## Project structure
 
@@ -134,10 +135,12 @@ where id = '<dosen-auth-user-uuid>';
 
 -- Kaprodi (read-only, whole program)
 update profiles set role = 'kaprodi' where id = '<kaprodi-auth-user-uuid>';
-
--- Admin akademik (full access, optional third account)
-update profiles set role = 'admin' where id = '<admin-uuid>';
 ```
+
+Dosen can edit the semester targets (**konfigurasi semester**) directly on the
+**Import / Export** page: change the curriculum totals and the per-semester
+fractions, then press **Simpan konfigurasi**. The Kaprodi view of the same
+table is read-only.
 
 ### 4. Run the frontend
 
