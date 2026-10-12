@@ -2,7 +2,7 @@ import {
   getCurrentUser, getProfile, signOut, isMock,
   mockHasData, mockClear, seedDummyData,
 } from "./data.js";
-import { escapeHtml, toast, setBusy } from "./utils.js";
+import { escapeHtml, toast, setBusy, el } from "./utils.js";
 
 const NAV = [
   { href: "dashboard.html", label: "Dashboard", id: "dashboard", icon: "" },
@@ -83,6 +83,31 @@ function setPageHeading(title, subtitle) {
   }
 }
 
+export function mountTestControls() {
+  const btn = el("dummy-btn");
+  const clear = el("dummy-clear");
+  const note = el("dummy-note");
+  if (!btn) return;
+
+  if (note) {
+    note.textContent = isMock
+      ? "Menghasilkan data dummy lokal."
+      : "Menghasilkan data uji ke Supabase.";
+  }
+  if (clear && isMock) {
+    clear.classList.remove("hidden");
+    clear.addEventListener("click", () => {
+      if (!mockHasData()) return toast("Tidak ada data dummy untuk dihapus.", "warn");
+      if (!window.confirm("Hapus semua data dummy?")) return;
+      mockClear();
+      toast("Data dummy dibersihkan.", "info");
+      setTimeout(() => window.location.reload(), 400);
+    });
+  }
+
+  btn.addEventListener("click", async () => handleGenerate(btn, 1));
+}
+
 function wireChrome() {
   const logout = document.getElementById("logout-btn");
   if (logout) {
@@ -92,24 +117,11 @@ function wireChrome() {
     });
   }
 
-  const generate = document.getElementById("dummy-generate");
-  if (generate) generate.addEventListener("click", () => handleGenerate(generate));
-
-  const clear = document.getElementById("dummy-clear");
-  if (clear) {
-    clear.addEventListener("click", () => {
-      if (!mockHasData()) return toast("Tidak ada data dummy untuk dihapus.", "warn");
-      if (!window.confirm("Hapus semua data dummy?")) return;
-      mockClear();
-      toast("Data dummy dibersihkan.", "info");
-      setTimeout(() => window.location.reload(), 400);
-    });
-  }
 }
 
-export async function handleGenerate(button) {
+export async function handleGenerate(button, forceOne = 0) {
   const countInput = document.getElementById("dummy-count");
-  const count = Math.min(100, Math.max(1, Number(countInput?.value) || 10));
+  const count = forceOne ? 1 : Math.min(100, Math.max(1, Number(countInput?.value) || 10));
 
   if (isMock) {
     if (mockHasData() && !window.confirm("Data dummy sudah ada. Hasilkan ulang dan ganti semuanya?")) return;

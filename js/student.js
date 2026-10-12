@@ -180,6 +180,8 @@ function openStudentReport(result) {
       .sig { margin-top: 34px; display: flex; justify-content: space-between; font-size: 12px; }
       .sig div { text-align: center; width: 200px; }
       .sig .line { margin-top: 54px; border-top: 1px solid #0f1f2e; padding-top: 6px; }
+      /* Chrome prints backgrounds only with color-adjust enabled. */
+      *, *::before, *::after { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       @media print { .sheet { max-width: none; padding: 0; } }
     </style></head><body>
     <div class="sheet">

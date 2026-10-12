@@ -1,4 +1,4 @@
-import { initLayout } from "./ui.js";
+import { initLayout, mountTestControls } from "./ui.js";
 import {
   loadDashboard, listFailedCourses, listCertifications,
   isMock, mockHasData, mockAddStudent,
@@ -128,13 +128,15 @@ function wireFilters() {
 function wireDummyTools() {
   if (!isMock) return;
   const banner = el("dummy-banner");
-  banner.classList.remove("hidden");
-  if (!mockHasData()) {
-    banner.className = "alert warn";
-    banner.innerHTML = "Belum ada data mahasiswa loaded.";
-  } else {
-    banner.className = "alert info";
-    banner.innerHTML = `<strong>Mode Demo.</strong> Menampilkan ${state.rows.length} mahasiswa hasil generate. Data tersimpan di sesi browser saat ini.`;
+  if (banner) {
+    banner.classList.remove("hidden");
+    if (!mockHasData()) {
+      banner.className = "alert warn";
+      banner.innerHTML = "Belum ada data dummy. Gunakan tombol <strong>+ Tambah Dummy</strong> untuk mengisi data uji.";
+    } else {
+      banner.className = "alert info";
+      banner.innerHTML = `<strong>Mode Demo.</strong> Menampilkan ${state.rows.length} mahasiswa hasil generate. Data tersimpan di sesi browser saat ini.`;
+    }
   }
 
   const addBtn = el("add-student-btn");
@@ -175,6 +177,7 @@ function wireDummyTools() {
   });
   if (!session) return;
   wireFilters();
+  mountTestControls();
   try {
     const { students, requirements } = await loadDashboard();
     state.requirements = requirements;
