@@ -16,8 +16,18 @@ the recommendation engine immediately. Set the flag in `js/config.js`:
 export const USE_MOCK = true; // false -> use Supabase
 ```
 
-Then serve the folder over HTTP and open it. Any password works. On the
-dashboard, use **Generate dummy data** (sidebar) to create 40 randomized
+Then serve the folder over HTTP and open it. On the login page, use one of the
+demo accounts shown under **AKUN DEMO**:
+
+| Email | Role |
+|---|---|
+| `dosen@binus.ac.id` | Dosen AA |
+| `kaprodi@binus.ac.id` | Kaprodi |
+
+Any password works in demo mode. After signing in, the profile in the header
+reflects the chosen account (`Dosen AA` or `Kaprodi`).
+
+On the dashboard, use **Generate dummy data** (sidebar) to create 40 randomized
 students, or **+ Add student** to craft a single clear-cut case and jump
 straight to its recommendation. **Clear dummy data** removes everything.
 
@@ -103,22 +113,30 @@ browser; RLS policies enforce access control.
 
 ### 3. Create users and link roles
 
-In **Authentication → Users → Add user**, create a user (e.g.
-`aad001@binus.ac.id`). A `profiles` row is created automatically. Then run the
-matching SQL in the SQL Editor:
+In **Authentication → Users → Add user**, create the two login accounts shown
+in the Figma login screen:
+
+| Email | `profiles.role` |
+|---|---|
+| `dosen@binus.ac.id` | `dosen_aa` |
+| `kaprodi@binus.ac.id` | `kaprodi` |
+
+In the demo/UI both accounts accept any password, against Supabase they use
+real Supabase Auth passwords. A `profiles` row is created automatically per
+user. Then run the matching SQL in the SQL Editor:
 
 ```sql
 -- Academic Advisor (sees only their advisees)
 update profiles
 set role = 'dosen_aa',
     advisor_id = (select id from advisors where kode_dosen = 'D001')
-where id = '<auth-user-uuid>';
-
--- Admin akademik (full access)
-update profiles set role = 'admin' where id = '<admin-uuid>';
+where id = '<dosen-auth-user-uuid>';
 
 -- Kaprodi (read-only, whole program)
-update profiles set role = 'kaprodi' where id = '<kaprodi-uuid>';
+update profiles set role = 'kaprodi' where id = '<kaprodi-auth-user-uuid>';
+
+-- Admin akademik (full access, optional third account)
+update profiles set role = 'admin' where id = '<admin-uuid>';
 ```
 
 ### 4. Run the frontend

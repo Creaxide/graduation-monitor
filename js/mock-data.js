@@ -5,13 +5,32 @@ const DB_KEY = "graduation-monitor-mock-db";
 const SESSION_KEY = "graduation-monitor-mock-session";
 const DELAY = 60;
 
-const MOCK_USER = { id: "mock-user-1", email: "advisor@binus.ac.id" };
-const MOCK_PROFILE = {
-  id: "mock-user-1",
-  full_name: "Dr. Demo Advisor",
-  role: "admin",
-  advisor_id: "adv-d001",
+const MOCK_USERS = {
+  "dosen@binus.ac.id": {
+    user: { id: "mock-user-dosen", email: "dosen@binus.ac.id" },
+    profile: {
+      id: "mock-user-dosen",
+      full_name: "Dr. Demo Dosen AA",
+      role: "dosen_aa",
+      advisor_id: "adv-d001",
+    },
+  },
+  "kaprodi@binus.ac.id": {
+    user: { id: "mock-user-kaprodi", email: "kaprodi@binus.ac.id" },
+    profile: {
+      id: "mock-user-kaprodi",
+      full_name: "Dr. Demo Kaprodi",
+      role: "kaprodi",
+      advisor_id: "adv-d001",
+    },
+  },
 };
+
+const MOCK_PROFILE = MOCK_USERS["dosen@binus.ac.id"].profile;
+
+function currentMockKey() {
+  return (sessionStorage.getItem(SESSION_KEY) || "").split(":")[0] || null;
+}
 
 const PROGRAMS = [
   { id: "prog-cs", code: "CS", name: "Computer Science", total_sks: 144 },
@@ -157,20 +176,23 @@ export function mockClear() {
 
 export async function getSession() {
   await delay();
-  const signedIn = sessionStorage.getItem(SESSION_KEY);
-  return signedIn ? { user: MOCK_USER } : null;
+  const key = currentMockKey();
+  return key ? { user: MOCK_USERS[key].user } : null;
 }
 
 export async function getCurrentUser() {
   await delay();
-  return sessionStorage.getItem(SESSION_KEY) ? MOCK_USER : null;
+  const key = currentMockKey();
+  return key ? MOCK_USERS[key].user : null;
 }
 
 export async function signIn(email, password) {
   await delay();
   if (!password) fail("Password is required.");
-  sessionStorage.setItem(SESSION_KEY, "1");
-  return { user: { ...MOCK_USER, email: email || MOCK_USER.email } };
+  const key = String(email || "").trim().toLowerCase();
+  if (!MOCK_USERS[key]) fail("Unknown demo account. Use dosen@binus.ac.id or kaprodi@binus.ac.id.");
+  sessionStorage.setItem(SESSION_KEY, key);
+  return { user: MOCK_USERS[key].user };
 }
 
 export async function signOut() {
@@ -184,7 +206,8 @@ export async function requireAuth() {
 
 export async function getProfile() {
   await delay();
-  return MOCK_PROFILE;
+  const key = currentMockKey();
+  return key ? MOCK_USERS[key].profile : MOCK_PROFILE;
 }
 
 function withRelations(db, student) {

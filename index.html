@@ -1,44 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign in - Graduation Monitor</title>
+  <title>Masuk - Sistem Monitoring Kelulusan</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-  <div class="login-wrap">
-    <div class="login-card">
-      <div class="brand">
-        <div class="logo">SM</div>
-        <div>
-          <h1>Graduation Monitor</h1>
-          <small>Student Graduation Monitoring System</small>
+  <header class="site-header site-header--slim">
+    <div class="header-inner">
+      <div class="binus-logo-wrap">
+        <div class="binus-logo">BINUS<small>UNIVERSITY</small></div>
+        <div class="binus-brand-label">
+          <span>BINUS UNIVERSITY</span>
+          <span>School of Computer Science</span>
         </div>
       </div>
+    </div>
+  </header>
 
-      <div id="alert" class="hidden"></div>
+  <main class="login-screen">
+    <div id="alert" class="hidden" style="max-width:330px; margin:0 auto 14px;"></div>
 
+    <h1 class="login-title">Sistem Monitoring Kelulusan</h1>
+    <p class="login-sub">Masuk dengan akun Binus Anda</p>
+
+    <div class="login-card">
       <form id="login-form">
         <div class="field">
-          <label for="email">Campus Email</label>
-          <input type="email" id="email" autocomplete="username" placeholder="name@binus.ac.id" required />
+          <label for="email">Email Binus</label>
+          <input type="email" id="email" autocomplete="username" placeholder="nama@binus.ac.id" required />
         </div>
-        <div class="field">
-          <label for="password">Password</label>
+        <div class="field" style="margin-bottom: 18px;">
+          <label for="password">Kata Sandi</label>
           <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required />
         </div>
-        <button type="submit" class="btn primary" id="submit-btn" style="width:100%;justify-content:center">
-          Sign in
-        </button>
+        <button type="submit" class="btn-login" id="submit-btn">Masuk</button>
       </form>
-
-      <p class="small muted mt-16" style="text-align:center" id="login-note">
-        Access is restricted to Academic Advisors and authorized staff.
-        Accounts are managed through campus SSO / Supabase Auth.
-      </p>
     </div>
-  </div>
+
+    <div class="login-card login-card--demo">
+      <div class="demo-title">AKUN DEMO</div>
+      <div class="demo-row">
+        <span class="demo-mail">dosen@binus.ac.id</span>
+        <span class="demo-pill">Dosen AA</span>
+      </div>
+      <div class="demo-row">
+        <span class="demo-mail">kaprodi@binus.ac.id</span>
+        <span class="demo-pill">Kaprodi</span>
+      </div>
+    </div>
+  </main>
 
   <script type="module">
     import { getSession, signIn, isMock } from "./js/data.js";
@@ -49,14 +61,14 @@
 
     function showAlert(message, type = "error") {
       alertBox.className = `alert ${type}`;
+      alertBox.style.maxWidth = "330px";
+      alertBox.style.margin = "0 auto 14px";
       alertBox.textContent = message;
     }
 
     if (isMock) {
-      document.getElementById("email").value = "advisor@binus.ac.id";
+      document.getElementById("email").value = "dosen@binus.ac.id";
       document.getElementById("password").value = "demo1234";
-      document.getElementById("login-note").innerHTML =
-        '<span class="badge info">Demo mode</span> Running on local dummy data. Any password works &mdash; sign in, then use <strong>Generate dummy data</strong> in the sidebar.';
     }
 
     (async () => {
@@ -68,7 +80,7 @@
       e.preventDefault();
       alertBox.classList.add("hidden");
       const btn = document.getElementById("submit-btn");
-      setBusy(btn, true, "Signing in...");
+      setBusy(btn, true, "Memproses...");
       try {
         await signIn(
           document.getElementById("email").value.trim(),
@@ -76,7 +88,7 @@
         );
         window.location.replace("dashboard.html");
       } catch (err) {
-        showAlert(err.message || "Sign in failed. Please check your credentials.");
+        showAlert(err.message || "Gagal masuk. Periksa kembali kredensial Anda.");
         setBusy(btn, false);
       }
     });
