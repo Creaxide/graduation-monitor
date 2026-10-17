@@ -45,8 +45,8 @@ create table if not exists students (
   status         text not null default 'aktif'
                    check (status in ('aktif','cuti','lulus','do')),
   total_sks_passed int not null default 0,
-  comserv_hours    numeric not null default 0,
-  sat_hours        numeric not null default 0,
+  comserv_hours    numeric(6,2) not null default 0,
+  sat_hours        numeric(6,2) not null default 0,
   belingua_status  text not null default 'belum_ambil'
                      check (belingua_status in ('belum_ambil','proses','lulus')),
   belingua_score   numeric,
@@ -68,6 +68,9 @@ create table if not exists requirements (
   total_required numeric not null default 0,
   -- target per semester index 1..14, each a fraction (0..1) of total_required
   targets       jsonb not null default '{}'::jsonb,
+  -- SKS is counted in whole credits; the other categories may be fractional.
+  constraint requirements_sks_total_integral
+    check (category <> 'sks' or total_required = trunc(total_required)),
   unique (program_id, category)
 );
 
@@ -229,3 +232,16 @@ drop trigger if exists trg_students_touch on students;
 create trigger trg_students_touch
   before update on students
   for each row execute function public.touch_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- 4. Type tightening for existing databases (safe to re-run)
+--    - Comserv / SAT hours keep two decimal places (fractional hours allowed).
+--    - SKS totals must always remain whole numbers.
+-- ---------------------------------------------------------------------------
+
+alter table students alter column comserv_hours type numeric(6,2);
+alter table students alter column sat_hours type numeric(6,2);
+
+alter table requirements drop constraint if exists requirements_sks_total_integral;
+alter table requirements add constraint requirements_sks_total_integral
+  check (category <> 'sks' or total_required = trunc(total_required));
