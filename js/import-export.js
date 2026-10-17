@@ -10,22 +10,21 @@ import {
   el, escapeHtml, formatNumber, toast, downloadFile, toCsv, setBusy,
 } from "./utils.js";
 
-const TEMPLATES = {
-  students: {
-    headers: ["nim", "name", "program_code", "advisor_kode", "angkatan", "current_semester", "status", "total_sks_passed", "comserv_hours", "sat_hours", "belingua_status", "belingua_score"],
-    sample: [["2702314920", "Andi Pratama", "CS", "D001", "2023", "6", "aktif", "126", "26", "20", "proses", "480"]],
-    hint: "NIM baru otomatis dibuat. Kolom: nim, name, program_code, advisor_kode, angkatan, current_semester, status, total_sks_passed, comserv_hours, sat_hours, belingua_status, belingua_score.",
-  },
-  failed_courses: {
-    headers: ["nim", "kode_mk", "nama_mk", "sks", "nilai", "semester_taken"],
-    sample: [["2702314921", "COMP6047", "Algoritma dan Pemrograman", "4", "D", "2"]],
-    hint: "Wajib: nim, kode_mk, nama_mk. Mata kuliah ditambahkan ke riwayat mahasiswa.",
-  },
-  certifications: {
-    headers: ["nim", "name", "is_required", "obtained", "obtained_at"],
-    sample: [["2702314920", "Sertifikasi Kompetensi Pemrograman", "true", "true", "2025-06-01"]],
-    hint: "Wajib: nim, name. is_required/obtained menerima true/false atau 1/0.",
-  },
+const STUDENT_FIELDS = ["name", "program_code", "advisor_kode", "angkatan", "current_semester", "status", "total_sks_passed", "comserv_hours", "sat_hours", "belingua_status", "belingua_score"];
+const COURSE_FIELDS = ["kode_mk", "nama_mk", "sks", "nilai", "semester_taken"];
+const CERT_FIELDS = ["cert_name", "cert_required", "cert_obtained", "cert_obtained_at"];
+
+// Satu template untuk semua data. Satu baris = satu mahasiswa + (opsional) satu MK tidak lulus
+// + (opsional) satu sertifikasi. Mahasiswa dengan banyak MK/sertifikasi: ulangi NIM di baris berikutnya.
+const TEMPLATE = {
+  headers: ["nim", ...STUDENT_FIELDS, ...COURSE_FIELDS, ...CERT_FIELDS],
+  sample: [
+    ["2702314920", "Andi Pratama", "CS", "D001", "2023", "6", "aktif", "126", "26", "20", "proses", "480", "", "", "", "", "", "Sertifikasi Kompetensi Pemrograman", "true", "true", "2025-06-01"],
+    ["2702314921", "Bella Kartika", "IS", "D002", "2023", "5", "aktif", "110", "24", "18", "belum_ambil", "450", "COMP6047", "Algoritma dan Pemrograman", "4", "D", "2", "", "", "", ""],
+    ["2702314921", "", "", "", "", "", "", "", "", "", "", "", "COMP6048", "Struktur Data", "4", "E", "3", "", "", "", ""],
+    ["2702314922", "Chandra Wijaya", "CS", "D001", "2022", "7", "aktif", "130", "30", "25", "proses", "500", "", "", "", "", "", "", "", "", ""],
+  ],
+  hint: "Satu file untuk semua data. Wajib: nim (mahasiswa baru juga wajib name). Kolom MK tidak lulus (kode_mk, nama_mk wajib bila diisi) dan sertifikasi (cert_name wajib bila diisi) boleh dikosongkan. Untuk banyak MK/sertifikasi per mahasiswa, ulangi NIM di baris baru. cert_required/cert_obtained menerima true/false atau 1/0.",
 };
 
 let state = { students: [], requirements: [], programs: [], advisors: [], selectedFile: null, profile: null, canEditRequirements: false };
@@ -91,103 +90,137 @@ function truthy(v) {
 // ---------------------------------------------------------------- import ----
 
 async function runImport() {
-  const entity = el("entity").value;
   const file = state.selectedFile;
   if (!file) return;
   const btn = el("import-btn");
   setBusy(btn, true, "Importing...");
   try {
     const { headers, records } = await recordsFromFile(file);
-    const required = TEMPLATES[entity].headers;
     if (!headers.length) throw new Error("The file appears to be empty.");
+    if (!headers.includes("nim")) throw new Error("Kolom 'nim' tidak ditemukan di file.");
 
-    const nims = [...new Set(records.map((r) => r.nim).filter(Boolean))];
-    const nimMap = await studentIdsByNim(nims);
-
-    const ok = [];
     const errors = [];
+    const badLines = new Set();
+    const fail = (line, msg) => { errors.push([line, msg]); badLines.add(line); };
+    const stats = { students: 0, courses: 0, certs: 0 };
 
-    if (entity === "students") {
-      for (let i = 0; i < records.length; i++) {
-        const r = records[i];
-        const line = i + 2;
-        if (!r.nim) { errors.push([line, "Missing 'nim' column value"]); continue; }
+    // Kelompokkan baris per NIM (baris pertama = sumber data mahasiswa, kolom kosong diisi dari baris lain).
+    const groups = new Map();
+    records.forEach((r, i) => {
+      const line = i + 2;
+      if (!r.nim) { fail(line, "Missing 'nim' column value"); return; }
+      if (!groups.has(r.nim)) groups.set(r.nim, []);
+      groups.get(r.nim).push({ r, line });
+    });
 
-        const patch = {};
-        if (r.current_semester) patch.current_semester = clampInt(r.current_semester, 1, 14);
-        if (r.status) patch.status = r.status;
-        if (r.total_sks_passed) patch.total_sks_passed = toInt(r.total_sks_passed);
-        if (r.comserv_hours) patch.comserv_hours = toNum(r.comserv_hours);
-        if (r.sat_hours) patch.sat_hours = toNum(r.sat_hours);
-        if (r.belingua_status) patch.belingua_status = r.belingua_status;
-        if (r.belingua_score) patch.belingua_score = toNum(r.belingua_score);
-        if (r.angkatan) patch.angkatan = toInt(r.angkatan);
+    const nimMap = await studentIdsByNim([...groups.keys()]);
 
-        const program = resolveProgram(r.program_code);
-        const advisor = resolveAdvisor(r.advisor_kode);
-        if (r.program_code && !program) { errors.push([line, `Unknown program_code '${r.program_code}'`]); continue; }
-        if (r.advisor_kode && !advisor) { errors.push([line, `Unknown advisor_kode '${r.advisor_kode}'`]); continue; }
-        if (program) patch.program_id = program.id;
-        if (advisor) patch.advisor_id = advisor.id;
-
-        if (nimMap[r.nim]) {
-          if (!Object.keys(patch).length) { errors.push([line, "No updatable columns provided"]); continue; }
-          try { await updateStudent(nimMap[r.nim], patch); ok.push(line); }
-          catch (e) { errors.push([line, e.message]); }
-        } else {
-          if (!r.name) { errors.push([line, "New student requires a 'name'"]); continue; }
-          const row = {
-            nim: r.nim,
-            name: r.name,
-            program_id: program ? program.id : state.programs[0]?.id || null,
-            advisor_id: advisor ? advisor.id : state.advisors[0]?.id || null,
-            angkatan: patch.angkatan ?? null,
-            current_semester: patch.current_semester ?? 1,
-            status: patch.status || "aktif",
-            total_sks_passed: patch.total_sks_passed ?? 0,
-            comserv_hours: patch.comserv_hours ?? 0,
-            sat_hours: patch.sat_hours ?? 0,
-            belingua_status: patch.belingua_status || "belum_ambil",
-            belingua_score: patch.belingua_score ?? null,
-          };
-          try { await insertStudent(row); ok.push(line); }
-          catch (e) { errors.push([line, e.message]); }
-        }
+    // ---- Tahap 1: mahasiswa (update / insert) ----
+    const failedNims = new Set();
+    for (const [nim, items] of groups) {
+      const line = items[0].line;
+      const merged = {};
+      for (const f of STUDENT_FIELDS) {
+        const hit = items.find((it) => it.r[f] !== undefined && it.r[f] !== "");
+        if (hit) merged[f] = hit.r[f];
       }
-    } else if (entity === "failed_courses") {
-      const rows = [];
-      for (let i = 0; i < records.length; i++) {
-        const r = records[i]; const line = i + 2;
-        if (!r.nim || !r.kode_mk || !r.nama_mk) { errors.push([line, "nim, kode_mk and nama_mk are required"]); continue; }
-        if (!nimMap[r.nim]) { errors.push([line, `NIM ${r.nim} not found. Import the student first.`]); continue; }
-        rows.push({
-          student_id: nimMap[r.nim], kode_mk: r.kode_mk, nama_mk: r.nama_mk,
-          sks: toInt(r.sks), nilai: r.nilai || null,
-          semester_taken: r.semester_taken ? toInt(r.semester_taken) : null,
-        });
-        ok.push(line);
+
+      const patch = {};
+      if (merged.current_semester) patch.current_semester = clampInt(merged.current_semester, 1, 14);
+      if (merged.status) patch.status = merged.status;
+      if (merged.total_sks_passed) patch.total_sks_passed = toInt(merged.total_sks_passed);
+      if (merged.comserv_hours) patch.comserv_hours = toNum(merged.comserv_hours);
+      if (merged.sat_hours) patch.sat_hours = toNum(merged.sat_hours);
+      if (merged.belingua_status) patch.belingua_status = merged.belingua_status;
+      if (merged.belingua_score) patch.belingua_score = toNum(merged.belingua_score);
+      if (merged.angkatan) patch.angkatan = toInt(merged.angkatan);
+
+      const program = resolveProgram(merged.program_code);
+      const advisor = resolveAdvisor(merged.advisor_kode);
+      if (merged.program_code && !program) { fail(line, `Unknown program_code '${merged.program_code}'`); failedNims.add(nim); continue; }
+      if (merged.advisor_kode && !advisor) { fail(line, `Unknown advisor_kode '${merged.advisor_kode}'`); failedNims.add(nim); continue; }
+      if (program) patch.program_id = program.id;
+      if (advisor) patch.advisor_id = advisor.id;
+
+      if (nimMap[nim]) {
+        if (!Object.keys(patch).length) continue; // hanya data MK/sertifikasi untuk mahasiswa yang sudah ada
+        try { await updateStudent(nimMap[nim], patch); stats.students++; }
+        catch (e) { fail(line, e.message); failedNims.add(nim); }
+      } else {
+        if (!merged.name) { fail(line, "New student requires a 'name'"); failedNims.add(nim); continue; }
+        const row = {
+          nim,
+          name: merged.name,
+          program_id: program ? program.id : state.programs[0]?.id || null,
+          advisor_id: advisor ? advisor.id : state.advisors[0]?.id || null,
+          angkatan: patch.angkatan ?? null,
+          current_semester: patch.current_semester ?? 1,
+          status: patch.status || "aktif",
+          total_sks_passed: patch.total_sks_passed ?? 0,
+          comserv_hours: patch.comserv_hours ?? 0,
+          sat_hours: patch.sat_hours ?? 0,
+          belingua_status: patch.belingua_status || "belum_ambil",
+          belingua_score: patch.belingua_score ?? null,
+        };
+        try { await insertStudent(row); stats.students++; }
+        catch (e) { fail(line, e.message); failedNims.add(nim); }
       }
-      if (rows.length) await insertFailedCourses(rows);
-    } else {
-      const rows = [];
-      for (let i = 0; i < records.length; i++) {
-        const r = records[i]; const line = i + 2;
-        if (!r.nim || !r.name) { errors.push([line, "nim and name are required"]); continue; }
-        if (!nimMap[r.nim]) { errors.push([line, `NIM ${r.nim} not found. Import the student first.`]); continue; }
-        rows.push({
-          student_id: nimMap[r.nim], name: r.name,
-          is_required: r.is_required === "" ? true : truthy(r.is_required),
-          obtained: truthy(r.obtained),
-          obtained_at: r.obtained_at || null,
-        });
-        ok.push(line);
-      }
-      if (rows.length) await insertCertifications(rows);
     }
 
-    logAudit({ entity, action: "import", detail: { success: ok.length, failed: errors.length, file: file.name } });
-    if (ok.length) pushRiwayat(entity);
-    showResult(entity, ok.length, errors);
+    // Ambil ulang ID supaya mahasiswa yang baru dibuat ikut terbaca.
+    const idMap = await studentIdsByNim([...groups.keys()]);
+
+    // ---- Tahap 2: MK tidak lulus & sertifikasi ----
+    const courseRows = [];
+    const certRows = [];
+    const seenCourse = new Set();
+    const seenCert = new Set();
+    for (const [nim, items] of groups) {
+      for (const { r, line } of items) {
+        const hasCourse = COURSE_FIELDS.some((f) => r[f]);
+        const hasCert = CERT_FIELDS.some((f) => r[f]);
+        if (!hasCourse && !hasCert) continue;
+        if (failedNims.has(nim)) { fail(line, "Data mahasiswa gagal diproses, MK/sertifikasi dilewati."); continue; }
+        if (!idMap[nim]) { fail(line, `NIM ${nim} not found.`); continue; }
+
+        if (hasCourse) {
+          if (!r.kode_mk || !r.nama_mk) { fail(line, "kode_mk and nama_mk are required"); continue; }
+          const key = `${nim}|${r.kode_mk}|${r.semester_taken}`;
+          if (!seenCourse.has(key)) {
+            seenCourse.add(key);
+            courseRows.push({
+              student_id: idMap[nim], kode_mk: r.kode_mk, nama_mk: r.nama_mk,
+              sks: toInt(r.sks), nilai: r.nilai || null,
+              semester_taken: r.semester_taken ? toInt(r.semester_taken) : null,
+            });
+          }
+        }
+        if (hasCert) {
+          if (!r.cert_name) { fail(line, "cert_name is required when certification columns are filled"); continue; }
+          const key = `${nim}|${r.cert_name.toLowerCase()}`;
+          if (!seenCert.has(key)) {
+            seenCert.add(key);
+            certRows.push({
+              student_id: idMap[nim], name: r.cert_name,
+              is_required: r.cert_required === "" ? true : truthy(r.cert_required),
+              obtained: truthy(r.cert_obtained),
+              obtained_at: r.cert_obtained_at || null,
+            });
+          }
+        }
+      }
+    }
+    try {
+      if (courseRows.length) { await insertFailedCourses(courseRows); stats.courses = courseRows.length; }
+    } catch (e) { errors.push(["MK", e.message]); }
+    try {
+      if (certRows.length) { await insertCertifications(certRows); stats.certs = certRows.length; }
+    } catch (e) { errors.push(["Sertifikasi", e.message]); }
+
+    const okCount = records.length - badLines.size;
+    logAudit({ entity: "students", action: "import", detail: { success: okCount, failed: errors.length, file: file.name, ...stats } });
+    if (okCount > 0) pushRiwayat();
+    showResult(okCount, errors, stats);
   } catch (err) {
     toast(err.message || "Import failed", "error");
   } finally {
@@ -195,13 +228,13 @@ async function runImport() {
   }
 }
 
-function showResult(entity, successCount, errors) {
+function showResult(successCount, errors, stats) {
   const card = el("result-card");
   card.classList.remove("hidden");
   el("result-summary").innerHTML = `
     <div class="card kpi safe"><div class="k-label">Imported</div><div class="k-value">${successCount}</div></div>
     <div class="card kpi danger"><div class="k-label">Failed</div><div class="k-value">${errors.length}</div></div>
-    <div class="card kpi accent"><div class="k-label">Data type</div><div class="k-value" style="font-size:1.1rem">${escapeHtml(entity)}</div></div>`;
+    <div class="card kpi accent"><div class="k-label">Rincian</div><div class="k-value" style="font-size:0.95rem">${stats.students} mahasiswa · ${stats.courses} MK · ${stats.certs} sertifikasi</div></div>`;
   el("result-detail").innerHTML = errors.length
     ? `<div class="table-wrap"><table class="data"><thead><tr><th>Row</th><th>Issue</th></tr></thead>
         <tbody>${errors.map(([line, msg]) => `<tr><td class="mono">${line}</td><td>${escapeHtml(msg)}</td></tr>`).join("")}</tbody>
@@ -407,16 +440,12 @@ function toNum(v) { const n = Number(v); return Number.isNaN(n) ? 0 : n; }
 function clampInt(v, min, max) { return Math.min(max, Math.max(min, toInt(v))); }
 
 function updateTemplateUI() {
-  const t = TEMPLATES[el("entity").value];
-  el("template-hint").textContent = `${t.hint} Kolom: ${t.headers.join(", ")}`;
+  el("template-hint").textContent = `${TEMPLATE.hint} Kolom: ${TEMPLATE.headers.join(", ")}`;
 }
 
 function wire() {
-  el("entity").addEventListener("change", updateTemplateUI);
   el("download-template").addEventListener("click", () => {
-    const t = TEMPLATES[el("entity").value];
-    const csv = toCsv(t.sample, t.headers);
-    downloadFile(`template-${el("entity").value}.csv`, csv);
+    downloadFile("template-data-lengkap.csv", toCsv(TEMPLATE.sample, TEMPLATE.headers));
   });
 
   const dz = el("dropzone");
@@ -493,14 +522,13 @@ function renderRiwayat() {
     </div>`).join("");
 }
 
-function pushRiwayat(entity) {
+function pushRiwayat() {
   const raw = sessionStorage.getItem("riwayat_import");
   const entries = raw ? JSON.parse(raw) : [];
   const now = new Date();
   const date = now.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   const uploader = "Dr. Ahmad Fauzi (demo)";
-  const typeLabelMap = { students: "SKS / MK", certifications: "Sertifikasi", failed_courses: "Nilai Tidak Lulus" };
-  entries.push({ typeLabel: typeLabelMap[entity] || entity, date, uploader });
+  entries.push({ typeLabel: "Data Lengkap", date, uploader });
   sessionStorage.setItem("riwayat_import", JSON.stringify(entries));
   renderRiwayat();
 }
