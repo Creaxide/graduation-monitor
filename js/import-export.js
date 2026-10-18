@@ -379,9 +379,12 @@ function renderSettings() {
             }</td>
             ${semesters.map((s) => {
               const frac = Number(r.targets?.[s] || 0);
+              const isInt = INTEGER_TOTAL_CATEGORIES.has(r.category);
+              const rawTarget = frac * Number(r.total_required || 0);
+              const target = isInt ? Math.round(rawTarget) : Math.round(rawTarget * 100) / 100;
               return editable
-                ? `<td><input type="number" step="any" min="0" max="1" data-req="${r.id}" data-sem="${s}" value="${frac}" style="width:64px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px;" title="fraksi 0..1" /></td>`
-                : `<td class="mono">${frac > 0 ? `${Math.round(frac * 100)}% <span class="muted">(${formatNumber(Math.round(frac * r.total_required * 100) / 100)})</span>` : '<span class="muted">-</span>'}</td>`;
+                ? `<td><input type="number" step="${isInt ? "1" : "0.01"}" min="0" max="${formatNumber(r.total_required)}" data-req="${r.id}" data-sem="${s}" value="${target}" style="width:64px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px;" title="target kumulatif per semester (${r.unit || "jumlah"})" /></td>`
+                : `<td class="mono">${target > 0 ? formatNumber(target) : '<span class="muted">-</span>'}</td>`;
             }).join("")}
           </tr>`;
         }).join("")}
@@ -413,7 +416,10 @@ async function saveSettings() {
           row.total_required = INTEGER_TOTAL_CATEGORIES.has(row.category) ? Math.round(v) : v;
         }
       } else if (input.dataset.sem) {
-        if (!Number.isNaN(v) && v >= 0 && v <= 1) row.targets[input.dataset.sem] = v;
+        const total = Number(row.total_required) || 0;
+        if (!Number.isNaN(v) && v >= 0 && total > 0) {
+          row.targets[input.dataset.sem] = Math.min(1, v / total);
+        }
       }
     });
     await updateRequirements(Object.values(byId));
