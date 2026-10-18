@@ -370,7 +370,7 @@ function renderSettings() {
             <td><strong>${escapeHtml(r.label)}</strong>${r.unit ? ` <span class="muted small">(${r.unit})</span>` : ""}</td>
             <td class="mono">${
               editable
-                ? `<input type="number" step="any" min="0" data-req="${r.id}" data-field="total" value="${formatNumber(r.total_required)}" style="width:84px;text-align:right;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px;" />`
+                ? `<input type="number" step="${r.category === "sks" ? "1" : "any"}" min="0" data-req="${r.id}" data-field="total" value="${formatNumber(r.total_required)}" style="width:84px;text-align:right;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px;" />`
                 : formatNumber(r.total_required)
             }</td>
             ${semesters.map((s) => {
