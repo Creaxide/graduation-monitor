@@ -346,6 +346,10 @@ function exportPdf(rows) {
 
 // --------------------------------------------------------------- settings ---
 
+// Categories counted in whole units; their curriculum total must stay an integer.
+// Hours (comserv, sat) may be fractional.
+const INTEGER_TOTAL_CATEGORIES = new Set(["sks", "belingua", "sertifikasi"]);
+
 function canEditTargets() {
   return state.profile?.role !== "kaprodi";
 }
@@ -370,7 +374,7 @@ function renderSettings() {
             <td><strong>${escapeHtml(r.label)}</strong>${r.unit ? ` <span class="muted small">(${r.unit})</span>` : ""}</td>
             <td class="mono">${
               editable
-                ? `<input type="number" step="${r.category === "sks" ? "1" : "any"}" min="0" data-req="${r.id}" data-field="total" value="${formatNumber(r.total_required)}" style="width:84px;text-align:right;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px;" />`
+                ? `<input type="number" step="${INTEGER_TOTAL_CATEGORIES.has(r.category) ? "1" : "any"}" min="0" data-req="${r.id}" data-field="total" value="${formatNumber(r.total_required)}" style="width:84px;text-align:right;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px;" />`
                 : formatNumber(r.total_required)
             }</td>
             ${semesters.map((s) => {
@@ -397,7 +401,7 @@ async function saveSettings() {
   try {
     const byId = {};
     for (const r of state.requirements) {
-      byId[r.id] = { id: r.id, total_required: r.total_required, targets: { ...(r.targets || {}) } };
+      byId[r.id] = { id: r.id, category: r.category, total_required: r.total_required, targets: { ...(r.targets || {}) } };
     }
     document.querySelectorAll("#settings-host input[data-req]").forEach((input) => {
       const id = input.dataset.req;
@@ -405,7 +409,9 @@ async function saveSettings() {
       if (!row) return;
       const v = parseFloat(String(input.value).replace(",", "."));
       if (input.dataset.field === "total") {
-        if (!Number.isNaN(v) && v > 0) row.total_required = v;
+        if (!Number.isNaN(v) && v > 0) {
+          row.total_required = INTEGER_TOTAL_CATEGORIES.has(row.category) ? Math.round(v) : v;
+        }
       } else if (input.dataset.sem) {
         if (!Number.isNaN(v) && v >= 0 && v <= 1) row.targets[input.dataset.sem] = v;
       }
