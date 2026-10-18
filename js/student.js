@@ -25,7 +25,7 @@ function gapText(cat) {
     return "Belum diambil";
   }
   if (cat.category === "sertifikasi") {
-    return `${cat.actual} / ${cat.total} sertifikat`;
+    return `${Math.min(cat.actual, cat.total)} / ${cat.total} sertifikat`;
   }
   const unit = cat.category === "sks" ? "SKS" : cat.category === "comserv" ? "Jam" : "Point";
   return `${formatNumber(cat.actual)} / ${formatNumber(cat.total)} ${unit}`;
@@ -36,7 +36,7 @@ function progressText(cat) {
     return cat.raw.status === "lulus" ? "Lulus (100%)" : cat.raw.status === "proses" ? `Proses` : "Belum diambil";
   }
   if (cat.category === "sertifikasi") {
-    return `${cat.actual} / ${cat.total} sertifikat`;
+    return `${Math.min(cat.actual, cat.total)} / ${cat.total} sertifikat`;
   }
   const unit = cat.category === "sks" ? "SKS" : cat.category === "comserv" ? "Jam" : "Point";
   const actual = cat.category === "sks" ? cat.actual : Math.round(cat.actual);
@@ -76,12 +76,14 @@ function openStudentReport(result) {
 
   const labelMap = { sks: "SKS", comserv: "Community Service", sat: "SAT (Student Activity)", belingua: "Belingua", sertifikasi: "Sertifikasi" };
   const sertCat = result.categories.find((c) => c.category === "sertifikasi");
+  const certTotal = Math.max(1, Math.round(sertCat?.total || 0));
+  const certActual = Math.min(Math.round(sertCat?.actual || 0), certTotal);
   const valueMap = {
     sks: `${formatNumber(s.total_sks_passed)} / 146 SKS`,
     comserv: `${formatNumber(s.comserv_hours)} / 30 Jam`,
     sat: `${formatNumber(s.sat_hours)} / 120 Point`,
     belingua: s.belingua_status === "lulus" ? "Lulus (100%)" : s.belingua_status === "proses" ? "Proses" : "Belum diambil",
-    sertifikasi: `${Math.round(sertCat?.actual || 0)} / ${Math.max(1, Math.round(sertCat?.total || 0))} sertifikat`,
+    sertifikasi: `${certActual} / ${certTotal} sertifikat`,
   };
 
   const catRows = result.categories

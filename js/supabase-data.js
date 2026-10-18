@@ -184,7 +184,13 @@ export async function deleteFailedCourse(id) {
 
 export async function insertFailedCourses(rows) {
   if (!rows.length) return [];
-  return unwrap(await supabase.from("failed_courses").insert(rows).select());
+  // ignoreDuplicates + the unique index keep re-imports / re-seeds idempotent.
+  return unwrap(
+    await supabase
+      .from("failed_courses")
+      .upsert(rows, { onConflict: "student_id,kode_mk,semester_taken", ignoreDuplicates: true })
+      .select()
+  );
 }
 
 export async function upsertCertification(row) {
@@ -193,7 +199,12 @@ export async function upsertCertification(row) {
 
 export async function insertCertifications(rows) {
   if (!rows.length) return [];
-  return unwrap(await supabase.from("certifications").insert(rows).select());
+  return unwrap(
+    await supabase
+      .from("certifications")
+      .upsert(rows, { onConflict: "student_id,name", ignoreDuplicates: true })
+      .select()
+  );
 }
 
 export async function updateRequirements(rows) {

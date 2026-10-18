@@ -313,7 +313,14 @@ export async function insertStudent(row) {
 export async function insertFailedCourses(rows) {
   const db = load();
   if (!db) fail("No dummy data loaded.");
-  const inserted = rows.map((row, i) => ({ id: `fc-manual-${Date.now()}-${i}`, created_at: nowIso(), ...row }));
+  const seen = new Set(db.failed_courses.map((r) => `${r.student_id}|${r.kode_mk}|${r.semester_taken ?? ""}`));
+  const inserted = [];
+  rows.forEach((row, i) => {
+    const key = `${row.student_id}|${row.kode_mk}|${row.semester_taken ?? ""}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    inserted.push({ id: `fc-manual-${Date.now()}-${i}`, created_at: nowIso(), ...row });
+  });
   db.failed_courses.push(...inserted);
   persist(db);
   return inserted;
@@ -322,7 +329,14 @@ export async function insertFailedCourses(rows) {
 export async function insertCertifications(rows) {
   const db = load();
   if (!db) fail("No dummy data loaded.");
-  const inserted = rows.map((row, i) => ({ id: `cert-manual-${Date.now()}-${i}`, created_at: nowIso(), ...row }));
+  const seen = new Set(db.certifications.map((r) => `${r.student_id}|${String(r.name || "").toLowerCase()}`));
+  const inserted = [];
+  rows.forEach((row, i) => {
+    const key = `${row.student_id}|${String(row.name || "").toLowerCase()}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    inserted.push({ id: `cert-manual-${Date.now()}-${i}`, created_at: nowIso(), ...row });
+  });
   db.certifications.push(...inserted);
   persist(db);
   return inserted;

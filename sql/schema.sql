@@ -101,6 +101,15 @@ create table if not exists certifications (
 
 create index if not exists idx_certifications_student on certifications (student_id);
 
+-- Uniqueness guards: keep these tables idempotent so re-running seed.sql or
+-- re-importing the same rows never creates duplicates. NOTE: if the tables
+-- already contain duplicates, run sql/fix_duplicates.sql first (it removes
+-- them before creating these indexes).
+create unique index if not exists uq_failed_courses_student_mk
+  on failed_courses (student_id, kode_mk, semester_taken);
+create unique index if not exists uq_certifications_student_name
+  on certifications (student_id, name);
+
 -- Audit trail for data changes
 create table if not exists audit_log (
   id           bigserial primary key,

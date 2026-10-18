@@ -24,10 +24,19 @@ export function normativeTarget(req, semester) {
 }
 
 function certSummary(certifications = []) {
-  const required = certifications.filter((c) => c.is_required);
-  const total = required.length;
-  const obtained = required.filter((c) => c.obtained).length;
-  return { total, obtained };
+  // Collapse duplicate rows (same certification name) so legacy/duplicated data
+  // can never inflate the count. Prefer a row that is marked obtained.
+  const unique = new Map();
+  for (const c of certifications) {
+    const key = String(c.name || "").trim().toLowerCase() || `#${c.id ?? unique.size}`;
+    const prev = unique.get(key);
+    if (!prev || (c.obtained && !prev.obtained)) unique.set(key, c);
+  }
+  const list = [...unique.values()];
+  return {
+    total: list.length,
+    obtained: list.filter((c) => c.obtained).length,
+  };
 }
 
 // Returns { actual, total, unit } in "real" units for a category
@@ -45,9 +54,9 @@ function actualValue(category, student, context) {
       return { actual: p * total, total, status: student.belingua_status, score: student.belingua_score };
     }
     case "sertifikasi": {
-      const { total, obtained } = context.cert;
-      const reqTotal = total || context.req.total_required || 1;
-      return { actual: obtained, total: reqTotal, requiredList: context.certifications || [] };
+      const { obtained } = context.cert;
+      const total = context.req.total_required || 1;
+      return { actual: obtained, total, requiredList: context.certifications || [] };
     }
     default:
       return { actual: 0, total: 0 };
@@ -88,10 +97,11 @@ export function evaluateCategory(category, student, requirements, certifications
   };
   const { actual, total } = actualValue(category, student, ctx);
 
-  // For binary/accumulation categories the target is a fraction of the
-  // curriculum total; for certification the target is a fraction of the
-  // number of required certifications held by the student.
-  const targetBase = category === "sertifikasi" ? ctx.cert.total || req.total_required : req.total_required;
+  // The target is always a fraction of the category's curriculum total (for
+  // certification: the configured number of required certifications). It is
+  // deliberately NOT derived from the student's own rows, so duplicated or
+  // extra records can't inflate the requirement.
+  const targetBase = total;
   const targetValue = targetFraction * targetBase;
 
   const gap = Math.max(0, targetValue - actual);

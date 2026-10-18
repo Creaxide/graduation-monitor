@@ -77,11 +77,14 @@ join (values
   ('2702107493','COMP6123','Struktur Data',4,'D',3),
   ('2702314920','COMP6083','Basis Data',4,'D',4),
   ('2702352623','MATH6031','Kalkulus',3,'D',1)
-) as v(nim, kode_mk, nama_mk, sks, nilai, semester_taken) on s.nim = v.nim;
+) as v(nim, kode_mk, nama_mk, sks, nilai, semester_taken) on s.nim = v.nim
+on conflict (student_id, kode_mk, semester_taken) do nothing;
 
 -- Certifications ------------------------------------------------------------
+-- The 3rd value in each tuple is the "required" flag; obtained is derived from
+-- whether an obtained_at date is present.
 insert into certifications (student_id, name, is_required, obtained, obtained_at)
-select s.id, v.name, true, v.obtained, v.obtained_at::date
+select s.id, v.name, v.is_required, (v.obtained_at is not null), v.obtained_at::date
 from students s
 join (values
   ('2702314920','Sertifikasi Kompetensi Pemrograman', true,  '2025-06-01'),
@@ -94,7 +97,8 @@ join (values
   ('2702107493','Sertifikasi Jaringan Dasar',         false, null),
   ('2702376452','Sertifikasi Kompetensi Pemrograman', true,  '2025-07-20'),
   ('2702376452','Sertifikasi Jaringan Dasar',         true,  '2025-10-05')
-) as v(nim, name, obtained, obtained_at) on s.nim = v.nim;
+) as v(nim, name, is_required, obtained_at) on s.nim = v.nim
+on conflict (student_id, name) do nothing;
 
 -- =============================================================================
 -- Linking users to advisors
