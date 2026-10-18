@@ -12,7 +12,7 @@ create table if not exists programs (
   id          uuid primary key default gen_random_uuid(),
   code        text unique not null,
   name        text not null,
-  total_sks   int  not null default 144,
+  total_sks   int  not null default 146,
   created_at  timestamptz default now()
 );
 

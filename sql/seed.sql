@@ -5,9 +5,9 @@
 
 -- Programs ------------------------------------------------------------------
 insert into programs (code, name, total_sks) values
-  ('CS', 'Computer Science', 144),
-  ('IS', 'Information Systems', 144)
-on conflict (code) do nothing;
+  ('CS', 'Computer Science', 146),
+  ('IS', 'Information Systems', 146)
+on conflict (code) do update set name = excluded.name, total_sks = excluded.total_sks;
 
 -- Advisors ------------------------------------------------------------------
 insert into advisors (kode_dosen, name) values
@@ -21,19 +21,23 @@ insert into requirements (program_id, category, label, unit, total_required, tar
 select p.id, v.category, v.label, v.unit, v.total_required, v.targets::jsonb
 from programs p
 cross join (values
-  ('sks','SKS','SKS',144,
+  ('sks','SKS','SKS',146,
    '{"1":0.12,"2":0.25,"3":0.375,"4":0.5,"5":0.625,"6":0.75,"7":0.875,"8":1.0}'),
-  ('comserv','Comserv','jam',40,
+  ('comserv','Comserv','jam',30,
    '{"1":0.05,"2":0.10,"3":0.20,"4":0.30,"5":0.40,"6":0.55,"7":0.75,"8":1.0}'),
-  ('sat','SAT','jam',32,
+  ('sat','SAT','poin',120,
    '{"1":0.06,"2":0.12,"3":0.20,"4":0.30,"5":0.40,"6":0.55,"7":0.75,"8":1.0}'),
   ('belingua','Belingua','',1,
-   '{"1":0.0,"2":0.0,"3":0.0,"4":0.0,"5":0.5,"6":1.0,"7":1.0,"8":1.0}'),
+   '{"1":0.0,"2":0.0,"3":0.0,"4":1.0,"5":1.0,"6":1.0,"7":1.0,"8":1.0}'),
   ('sertifikasi','Sertifikasi','',1,
    '{"1":0.0,"2":0.0,"3":0.0,"4":0.0,"5":0.3,"6":0.5,"7":1.0,"8":1.0}')
 ) as v(category, label, unit, total_required, targets)
 where p.code = 'CS'
-on conflict (program_id, category) do nothing;
+on conflict (program_id, category) do update set
+  label = excluded.label,
+  unit = excluded.unit,
+  total_required = excluded.total_required,
+  targets = excluded.targets;
 
 -- Students ------------------------------------------------------------------
 insert into students

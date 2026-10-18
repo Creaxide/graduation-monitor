@@ -33,8 +33,8 @@ function currentMockKey() {
 }
 
 const PROGRAMS = [
-  { id: "prog-cs", code: "CS", name: "Computer Science", total_sks: 144 },
-  { id: "prog-is", code: "IS", name: "Information Systems", total_sks: 144 },
+  { id: "prog-cs", code: "CS", name: "Computer Science", total_sks: 146 },
+  { id: "prog-is", code: "IS", name: "Information Systems", total_sks: 146 },
 ];
 
 const ADVISORS = [
@@ -47,19 +47,19 @@ const CS_TARGETS = {
   sks: { 1: 0.12, 2: 0.25, 3: 0.375, 4: 0.5, 5: 0.625, 6: 0.75, 7: 0.875, 8: 1 },
   comserv: { 1: 0.05, 2: 0.1, 3: 0.2, 4: 0.3, 5: 0.4, 6: 0.55, 7: 0.75, 8: 1 },
   sat: { 1: 0.06, 2: 0.12, 3: 0.2, 4: 0.3, 5: 0.4, 6: 0.55, 7: 0.75, 8: 1 },
-  belingua: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0.5, 6: 1, 7: 1, 8: 1 },
+  belingua: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1 },
   sertifikasi: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0.3, 6: 0.5, 7: 1, 8: 1 },
 };
 
 const REQUIREMENTS = [
-  { id: "req-cs-sks", program_id: "prog-cs", category: "sks", label: "SKS", unit: "SKS", total_required: 144, targets: CS_TARGETS.sks },
-  { id: "req-cs-comserv", program_id: "prog-cs", category: "comserv", label: "Comserv", unit: "jam", total_required: 40, targets: CS_TARGETS.comserv },
-  { id: "req-cs-sat", program_id: "prog-cs", category: "sat", label: "SAT", unit: "jam", total_required: 32, targets: CS_TARGETS.sat },
+  { id: "req-cs-sks", program_id: "prog-cs", category: "sks", label: "SKS", unit: "SKS", total_required: 146, targets: CS_TARGETS.sks },
+  { id: "req-cs-comserv", program_id: "prog-cs", category: "comserv", label: "Comserv", unit: "jam", total_required: 30, targets: CS_TARGETS.comserv },
+  { id: "req-cs-sat", program_id: "prog-cs", category: "sat", label: "SAT", unit: "poin", total_required: 120, targets: CS_TARGETS.sat },
   { id: "req-cs-belingua", program_id: "prog-cs", category: "belingua", label: "Belingua", unit: "", total_required: 1, targets: CS_TARGETS.belingua },
   { id: "req-cs-sertifikasi", program_id: "prog-cs", category: "sertifikasi", label: "Sertifikasi", unit: "", total_required: 1, targets: CS_TARGETS.sertifikasi },
-  { id: "req-is-sks", program_id: "prog-is", category: "sks", label: "SKS", unit: "SKS", total_required: 144, targets: CS_TARGETS.sks },
-  { id: "req-is-comserv", program_id: "prog-is", category: "comserv", label: "Comserv", unit: "jam", total_required: 40, targets: CS_TARGETS.comserv },
-  { id: "req-is-sat", program_id: "prog-is", category: "sat", label: "SAT", unit: "jam", total_required: 32, targets: CS_TARGETS.sat },
+  { id: "req-is-sks", program_id: "prog-is", category: "sks", label: "SKS", unit: "SKS", total_required: 146, targets: CS_TARGETS.sks },
+  { id: "req-is-comserv", program_id: "prog-is", category: "comserv", label: "Comserv", unit: "jam", total_required: 30, targets: CS_TARGETS.comserv },
+  { id: "req-is-sat", program_id: "prog-is", category: "sat", label: "SAT", unit: "poin", total_required: 120, targets: CS_TARGETS.sat },
   { id: "req-is-belingua", program_id: "prog-is", category: "belingua", label: "Belingua", unit: "", total_required: 1, targets: CS_TARGETS.belingua },
   { id: "req-is-sertifikasi", program_id: "prog-is", category: "sertifikasi", label: "Sertifikasi", unit: "", total_required: 1, targets: CS_TARGETS.sertifikasi },
 ];

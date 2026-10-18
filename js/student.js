@@ -77,7 +77,7 @@ function openStudentReport(result) {
   const labelMap = { sks: "SKS", comserv: "Community Service", sat: "SAT (Student Activity)", belingua: "Belingua", sertifikasi: "Sertifikasi" };
   const sertCat = result.categories.find((c) => c.category === "sertifikasi");
   const valueMap = {
-    sks: `${formatNumber(s.total_sks_passed)} / 144 SKS`,
+    sks: `${formatNumber(s.total_sks_passed)} / 146 SKS`,
     comserv: `${formatNumber(s.comserv_hours)} / 30 Jam`,
     sat: `${formatNumber(s.sat_hours)} / 120 Point`,
     belingua: s.belingua_status === "lulus" ? "Lulus (100%)" : s.belingua_status === "proses" ? "Proses" : "Belum diambil",
@@ -213,7 +213,7 @@ function openStudentReport(result) {
         </div>
       </div>
       <div class="facts">
-        <div class="fact"><div class="k">SKS Lulus</div><div class="v">${formatNumber(s.total_sks_passed)} / 144</div></div>
+        <div class="fact"><div class="k">SKS Lulus</div><div class="v">${formatNumber(s.total_sks_passed)} / 146</div></div>
         <div class="fact"><div class="k">Comserv</div><div class="v">${formatNumber(s.comserv_hours)} / 30 Jam</div></div>
         <div class="fact"><div class="k">SAT</div><div class="v">${formatNumber(s.sat_hours)} / 120 Point</div></div>
         <div class="fact"><div class="k">Belingua</div><div class="v">${s.belingua_status === "lulus" ? "Lulus" : s.belingua_status === "proses" ? "Proses" : "Belum"}</div></div>
