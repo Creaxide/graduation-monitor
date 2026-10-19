@@ -5,6 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Mahasiswa Bimbingan - Graduation Monitor</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <script>
+    /* Terapkan tema sebelum render supaya tidak ada kedipan (flash of unstyled theme) */
+    (function () {
+      try {
+        var pref = localStorage.getItem("gm-theme") || "system";
+        var dark = pref === "dark" ||
+          (pref === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "light");
+      }
+    })();
+  </script>
 </head>
 <body>
   <div class="page-wrap">
@@ -17,28 +31,28 @@
     <div id="dummy-banner" class="alert info hidden"></div>
 
     <section class="grid cols-4 mb-24" id="kpi-row">
-      <div class="figma-card stat-card">
+      <div class="figma-card stat-card stat-card--total">
         <div class="k-icon brown">👥</div>
         <div class="kpi">
           <div class="k-value" id="k-total">-</div>
           <div class="k-label">Total Mahasiswa</div>
         </div>
       </div>
-      <div class="figma-card stat-card">
+      <div class="figma-card stat-card stat-card--danger">
         <div class="k-icon red">⚠️</div>
         <div class="kpi">
           <div class="k-value" id="k-danger">-</div>
           <div class="k-label">Mendesak</div>
         </div>
       </div>
-      <div class="figma-card stat-card">
+      <div class="figma-card stat-card stat-card--warn">
         <div class="k-icon amber">ℹ️</div>
         <div class="kpi">
           <div class="k-value" id="k-warn">-</div>
           <div class="k-label">Perlu Perhatian</div>
         </div>
       </div>
-      <div class="figma-card stat-card">
+      <div class="figma-card stat-card stat-card--safe">
         <div class="k-icon green">✓</div>
         <div class="kpi">
           <div class="k-value" id="k-safe">-</div>
@@ -63,9 +77,9 @@
             <option value="safe">Aman</option>
           </select>
         </div>
-        <div class="small fw-700" style="margin-bottom:12px; color:rgba(255,255,255,0.9)" id="count-label">
-          0 mahasiswa bimbingan ditemukan
-        </div>
+      </div>
+      <div class="count-row">
+        <div class="small" id="count-label">0 mahasiswa bimbingan ditemukan</div>
       </div>
     </section>
 
@@ -78,7 +92,7 @@
       </div>
     </div>
 
-    <div class="flex center gap-8 mt-24" style="justify-content:center; color: #64708a; font-size: 12px; font-weight: 500;">
+    <div class="flex center gap-8 mt-24" style="justify-content:center; color: var(--text-muted); font-size: 12px; font-weight: 500;">
       <span>ℹ️</span>
       <span>Klik baris mahasiswa untuk melihat detail dan rekomendasi prioritas kelulusan.</span>
     </div>

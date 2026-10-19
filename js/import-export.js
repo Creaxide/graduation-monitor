@@ -387,7 +387,8 @@ function renderSettings() {
     grouped[r.category].push(r);
   }
   const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
-  const selectStyle = "min-width:128px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px;font-size:11px;";
+  const selectStyle = "min-width:128px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--input-text);border-radius:6px;padding:5px 7px;font-size:11px;";
+  const inputStyle = "background:var(--input-bg);border:1px solid var(--input-border);color:var(--input-text);border-radius:6px;padding:5px 7px;";
   host.innerHTML = `
     <div class="table-wrap"><table class="data">
       <thead><tr><th>Category</th><th>Curriculum total</th>${semesters.map((s) => `<th>Sem ${s}</th>`).join("")}</tr></thead>
@@ -398,7 +399,7 @@ function renderSettings() {
           const totalCell = isBelingua
             ? ""
             : editable
-              ? `<input type="number" step="${INTEGER_TOTAL_CATEGORIES.has(r.category) ? "1" : "any"}" min="0" data-req="${r.id}" data-field="total" value="${formatNumber(r.total_required)}" style="width:84px;text-align:right;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px;" />`
+              ? `<input type="number" step="${INTEGER_TOTAL_CATEGORIES.has(r.category) ? "1" : "any"}" min="0" data-req="${r.id}" data-field="total" value="${formatNumber(r.total_required)}" style="width:84px;text-align:right;${inputStyle}" />`
               : formatNumber(r.total_required);
           return `<tr data-req="${r.id}">
             <td><strong>${escapeHtml(r.label)}</strong></td>
@@ -414,7 +415,7 @@ function renderSettings() {
               const rawTarget = frac * Number(r.total_required || 0);
               const target = isInt ? Math.round(rawTarget) : Math.round(rawTarget * 100) / 100;
               return editable
-                ? `<td><input type="number" step="${isInt ? "1" : "0.01"}" min="0" max="${formatNumber(r.total_required)}" data-req="${r.id}" data-sem="${s}" value="${target}" style="width:64px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px;" title="target kumulatif per semester (${r.unit || "jumlah"})" /></td>`
+                ? `<td><input type="number" step="${isInt ? "1" : "0.01"}" min="0" max="${formatNumber(r.total_required)}" data-req="${r.id}" data-sem="${s}" value="${target}" style="width:64px;${inputStyle}" title="target kumulatif per semester (${r.unit || "jumlah"})" /></td>`
                 : `<td class="mono">${target > 0 ? formatNumber(target) : ""}</td>`;
             }).join("")}
           </tr>`;
@@ -535,14 +536,8 @@ function bindExportToggles() {
   const apply = (mode) => {
     if (!fmt) return;
     fmt.value = mode;
-    xlsx.style.background = mode === "xlsx" ? "#ffffff" : "#eef6fb";
-    xlsx.style.color = mode === "xlsx" ? "#0c7fae" : "#0c7fae";
-    csv.style.background = mode === "csv" ? "#ffffff" : "#eef6fb";
-    csv.style.color = mode === "csv" ? "#0c7fae" : "#0c7fae";
-    xlsx.style.borderColor = mode === "xlsx" ? "#0c7fae" : "#cbd5e1";
-    csv.style.borderColor = mode === "csv" ? "#0c7fae" : "#cbd5e1";
-    xlsx.style.fontWeight = mode === "xlsx" ? "800" : "600";
-    csv.style.fontWeight = mode === "csv" ? "800" : "600";
+    xlsx.classList.toggle("is-active", mode === "xlsx");
+    csv.classList.toggle("is-active", mode === "csv");
   };
   xlsx.addEventListener("click", () => apply("xlsx"));
   csv.addEventListener("click", () => apply("csv"));
@@ -557,14 +552,14 @@ function renderRiwayat() {
   const entries = raw ? JSON.parse(raw) : [];
   if (pill) pill.textContent = `${entries.length} aktivitas`;
   if (!entries.length) {
-    host.innerHTML = `<div class="empty-state" style="padding:18px; color:#64748b; font-size:12px;">Belum ada aktivitas import.</div>`;
+    host.innerHTML = `<div class="empty-state" style="padding:18px; color:var(--text-muted); font-size:12px;">Belum ada aktivitas import.</div>`;
     return;
   }
   host.innerHTML = entries.slice(-3).reverse().map((e) => `
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; border-bottom:1px solid #e2e8f0;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:13px 15px; border-bottom:1px solid var(--table-cell-border);">
       <div>
-        <div style="font-weight:700; font-size:13px; color:#0f1f2e;">${escapeHtml(e.typeLabel)}</div>
-        <div style="font-size:11px; color:#64748b;">${escapeHtml(e.date)} · ${escapeHtml(e.uploader)}</div>
+        <div style="font-weight:700; font-size:13px; color:var(--text-strong);">${escapeHtml(e.typeLabel)}</div>
+        <div style="font-size:11px; color:var(--text-muted);">${escapeHtml(e.date)} · ${escapeHtml(e.uploader)}</div>
       </div>
       <span class="badge info" style="font-size:10px;">Berhasil</span>
     </div>`).join("");

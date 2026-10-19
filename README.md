@@ -61,6 +61,23 @@ button appends rows; it never deletes existing data.
 - **RBAC + RLS** — Dosen AA have full read + write (their advisees' students plus
   all master data and normative targets); Kaprodi is read-only across the
   program. There is no separate admin role.
+- **Light / Dark theme** — follows the OS preference by default (like Android
+  light/dark), with a sun/moon button in the header to override it manually.
+
+## Theme (light / dark)
+
+- Default: **follow the system** — the page renders in dark mode when the
+  device/browser is set to dark, and in light mode otherwise. The choice is
+  applied before the first paint, so there is no "flash" of the wrong theme.
+- The sun/moon button in the header (login page and app pages) switches the
+  theme manually; the manual choice is stored in `localStorage`
+  (`gm-theme` = `light` | `dark`) and wins over the system preference.
+- Switching the theme animates the color transition (~0.4 s) and crossfades
+  the BINUS logo between `Binusian_logolightmode.png` and
+  `Binusian_logodarkmode.png`.
+- All colors are driven by CSS custom properties in `css/styles.css`; the dark
+  palette is `#1D2432 #222835 #1B1D2A #202D46 #44464A #4C566A #6C7585 #3B82F6
+  #063B2E #3E2B05 #451014`.
 
 ## Project structure
 
@@ -70,7 +87,9 @@ dashboard.html        Monitoring dashboard
 students.html         Student master data
 student.html          Student detail + recommendation
 import-export.html    Bulk import / export + target config
-css/styles.css        Design system
+css/styles.css        Design system (tokens + light/dark theme)
+Binusian_logolightmode.png   Logo (light theme)
+Binusian_logodarkmode.png    Logo (dark theme)
 js/
   config.js           <-- USE_MOCK flag + Supabase URL/anon key
   data.js             Data access layer (auto-selects mock or Supabase)
@@ -80,6 +99,7 @@ js/
   errors.js           Shared DataError type
   supabase.js         Supabase client (lazy-loaded)
   engine.js           Rule-based recommendation engine
+  theme.js            Light/dark/system theme manager
   ui.js               Sidebar/layout/auth guard + dummy-data buttons
   utils.js            Helpers
   dashboard.js / student.js / students.js / import-export.js
@@ -171,6 +191,22 @@ Failed courses are listed separately with a recommended retake semester
 
 Targets are configurable per program in the `requirements` table and are shown
 read-only on the **Import / Export** page.
+
+### Status Belingua
+
+Belingua is binary, so its status is derived from the status recorded on the
+student — never from a "gap" like SKS or Comserv:
+
+| `belingua_status` | Badge | Meaning |
+|---|---|---|
+| `lulus` | **AMAN** | finished — the only state that may be *Aman* |
+| `proses` | **PERHATIAN** (or **MENDESAK** when ≤ 2 semesters left) | still in progress, not finished yet |
+| `belum_ambil` + target already due | **MENDESAK** | not started while the target is already due |
+| `belum_ambil` + target not due yet | **BELUM WAJIB** | not required this semester (neutral, does not affect the overall status) |
+
+So a student can never be reported as *Aman* while the Belingua is still
+running. `BELUM WAJIB` is a neutral (`info`) status: it does not downgrade the
+student's overall status, but it is no longer displayed as *Aman* either.
 
 ## Notes
 

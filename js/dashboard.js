@@ -14,6 +14,9 @@ const STATUS_ID = {
   safe: { label: "AMAN", cls: "safe" },
   warn: { label: "PERHATIAN", cls: "warn" },
   danger: { label: "MENDESAK", cls: "danger" },
+  // Kategori yang belum jatuh tempo (mis. Belingua belum wajib semester ini):
+  // belum selesai, jadi tidak boleh ditampilkan sebagai AMAN.
+  info: { label: "BELUM WAJIB", cls: "info" },
 };
 
 function renderFigmaBadge(statusKey) {

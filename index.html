@@ -5,22 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Masuk - Sistem Monitoring Kelulusan</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <script>
+    /* Terapkan tema sebelum render supaya tidak ada kedipan (flash of unstyled theme) */
+    (function () {
+      try {
+        var pref = localStorage.getItem("gm-theme") || "system";
+        var dark = pref === "dark" ||
+          (pref === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "light");
+      }
+    })();
+  </script>
 </head>
 <body>
   <header class="site-header site-header--slim">
     <div class="header-inner">
       <div class="binus-logo-wrap">
-        <img class="binus-logo" src="https://media.neliti.com/media/organisations/logo-219-binus.png" alt="BINUS University" />
+        <span class="binus-logo-box" role="img" aria-label="BINUS University">
+          <img class="binus-logo binus-logo--light" src="Binusian_logolightmode.png" alt="" />
+          <img class="binus-logo binus-logo--dark" src="Binusian_logodarkmode.png" alt="" />
+        </span>
         <div class="binus-brand-label">
-          <span>BINUS UNIVERSITY</span>
           <span>School of Computer Science</span>
         </div>
       </div>
+      <div class="header-spacer"></div>
+      <button class="btn-theme" id="theme-btn" type="button" title="Ganti tema terang/gelap" aria-label="Ganti tema terang/gelap"></button>
     </div>
   </header>
 
   <main class="login-screen">
-    <div id="alert" class="hidden" style="max-width:330px; margin:0 auto 14px;"></div>
+    <div id="alert" class="hidden" style="max-width:380px; margin:0 auto 16px;"></div>
 
     <h1 class="login-title">Sistem Monitoring Kelulusan</h1>
     <p class="login-sub">Masuk dengan akun Binus Anda</p>
@@ -55,14 +73,18 @@
   <script type="module">
     import { getSession, signIn, isMock } from "./js/data.js";
     import { setBusy } from "./js/utils.js";
+    import { initTheme, mountThemeToggle } from "./js/theme.js";
+
+    initTheme();
+    mountThemeToggle("theme-btn");
 
     const form = document.getElementById("login-form");
     const alertBox = document.getElementById("alert");
 
     function showAlert(message, type = "error") {
       alertBox.className = `alert ${type}`;
-      alertBox.style.maxWidth = "330px";
-      alertBox.style.margin = "0 auto 14px";
+      alertBox.style.maxWidth = "380px";
+      alertBox.style.margin = "0 auto 16px";
       alertBox.textContent = message;
     }
 

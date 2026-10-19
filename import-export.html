@@ -5,6 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Import / Export Data - Graduation Monitor</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <script>
+    /* Terapkan tema sebelum render supaya tidak ada kedipan (flash of unstyled theme) */
+    (function () {
+      try {
+        var pref = localStorage.getItem("gm-theme") || "system";
+        var dark = pref === "dark" ||
+          (pref === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "light");
+      }
+    })();
+  </script>
 </head>
 <body>
   <div class="page-wrap">
@@ -14,8 +28,8 @@
         <h1>Import / Export Data</h1>
         <div class="sub">Unggah data capaian mahasiswa dan unduh laporan kelulusan.</div>
       </header>
-      <div class="badge neutral" style="background:#eaf6ff; border:1.5px solid #bde1f2; color:#0b7fb8; padding:8px 12px; font-size:11px; display:inline-flex; align-items:center; gap:8px;">
-        <span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;"></span>
+      <div class="badge neutral" style="background:var(--badge-info-bg); border:1.5px solid var(--alert-info-border); color:var(--badge-info-fg); padding:8px 12px; font-size:11px; display:inline-flex; align-items:center; gap:8px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--safe);display:inline-block;"></span>
         <span>Sistem siap menerima data</span>
       </div>
     </div>
@@ -39,12 +53,12 @@
           <label for="dropzone">File Data Lengkap (.xlsx / .csv)</label>
           <div class="dropzone" id="dropzone">
             <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
-              <div style="width:32px;height:32px;border-radius:8px; background:#fff7ed; border:1px solid #fed7aa; display:grid;place-items:center;">
+              <div style="width:32px;height:32px;border-radius:8px; background:var(--alert-warn-bg); border:1px solid var(--alert-warn-border); display:grid;place-items:center;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
               </div>
-              <div style="font-weight:700; font-size:12px; color:#334155;">Pilih file untuk diunggah</div>
-              <div class="small muted" style="font-size:11px; color:#64748b;">Klik untuk memilih atau tarik file ke area ini · Maks. 10 MB</div>
-              <div class="small muted" id="file-name" style="margin-top:4px; font-size:11px; color:#0f1f2e; font-weight:600;">Belum ada file dipilih</div>
+              <div style="font-weight:700; font-size:12px; color:var(--text-strong);">Pilih file untuk diunggah</div>
+              <div class="small muted" style="font-size:11px; color:var(--text-muted);">Klik untuk memilih atau tarik file ke area ini · Maks. 10 MB</div>
+              <div class="small muted" id="file-name" style="margin-top:4px; font-size:11px; color:var(--text-strong); font-weight:600;">Belum ada file dipilih</div>
             </div>
             <input type="file" id="file-input" accept=".csv,.xlsx,.xls" class="hidden" />
           </div>
@@ -81,8 +95,8 @@
         <div class="field">
           <label>Format File</label>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button type="button" class="btn sm" id="fmt-xlsx" style="flex:1; justify-content:center;">XLSX</button>
-            <button type="button" class="btn sm" id="fmt-csv" style="flex:1; justify-content:center; background:#fff;">CSV</button>
+            <button type="button" class="btn sm fmt-toggle" id="fmt-xlsx" style="flex:1; justify-content:center;">XLSX</button>
+            <button type="button" class="btn sm fmt-toggle" id="fmt-csv" style="flex:1; justify-content:center;">CSV</button>
           </div>
         </div>
 
@@ -110,8 +124,8 @@
             <h3 style="margin:0; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(255,255,255,0.88);">RIWAYAT IMPORT TERAKHIR</h3>
             <span class="badge info" id="riwayat-pill" style="font-size:10px;">0 aktivitas</span>
           </div>
-          <div id="riwayat-list" style="background:#fff; border-radius:10px; overflow:hidden;">
-            <div class="empty-state" style="padding:18px; color:#64748b; font-size:12px;">Belum ada aktivitas import.</div>
+          <div id="riwayat-list" class="theme-surface" style="border-radius:10px; overflow:hidden;">
+            <div class="empty-state" style="padding:18px; color:var(--text-muted); font-size:12px;">Belum ada aktivitas import.</div>
           </div>
         </section>
       </div>

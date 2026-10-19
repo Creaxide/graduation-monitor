@@ -8,13 +8,21 @@ const studentId = params.get("id");
 let current = null;
 
 function statusId(status) {
-  const map = { safe: "AMAN", warn: "PERHATIAN", danger: "MENDESAK" };
+  const map = { safe: "AMAN", warn: "PERHATIAN", danger: "MENDESAK", info: "BELUM WAJIB" };
   return map[status] || "AMAN";
 }
 
 function statusCls(status) {
-  const map = { safe: "aman", warn: "perhatian", danger: "mendesak" };
+  const map = { safe: "aman", warn: "perhatian", danger: "mendesak", info: "info" };
   return map[status] || "aman";
+}
+
+// Badge + warna progress bar untuk sebuah status kategori.
+function statusBadge(status) {
+  const cls = statusCls(status);
+  const badge = { mendesak: "danger", perhatian: "warn", info: "info" }[cls] || "safe";
+  const bar = { mendesak: "#dc2626", perhatian: "#f59e0b", info: "#3b82f6" }[cls] || "#16a34a";
+  return { cls, badge, bar };
 }
 
 function progressText(cat) {
@@ -80,10 +88,10 @@ function openStudentReport(result) {
 
   const catRows = result.categories
     .map((c) => {
-      const badgeBg = c.status === "danger" ? "#dc2626" : c.status === "warn" ? "#f59e0b" : "#16a34a";
-      const badgeTxt = c.status === "danger" ? "MENDESAK" : c.status === "warn" ? "PERHATIAN" : "AMAN";
+      const badgeBg = c.status === "danger" ? "#dc2626" : c.status === "warn" ? "#f59e0b" : c.status === "info" ? "#2563eb" : "#16a34a";
+      const badgeTxt = c.status === "danger" ? "MENDESAK" : c.status === "warn" ? "PERHATIAN" : c.status === "info" ? "BELUM WAJIB" : "AMAN";
       const pct = c.targetValue > 0 ? Math.min(100, Math.round((c.actual / c.targetValue) * 100)) : 100;
-      const barBg = c.status === "danger" ? "#dc2626" : c.status === "warn" ? "#f59e0b" : "#16a34a";
+      const barBg = c.status === "danger" ? "#dc2626" : c.status === "warn" ? "#f59e0b" : c.status === "info" ? "#2563eb" : "#16a34a";
       return `
         <tr>
           <td><strong>${escapeHtml(labelMap[c.category] || c.label)}</strong></td>
@@ -340,21 +348,21 @@ function render(result) {
               .map((cat) => {
                 const labelMap = { sks: "SKS", comserv: "Community Svc", sat: "SAT", belingua: "Belingua", sertifikasi: "Sertifikasi" };
                 const label = labelMap[cat.category] || cat.label;
-                const cls = statusCls(cat.status);
+                const { cls, badge, bar } = statusBadge(cat.status);
                 const statusTxt = statusId(cat.status);
                 const val = progressText(cat);
                 const pct = cat.targetValue > 0 ? Math.min(100, Math.round((cat.actual / cat.targetValue) * 100)) : 100;
                 const clamped = Math.min(100, Math.max(0, pct));
                 return `
-                  <div style="display:flex; align-items:center; gap:10px;">
-                    <div style="width:120px; font-size:12px; font-weight:700; color:#fff;">${label}</div>
-                    <div style="flex:1; display:flex; align-items:center; gap:10px;">
-                      <div class="progress ${cls}" style="flex:1; height:10px; border-radius:999px; background:#fff; overflow:hidden;">
-                        <span style="display:block; height:100%; width:${clamped}%; background:${cls === "mendesak" ? "#dc2626" : cls === "perhatian" ? "#f59e0b" : "#16a34a"};"></span>
+                  <div class="prog-item">
+                    <div class="prog-label">${label}</div>
+                    <div class="prog-bar">
+                      <div class="progress ${cls}">
+                        <span style="display:block; height:100%; width:${clamped}%; background:${bar};"></span>
                       </div>
-                      <span style="font-size:11px; font-weight:700; color:#fff; min-width:95px; text-align:right;">${escapeHtml(val)}</span>
+                      <span class="prog-value">${escapeHtml(val)}</span>
                     </div>
-                    <span class="badge ${cls === "mendesak" ? "danger" : cls === "perhatian" ? "warn" : "safe"}" style="min-width:74px; justify-content:center;">${statusTxt}</span>
+                    <span class="badge ${badge} prog-badge">${statusTxt}</span>
                   </div>`;
               })
               .join("")}
@@ -376,10 +384,10 @@ function render(result) {
             <table class="data" style="margin:0;">
               <thead>
                 <tr>
-                  <th style="background:#f59e0b;">Mata Kuliah</th>
-                  <th style="background:#f59e0b;">Nilai</th>
-                  <th style="background:#f59e0b;">Semester</th>
-                  <th style="background:#f59e0b;">Rekomendasi</th>
+                  <th>Mata Kuliah</th>
+                  <th>Nilai</th>
+                  <th>Semester</th>
+                  <th>Rekomendasi</th>
                 </tr>
               </thead>
               <tbody>
@@ -422,7 +430,7 @@ function render(result) {
           </div>
         </section>
 
-        <button class="btn primary" id="download-pdf-btn" style="width:100%; justify-content:center; background:#f59e0b; border-color:#d97706; color:#fff; font-weight:800; border-radius:10px; padding:12px;">
+        <button class="btn primary" id="download-pdf-btn" style="width:100%; justify-content:center; background:var(--primary-bg); border-color:var(--primary-border); color:var(--primary-fg); font-weight:800; border-radius:10px; padding:12px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
           <span>Unduh PDF</span>
         </button>

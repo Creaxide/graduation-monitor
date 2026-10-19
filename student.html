@@ -5,6 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Detail Mahasiswa - Graduation Monitor</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <script>
+    /* Terapkan tema sebelum render supaya tidak ada kedipan (flash of unstyled theme) */
+    (function () {
+      try {
+        var pref = localStorage.getItem("gm-theme") || "system";
+        var dark = pref === "dark" ||
+          (pref === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "light");
+      }
+    })();
+  </script>
 </head>
 <body>
   <div class="page-wrap">
