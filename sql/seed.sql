@@ -5,7 +5,8 @@
 -- Re-runnable / idempotent:
 --   * master rows (programs, advisors, requirements, students) are upserted,
 --     so re-running refreshes stale values instead of duplicating them;
---   * child rows (failed_courses, certifications) upsert on their natural keys.
+--   * child rows (failed_courses, certifications) upsert on their natural keys,
+--     enforced by the unique guards created in schema.sql.
 --
 -- Curriculum totals are the graduation config used by the UI:
 --   146 SKS, 30 Comserv hours, 120 SAT points, Belingua by semester 4,

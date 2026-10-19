@@ -1,6 +1,7 @@
 import { supabase } from "./supabase.js";
 import { DataError } from "./errors.js";
 import { generateStudents, generateChildrenFor } from "./dummy.js";
+import { sanitizeStudentFields } from "./engine.js";
 
 export { DataError };
 
@@ -109,11 +110,11 @@ export async function loadStudentBundle(id) {
 // --------------------------------------------------------------- mutations --
 
 export async function updateStudent(id, patch) {
-  return unwrap(await supabase.from("students").update(patch).eq("id", id).select().single());
+  return unwrap(await supabase.from("students").update(sanitizeStudentFields(patch)).eq("id", id).select().single());
 }
 
 export async function insertStudent(row) {
-  return unwrap(await supabase.from("students").insert(row).select().single());
+  return unwrap(await supabase.from("students").insert(sanitizeStudentFields(row)).select().single());
 }
 
 /**

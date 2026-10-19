@@ -15,8 +15,75 @@ export const BELINGUA_LABEL = {
   proses: "Sedang Menjalankan",
   belum_ambil: "Belum Menjalankan",
 };
+// Sanitasi teks untuk mencocokkan nilai enum yang diimpor. Membuang aksen,
+// menyeragamkan huruf kecil, dan mengganti semua pemisah menjadi underscore
+// sehingga "Lulus", " lulus ", "LULUS", "Sedang Menjalankan", "belum ambil",
+// maupun "lulus (100%)" tetap terdeteksi sebagai status yang sama.
+export function sanitizeString(value) {
+  return String(value ?? "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+// Alias status Belingua (Indonesia/Inggris/boolean) -> status kanonik.
+const BELINGUA_ALIASES = {
+  lulus: "lulus", lulus_100: "lulus", passed: "lulus", pass: "lulus",
+  sudah: "lulus", sudah_lulus: "lulus", true: "lulus", ya: "lulus", yes: "lulus", y: "lulus",
+  proses: "proses", process: "proses", in_progress: "proses", on_progress: "proses",
+  sedang: "proses", sedang_menjalankan: "proses", menjalankan: "proses",
+  belum_ambil: "belum_ambil", belum_menjalankan: "belum_ambil", belum: "belum_ambil",
+  belum_lulus: "belum_ambil", false: "belum_ambil", tidak: "belum_ambil", no: "belum_ambil", n: "belum_ambil",
+};
+
+// Status Belingua bisa datang dalam beberapa bentuk: string kanonik
+// (belum_ambil / proses / lulus), boolean lama (true = lulus), atau angka
+// progres (0 / 0.5 / 1). Semua dipetakan ke satu status kanonik supaya label
+// selalu mencerminkan kondisi asli — mahasiswa yang sudah lulus tetap "Lulus".
+export function normalizeBelinguaStatus(status) {
+  if (typeof status === "boolean") return status ? "lulus" : "belum_ambil";
+  if (typeof status === "number") {
+    if (status > 1 || status < 0) return "belum_ambil";
+    return status >= 1 ? "lulus" : status >= 0.5 ? "proses" : "belum_ambil";
+  }
+  const key = sanitizeString(status);
+  if (Object.prototype.hasOwnProperty.call(BELINGUA_LABEL, key)) return key;
+  if (/^\d+(_\d+)?$/.test(key)) {
+    const num = Number(key.replace("_", "."));
+    return num >= 1 ? "lulus" : num >= 0.5 ? "proses" : "belum_ambil";
+  }
+  return BELINGUA_ALIASES[key] || "belum_ambil";
+}
+
 export function belinguaLabel(status) {
-  return BELINGUA_LABEL[status] || "Belum Menjalankan";
+  return BELINGUA_LABEL[normalizeBelinguaStatus(status)];
+}
+
+// Status akademik mahasiswa (bukan status kelulusan): aktif/cuti/lulus/do.
+export const STUDENT_STATUSES = ["aktif", "cuti", "lulus", "do"];
+const STUDENT_STATUS_ALIASES = {
+  aktif: "aktif", active: "aktif", kuliah: "aktif", aktif_kuliah: "aktif",
+  cuti: "cuti", leave: "cuti", cuti_akademik: "cuti", on_leave: "cuti",
+  lulus: "lulus", graduate: "lulus", graduated: "lulus", sudah_lulus: "lulus",
+  do: "do", dropout: "do", drop_out: "do", dikeluarkan: "do", berhenti: "do",
+};
+
+export function normalizeStudentStatus(status) {
+  const key = sanitizeString(status);
+  if (STUDENT_STATUSES.includes(key)) return key;
+  return STUDENT_STATUS_ALIASES[key] || "aktif";
+}
+
+// Terapkan sanitasi pada field enum mahasiswa sebelum dikirim ke data layer,
+// sehingga nilai dari sumber mana pun (import, form, API) tetap valid dan tidak
+// ditolak check constraint database.
+export function sanitizeStudentFields(row = {}) {
+  const out = { ...row };
+  if (out.status !== undefined) out.status = normalizeStudentStatus(out.status);
+  if (out.belingua_status !== undefined) out.belingua_status = normalizeBelinguaStatus(out.belingua_status);
+  return out;
 }
 
 const BELINGUA_PROGRESS = { lulus: 1, proses: 0.5, belum_ambil: 0 };
@@ -59,9 +126,10 @@ function actualValue(category, student, context) {
     case "sat":
       return { actual: Number(student.sat_hours) || 0, total: context.req.total_required };
     case "belingua": {
-      const p = BELINGUA_PROGRESS[student.belingua_status] ?? 0;
+      const status = normalizeBelinguaStatus(student.belingua_status);
+      const p = BELINGUA_PROGRESS[status] ?? 0;
       const total = context.req.total_required || 1;
-      return { actual: p * total, total, status: student.belingua_status, score: student.belingua_score };
+      return { actual: p * total, total, status, score: student.belingua_score };
     }
     case "sertifikasi": {
       const { obtained } = context.cert;
@@ -90,8 +158,9 @@ export const STATUS_LABEL = {
 // Belingua itu biner (lulus / belum), bukan progres bertahap seperti SKS.
 // "Sedang menjalankan" bukan berarti target terpenuhi, jadi tidak boleh dianggap AMAN.
 function belinguaStatus(student, remainingSemesters) {
-  if (student.belingua_status === "lulus") return "safe";
-  if (student.belingua_status === "proses" && remainingSemesters > 2) return "warn";
+  const status = normalizeBelinguaStatus(student.belingua_status);
+  if (status === "lulus") return "safe";
+  if (status === "proses" && remainingSemesters > 2) return "warn";
   return "danger";
 }
 
@@ -123,7 +192,7 @@ export function evaluateCategory(category, student, requirements, certifications
   const targetValue = targetFraction * targetBase;
 
   const isBelingua = category === "belingua";
-  const belinguaPassed = student.belingua_status === "lulus";
+  const belinguaPassed = normalizeBelinguaStatus(student.belingua_status) === "lulus";
 
   // Belingua: selama belum lulus, seluruh target semester ini dianggap belum terpenuhi.
   // (actual 0.5 untuk "proses" hanya dipakai untuk progress bar, bukan untuk gap.)

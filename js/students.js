@@ -1,15 +1,16 @@
 import { initLayout } from "./ui.js";
 import { listStudents } from "./data.js";
 import { el, escapeHtml, debounce } from "./utils.js";
-import { belinguaLabel } from "./engine.js";
+import { belinguaLabel, normalizeBelinguaStatus } from "./engine.js";
 
 let state = { students: [], q: "", semester: "" };
 
 // Kolom ini hanya menampilkan data mentah. Urgensi (Aman/Perhatian/Mendesak)
 // dihitung engine.js dan tampil di halaman detail, supaya tidak ada dua aturan berbeda.
 function belinguaBadge(v) {
-  const cls = { lulus: "safe", proses: "info", belum_ambil: "neutral" }[v] || "neutral";
-  return `<span class="badge ${cls}">${escapeHtml(belinguaLabel(v))}</span>`;
+  const status = normalizeBelinguaStatus(v);
+  const cls = { lulus: "safe", proses: "info", belum_ambil: "neutral" }[status] || "neutral";
+  return `<span class="badge ${cls}">${escapeHtml(belinguaLabel(status))}</span>`;
 }
 
 function overallBadge(s) {

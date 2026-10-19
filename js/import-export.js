@@ -5,7 +5,7 @@ import {
   listPrograms, listAdvisors, listRequirements, updateRequirements,
   insertFailedCourses, insertCertifications, logAudit,
 } from "./data.js";
-import { evaluateStudent, STATUS_LABEL } from "./engine.js";
+import { evaluateStudent, STATUS_LABEL, normalizeStudentStatus, normalizeBelinguaStatus } from "./engine.js";
 import {
   el, escapeHtml, formatNumber, toast, downloadFile, toCsv, setBusy,
 } from "./utils.js";
@@ -125,13 +125,15 @@ async function runImport() {
         if (hit) merged[f] = hit.r[f];
       }
 
+      // Sanitasi nilai enum agar variasi format dari file (mis. "Aktif",
+      // "active", "Lulus", "belum ambil") tetap diterima database.
       const patch = {};
       if (merged.current_semester) patch.current_semester = clampInt(merged.current_semester, 1, 14);
-      if (merged.status) patch.status = merged.status;
+      if (merged.status) patch.status = normalizeStudentStatus(merged.status);
       if (merged.total_sks_passed) patch.total_sks_passed = toInt(merged.total_sks_passed);
       if (merged.comserv_hours) patch.comserv_hours = toNum(merged.comserv_hours);
       if (merged.sat_hours) patch.sat_hours = toNum(merged.sat_hours);
-      if (merged.belingua_status) patch.belingua_status = merged.belingua_status;
+      if (merged.belingua_status) patch.belingua_status = normalizeBelinguaStatus(merged.belingua_status);
       if (merged.belingua_score) patch.belingua_score = toNum(merged.belingua_score);
       if (merged.angkatan) patch.angkatan = toInt(merged.angkatan);
 

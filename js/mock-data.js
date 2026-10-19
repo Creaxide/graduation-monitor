@@ -1,5 +1,6 @@
 import { DataError } from "./errors.js";
 import { generateStudents, generateChildrenFor } from "./dummy.js";
+import { sanitizeStudentFields } from "./engine.js";
 
 const DB_KEY = "graduation-monitor-mock-db";
 const SESSION_KEY = "graduation-monitor-mock-session";
@@ -145,7 +146,7 @@ export function mockAddStudent(overrides = {}) {
   const advisor = db.advisors.find((a) => a.id === (overrides.advisor_id || "adv-d001")) || db.advisors[0];
   const semester = overrides.current_semester || 6;
   const id = `stu-manual-${Date.now()}`;
-  const student = {
+  const student = sanitizeStudentFields({
     id,
     nim: overrides.nim || `${2702400000 + db.students.length}`,
     name: overrides.name || `Manual Student ${db.students.length + 1}`,
@@ -163,7 +164,7 @@ export function mockAddStudent(overrides = {}) {
     updated_at: nowIso(),
     programs: { code: program.code, name: program.name, total_sks: program.total_sks },
     advisors: { kode_dosen: advisor.kode_dosen, name: advisor.name },
-  };
+  });
   db.students.push(student);
   persist(db);
   return student;
@@ -283,7 +284,7 @@ export async function updateStudent(id, patch) {
   if (!db) fail("No dummy data loaded.");
   const student = db.students.find((s) => s.id === id);
   if (!student) fail("Student not found.");
-  Object.assign(student, patch, { updated_at: nowIso() });
+  Object.assign(student, sanitizeStudentFields(patch), { updated_at: nowIso() });
   persist(db);
   return withRelations(db, student);
 }
@@ -292,7 +293,7 @@ export async function insertStudent(row) {
   const db = load();
   if (!db) fail("No dummy data loaded. Click 'Generate dummy data' first.");
   if (db.students.some((s) => s.nim === row.nim)) fail(`NIM ${row.nim} already exists.`);
-  const student = {
+  const student = sanitizeStudentFields({
     id: `stu-manual-${Date.now()}`,
     status: "aktif",
     total_sks_passed: 0,
@@ -303,7 +304,7 @@ export async function insertStudent(row) {
     created_at: nowIso(),
     updated_at: nowIso(),
     ...row,
-  };
+  });
   db.students.push(student);
   persist(db);
   return withRelations(db, student);
