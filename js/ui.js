@@ -3,6 +3,7 @@ import {
   mockHasData, mockClear, seedDummyData,
 } from "./data.js";
 import { escapeHtml, toast, setBusy, el } from "./utils.js";
+import { initTheme, mountThemeToggle } from "./theme.js";
 
 const NAV = [
   { href: "dashboard.html", label: "Dashboard", id: "dashboard", icon: "" },
@@ -10,6 +11,7 @@ const NAV = [
 ];
 
 export async function initLayout({ active, title, subtitle }) {
+  initTheme();
   const user = await getCurrentUser();
   if (!user) {
     window.location.replace("index.html");
@@ -49,9 +51,11 @@ function renderHeader(profile, active) {
   header.innerHTML = `
     <div class="header-inner">
       <div class="binus-logo-wrap">
-        <img class="binus-logo" src="https://media.neliti.com/media/organisations/logo-219-binus.png" alt="BINUS University" />
+        <span class="binus-logo-box" role="img" aria-label="BINUS University">
+          <img class="binus-logo binus-logo--light" src="Binusian_logolightmode.png" alt="" />
+          <img class="binus-logo binus-logo--dark" src="Binusian_logodarkmode.png" alt="" />
+        </span>
         <div class="binus-brand-label">
-          <span>BINUS UNIVERSITY</span>
           <span>School of Computer Science</span>
         </div>
       </div>
@@ -62,6 +66,7 @@ function renderHeader(profile, active) {
           <div class="u-name">${escapeHtml(name)}</div>
           <div class="u-role">${escapeHtml(roleLabel)}</div>
         </div>
+        <button class="btn-theme" id="theme-btn" type="button" title="Ganti tema terang/gelap" aria-label="Ganti tema terang/gelap"></button>
         <button class="btn-keluar" id="logout-btn" title="Keluar dari sistem">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -72,6 +77,8 @@ function renderHeader(profile, active) {
         </button>
       </div>
     </div>`;
+
+  mountThemeToggle("theme-btn");
 }
 
 function setPageHeading(title, subtitle) {

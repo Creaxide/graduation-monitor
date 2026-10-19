@@ -156,12 +156,17 @@ export const STATUS_LABEL = {
 };
 
 // Belingua itu biner (lulus / belum), bukan progres bertahap seperti SKS.
-// "Sedang menjalankan" bukan berarti target terpenuhi, jadi tidak boleh dianggap AMAN.
-function belinguaStatus(student, remainingSemesters) {
+// "Sedang menjalankan" belum berarti selesai, jadi tidak boleh mendapat label
+// AMAN: AMAN hanya diberikan bila Belingua sudah LULUS.
+// Kalau target semester ini belum jatuh tempo dan mahasiswa belum memulai,
+// kategorinya berstatus INFO (netral) — belum ada kewajiban, tapi juga belum
+// selesai, sehingga tidak boleh ditampilkan sebagai AMAN.
+function belinguaStatus(student, remainingSemesters, targetDue) {
   const status = normalizeBelinguaStatus(student.belingua_status);
   if (status === "lulus") return "safe";
-  if (status === "proses" && remainingSemesters > 2) return "warn";
-  return "danger";
+  if (status === "proses") return remainingSemesters > 2 ? "warn" : "danger";
+  // belum_ambil
+  return targetDue ? "danger" : "info";
 }
 
 export const STATUS_RANK = { danger: 3, warn: 2, safe: 1, info: 0 };
@@ -177,10 +182,17 @@ export function evaluateCategory(category, student, requirements, certifications
   const remainingSemesters = Math.max(1, GRADUATION_SEMESTER - semester + 1);
   const targetFraction = normativeTarget(req, semester);
 
+  const isBelingua = category === "belingua";
+  const belinguaRaw = normalizeBelinguaStatus(student.belingua_status);
+
   const ctx = {
     req,
     cert: certSummary(certifications),
     certifications,
+    // Status Belingua asli ikut disimpan supaya UI (progress bar, label,
+    // alasan prioritas) menampilkan kondisi sebenarnya — "Sedang Menjalankan"
+    // tidak boleh tampil sebagai "Belum Menjalankan".
+    ...(isBelingua ? { status: belinguaRaw } : {}),
   };
   const { actual, total } = actualValue(category, student, ctx);
 
@@ -191,8 +203,7 @@ export function evaluateCategory(category, student, requirements, certifications
   const targetBase = total;
   const targetValue = targetFraction * targetBase;
 
-  const isBelingua = category === "belingua";
-  const belinguaPassed = normalizeBelinguaStatus(student.belingua_status) === "lulus";
+  const belinguaPassed = belinguaRaw === "lulus";
 
   // Belingua: selama belum lulus, seluruh target semester ini dianggap belum terpenuhi.
   // (actual 0.5 untuk "proses" hanya dipakai untuk progress bar, bukan untuk gap.)
@@ -205,7 +216,10 @@ export function evaluateCategory(category, student, requirements, certifications
   let status = targetValue === 0 && gap <= 0
     ? "safe"
     : statusFromRatio(ratio, gap, remainingSemesters);
-  if (isBelingua && gap > 0) status = belinguaStatus(student, remainingSemesters);
+  // Status Belingua selalu dihitung dari status yang tercatat pada mahasiswa
+  // (lulus / proses / belum_ambil), bukan dari gap — supaya "Sedang
+  // Menjalankan" tidak pernah ikut tampil sebagai AMAN.
+  if (isBelingua) status = belinguaStatus(student, remainingSemesters, targetValue > 0);
 
   const urgency = gap > 0 ? (gapFraction * 100) / remainingSemesters : 0;
 
