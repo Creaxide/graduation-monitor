@@ -1,7 +1,7 @@
 import { initLayout } from "./ui.js";
 import { loadStudentBundle } from "./data.js";
-import { evaluateStudent, priorityReason, recommendationSentence } from "./engine.js";
-import { el, escapeHtml, formatNumber, toast, printNode } from "./utils.js";
+import { evaluateStudent, priorityReason, recommendationSentence, belinguaLabel } from "./engine.js";
+import { el, escapeHtml, formatNumber, toast } from "./utils.js";
 
 const params = new URLSearchParams(window.location.search);
 const studentId = params.get("id");
@@ -17,31 +17,16 @@ function statusCls(status) {
   return map[status] || "aman";
 }
 
-function gapText(cat) {
-  if (cat.category === "belingua") {
-    const m = { belum_ambil: "Belum diambil", proses: "Proses", lulus: "Lulus (100%)" };
-    if (cat.raw.status === "lulus") return "Lulus (100%)";
-    if (cat.raw.status === "proses") return cat.raw.score ? `Proses \u2014 skor ${cat.raw.score}` : "Proses";
-    return "Belum diambil";
-  }
-  if (cat.category === "sertifikasi") {
-    return `${Math.min(cat.actual, cat.total)} / ${cat.total} sertifikat`;
-  }
-  const unit = cat.category === "sks" ? "SKS" : cat.category === "comserv" ? "Jam" : "Point";
-  return `${formatNumber(cat.actual)} / ${formatNumber(cat.total)} ${unit}`;
-}
-
 function progressText(cat) {
   if (cat.category === "belingua") {
-    return cat.raw.status === "lulus" ? "Lulus (100%)" : cat.raw.status === "proses" ? `Proses` : "Belum diambil";
+    return belinguaLabel(cat.raw.status);
   }
   if (cat.category === "sertifikasi") {
     return `${Math.min(cat.actual, cat.total)} / ${cat.total} sertifikat`;
   }
   const unit = cat.category === "sks" ? "SKS" : cat.category === "comserv" ? "Jam" : "Point";
   const actual = cat.category === "sks" ? cat.actual : Math.round(cat.actual);
-  const total = cat.category === "sks" ? cat.total : cat.category === "comserv" ? 30 : 120;
-  return `${actual} / ${total} ${unit}`;
+  return `${formatNumber(actual)} / ${formatNumber(cat.total)} ${unit}`;
 }
 
 function priorityText(p) {
@@ -56,12 +41,18 @@ function priorityText(p) {
     return { title: "SAT (Student Activity)", desc: `Kurang ${Math.ceil(p.gap)} jam dari target ${formatNumber(p.total)} Point` };
   }
   if (p.category === "belingua") {
-    return { title: "Belingua", desc: "Belum memenuhi syarat kemampuan bahasa Inggris." };
+    return { title: "Belingua", desc: `Status saat ini: ${belinguaLabel(p.raw.status)}. Belum memenuhi syarat kemampuan bahasa Inggris.` };
   }
   if (p.category === "sertifikasi") {
     return { title: "Sertifikasi", desc: `Kurang ${Math.ceil(p.gap)} sertifikat dari target.` };
   }
   return { title: p.label, desc: priorityReason(p) };
+}
+
+function riskTextFor(overall) {
+  if (overall === "danger") return "Berisiko tidak lulus tepat waktu. Tindak lanjuti rekomendasi prioritas segera.";
+  if (overall === "warn") return "Perlu perhatian. Berpotensi lulus tepat waktu jika rekomendasi ditindaklanjuti semester ini.";
+  return "Sesuai target. Pertahankan progres agar lulus tepat waktu.";
 }
 
 function openStudentReport(result) {
@@ -78,11 +69,12 @@ function openStudentReport(result) {
   const sertCat = result.categories.find((c) => c.category === "sertifikasi");
   const certTotal = Math.max(1, Math.round(sertCat?.total || 0));
   const certActual = Math.min(Math.round(sertCat?.actual || 0), certTotal);
+  const totalOf = (k) => result.categories.find((c) => c.category === k)?.total ?? 0;
   const valueMap = {
-    sks: `${formatNumber(s.total_sks_passed)} / 146 SKS`,
-    comserv: `${formatNumber(s.comserv_hours)} / 30 Jam`,
-    sat: `${formatNumber(s.sat_hours)} / 120 Point`,
-    belingua: s.belingua_status === "lulus" ? "Lulus (100%)" : s.belingua_status === "proses" ? "Proses" : "Belum diambil",
+    sks: `${formatNumber(s.total_sks_passed)} / ${formatNumber(totalOf("sks"))} SKS`,
+    comserv: `${formatNumber(s.comserv_hours)} / ${formatNumber(totalOf("comserv"))} Jam`,
+    sat: `${formatNumber(s.sat_hours)} / ${formatNumber(totalOf("sat"))} Point`,
+    belingua: belinguaLabel(s.belingua_status),
     sertifikasi: `${certActual} / ${certTotal} sertifikat`,
   };
 
@@ -137,7 +129,7 @@ function openStudentReport(result) {
             <td><strong>${escapeHtml(f.nama_mk)}</strong><br><span style="color:#64748b;font-size:11px;">${escapeHtml(f.kode_mk)}</span></td>
             <td style="text-align:center;"><span style="display:inline-block;min-width:26px;padding:3px 0;border-radius:7px;background:#dc2626;color:#fff;font-weight:800;font-size:11px;">${escapeHtml(f.nilai || "-")}</span></td>
             <td style="text-align:center;">${f.semester_taken ? `Sem ${f.semester_taken}` : "-"}</td>
-            <td>Her semester depan</td>
+            <td>Ulang di semester ${f.retake_semester}</td>
           </tr>`
         )
         .join("")
@@ -215,10 +207,10 @@ function openStudentReport(result) {
         </div>
       </div>
       <div class="facts">
-        <div class="fact"><div class="k">SKS Lulus</div><div class="v">${formatNumber(s.total_sks_passed)} / 146</div></div>
-        <div class="fact"><div class="k">Comserv</div><div class="v">${formatNumber(s.comserv_hours)} / 30 Jam</div></div>
-        <div class="fact"><div class="k">SAT</div><div class="v">${formatNumber(s.sat_hours)} / 120 Point</div></div>
-        <div class="fact"><div class="k">Belingua</div><div class="v">${s.belingua_status === "lulus" ? "Lulus" : s.belingua_status === "proses" ? "Proses" : "Belum"}</div></div>
+        <div class="fact"><div class="k">SKS Lulus</div><div class="v">${formatNumber(s.total_sks_passed)} / ${formatNumber(totalOf("sks"))}</div></div>
+        <div class="fact"><div class="k">Comserv</div><div class="v">${formatNumber(s.comserv_hours)} / ${formatNumber(totalOf("comserv"))} Jam</div></div>
+        <div class="fact"><div class="k">SAT</div><div class="v">${formatNumber(s.sat_hours)} / ${formatNumber(totalOf("sat"))} Point</div></div>
+        <div class="fact"><div class="k">Belingua</div><div class="v">${escapeHtml(belinguaLabel(s.belingua_status))}</div></div>
       </div>
       <h4 class="sec">Progress Kelulusan</h4>
       <table><tbody>${catRows}</tbody></table>
@@ -229,12 +221,12 @@ function openStudentReport(result) {
       <div class="risk">
         <div>
           <div style="font-size:11px;font-weight:800;letter-spacing:0.06em;color:#0b7fb8;">ESTIMASI RISIKO</div>
-          <div style="font-size:12px;margin-top:4px;">Berpotensi lulus tepat waktu jika rekomendasi ditindaklanjuti semester ini.</div>
+          <div style="font-size:12px;margin-top:4px;">${escapeHtml(riskTextFor(result.overall))}</div>
         </div>
         <span class="pill">${overallId}</span>
       </div>
       <div class="sig">
-        <div>Mengetahui,<br>Dosen Academic Advisor<br><div class="line">${escapeHtml(result.profile?.full_name || "Dr. Ahmad Fauzi, M.T.")}</div></div>
+        <div>Mengetahui,<br>Dosen Academic Advisor<br><div class="line">${escapeHtml(result.profile?.full_name || "(Nama Dosen AA)")}</div></div>
         <div>Bekasi, ${escapeHtml(d)}<br>Dosen Pembimbing<br><div class="line">&nbsp;</div></div>
       </div>
       <div class="foot">
@@ -289,11 +281,11 @@ function render(result) {
     }).join("");
   }
 
-  const angkatan = s.angkatan || Math.max(2020, 2022 + (s.current_semester ? s.current_semester - 6 : 0));
+  const angkatan = s.angkatan || "-";
   const programName = s.programs?.name || "Teknik Informatika";
   const facultyName = "Fakultas Teknologi Informasi";
   const fakultasLine = (s.programs?.name || "").includes("Sistem") ? "Fakultas Teknologi Informasi" : facultyName;
-  const ipkSeed = (2.3 + (s.current_semester * 0.07) + ((parseInt(s.nim?.slice(-2) || "0", 10) % 20) * 0.02)).toFixed(2);
+  const ipkText = s.ipk != null && s.ipk !== "" ? Number(s.ipk).toFixed(2).replace(".", ",") : "-";
 
   document.title = `${s.name} \u2014 Detail Mahasiswa`;
 
@@ -304,7 +296,7 @@ function render(result) {
         <div style="flex:1; min-width:0;">
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <h1 style="margin:0; font-size:20px; font-weight:800; color:#fff;">${escapeHtml(s.name)}</h1>
-            <span class="pill-aktif" style="display:inline-flex;align-items:center;gap:6px;">${statusDot} AKTIF</span>
+            <span class="pill-aktif" style="display:inline-flex;align-items:center;gap:6px;">${statusDot} ${escapeHtml(String(s.status || "aktif").toUpperCase())}</span>
           </div>
           <div style="margin-top:4px; color:rgba(255,255,255,0.9); font-size:12px;">${escapeHtml(programName)} \u00b7 ${escapeHtml(fakultasLine)}</div>
           <div class="hero-note" style="display:flex; align-items:center; gap:6px; margin-top:6px; color:#fde68a; font-size:11px; font-weight:600;">
@@ -328,7 +320,7 @@ function render(result) {
         </div>
         <div style="min-width:80px;">
           <div style="font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(255,255,255,0.75);">IPK</div>
-          <div style="font-weight:800; color:#fff; font-size:18px; margin-top:2px;">${ipkSeed.replace(".", ",")}</div>
+          <div style="font-weight:800; color:#fff; font-size:18px; margin-top:2px;">${ipkText}</div>
         </div>
       </div>
     </section>
@@ -398,7 +390,7 @@ function render(result) {
                     <td style="font-weight:700; color:#fff;">${escapeHtml(f.nama_mk)}</td>
                     <td><span style="display:inline-flex; width:28px; height:28px; border-radius:7px; font-size:11px; font-weight:800; align-items:center; justify-content:center; background:#dc2626; color:#fff;">${escapeHtml(f.nilai || "-")}</span></td>
                     <td style="color:rgba(255,255,255,0.9);">${f.semester_taken ? `Sem ${f.semester_taken}` : "-"}</td>
-                    <td style="color:rgba(255,255,255,0.9);">Her semester depan</td>
+                    <td style="color:rgba(255,255,255,0.9);">Ulang di semester ${f.retake_semester}</td>
                   </tr>`
                   )
                   .join("")}
@@ -425,7 +417,7 @@ function render(result) {
               </span>
             </div>
             <div style="font-size:12px; color:rgba(255,255,255,0.92); line-height:1.4;">
-              Berpotensi lulus tepat waktu jika rekomendasi ditindaklanjuti semester ini.
+              ${escapeHtml(riskTextFor(result.overall))}
             </div>
           </div>
         </section>

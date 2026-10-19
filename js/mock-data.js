@@ -86,7 +86,6 @@ function generateDatabase(count = 40) {
   return {
     version: 1,
     generated_at: nowIso(),
-    mock_user: MOCK_USER,
     profile: MOCK_PROFILE,
     programs: PROGRAMS,
     advisors: ADVISORS,

@@ -3,11 +3,21 @@ export const MAX_SEMESTER = 14;
 
 export const CATEGORY_META = {
   sks: { label: "SKS", unit: "SKS", icon: "SKS" },
-  comserv: { label: "Comserv", unit: "hours", icon: "CS" },
-  sat: { label: "SAT", unit: "hours", icon: "SAT" },
+  comserv: { label: "Comserv", unit: "jam", icon: "CS" },
+  sat: { label: "SAT", unit: "point", icon: "SAT" },
   belingua: { label: "Belingua", unit: "", icon: "BL" },
-  sertifikasi: { label: "Certification", unit: "", icon: "CT" },
+  sertifikasi: { label: "Sertifikasi", unit: "", icon: "CT" },
 };
+
+// Satu sumber label untuk status Belingua (dipakai di tabel, detail, laporan PDF).
+export const BELINGUA_LABEL = {
+  lulus: "Lulus",
+  proses: "Sedang Menjalankan",
+  belum_ambil: "Belum Menjalankan",
+};
+export function belinguaLabel(status) {
+  return BELINGUA_LABEL[status] || "Belum Menjalankan";
+}
 
 const BELINGUA_PROGRESS = { lulus: 1, proses: 0.5, belum_ambil: 0 };
 
@@ -71,11 +81,19 @@ function statusFromRatio(ratio, gap, remainingSemesters) {
 }
 
 export const STATUS_LABEL = {
-  safe: "On Track",
-  warn: "Needs Attention",
-  danger: "Urgent",
+  safe: "Aman",
+  warn: "Perlu Perhatian",
+  danger: "Mendesak",
   info: "Info",
 };
+
+// Belingua itu biner (lulus / belum), bukan progres bertahap seperti SKS.
+// "Sedang menjalankan" bukan berarti target terpenuhi, jadi tidak boleh dianggap AMAN.
+function belinguaStatus(student, remainingSemesters) {
+  if (student.belingua_status === "lulus") return "safe";
+  if (student.belingua_status === "proses" && remainingSemesters > 2) return "warn";
+  return "danger";
+}
 
 export const STATUS_RANK = { danger: 3, warn: 2, safe: 1, info: 0 };
 
@@ -104,13 +122,21 @@ export function evaluateCategory(category, student, requirements, certifications
   const targetBase = total;
   const targetValue = targetFraction * targetBase;
 
-  const gap = Math.max(0, targetValue - actual);
+  const isBelingua = category === "belingua";
+  const belinguaPassed = student.belingua_status === "lulus";
+
+  // Belingua: selama belum lulus, seluruh target semester ini dianggap belum terpenuhi.
+  // (actual 0.5 untuk "proses" hanya dipakai untuk progress bar, bukan untuk gap.)
+  const gap = isBelingua
+    ? (belinguaPassed ? 0 : targetValue)
+    : Math.max(0, targetValue - actual);
   const ratio = targetValue > 0 ? actual / targetValue : 1;
   const gapFraction = targetBase > 0 ? gap / targetBase : 0;
 
-  const status = targetValue === 0 && gap <= 0
+  let status = targetValue === 0 && gap <= 0
     ? "safe"
     : statusFromRatio(ratio, gap, remainingSemesters);
+  if (isBelingua && gap > 0) status = belinguaStatus(student, remainingSemesters);
 
   const urgency = gap > 0 ? (gapFraction * 100) / remainingSemesters : 0;
 
@@ -172,34 +198,33 @@ export function evaluateStudent(student, requirements, failedCourses = [], certi
 export function priorityReason(item) {
   const unit = item.unit ? ` ${item.unit}` : "";
   if (item.category === "belingua") {
-    const map = { belum_ambil: "not yet taken", proses: "in progress", lulus: "passed" };
-    return `Belingua is "${map[item.raw.status] || item.raw.status}". Needed: reach the semester-${item.semester} target.`;
+    return `Belingua berstatus "${belinguaLabel(item.raw.status)}". Perlu lulus untuk memenuhi target semester ${item.semester}.`;
   }
   if (item.category === "sertifikasi") {
-    return `Missing ${item.gap} required certification(s) for this semester's target.`;
+    return `Kurang ${item.gap} sertifikat dari target semester ini.`;
   }
-  return `Short by ${item.gap}${unit} against the semester-${item.semester} target (${item.targetValue}${unit}). ${item.remainingSemesters} semester(s) left.`;
+  return `Kurang ${item.gap}${unit} dari target semester ${item.semester} (${item.targetValue}${unit}). Sisa ${item.remainingSemesters} semester.`;
 }
 
 export function recommendationSentence(result) {
   const s = result.student;
   if (!result.priorities.length) {
-    return `${s.name} is on track — all graduation requirements meet the norms for semester ${s.current_semester}.`;
+    return `${s.name} sudah sesuai target: semua syarat kelulusan memenuhi norma semester ${s.current_semester}.`;
   }
   const parts = result.priorities.slice(0, 3).map((p, i) => {
     if (p.category === "belingua") {
-      return `Priority ${i + 1}: Belingua` + (p.gap > 0 ? " — still not passed." : ".");
+      return `Prioritas ${i + 1}: Belingua` + (p.gap > 0 ? " — belum lulus." : ".");
     }
     if (p.category === "sertifikasi") {
-      return `Priority ${i + 1}: Certification — ${p.gap} still missing.`;
+      return `Prioritas ${i + 1}: Sertifikasi — kurang ${p.gap}.`;
     }
     const unit = p.unit ? ` ${p.unit}` : "";
-    return `Priority ${i + 1}: ${p.label} — short by ${p.gap}${unit} of the target.`;
+    return `Prioritas ${i + 1}: ${p.label} — kurang ${p.gap}${unit} dari target.`;
   });
-  let text = `Recommendation for ${s.name} — Semester ${s.current_semester}: ` + parts.join(" ");
+  let text = `Rekomendasi untuk ${s.name} — Semester ${s.current_semester}: ` + parts.join(" ");
   if (result.failed.length) {
     const list = result.failed.map((f) => f.nama_mk).join(", ");
-    text += ` Failed courses: ${list} — recommended to retake in semester ${result.failed[0].retake_semester}.`;
+    text += ` Mata kuliah tidak lulus: ${list} — disarankan diulang di semester ${result.failed[0].retake_semester}.`;
   }
   return text;
 }

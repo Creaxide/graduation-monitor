@@ -1,35 +1,19 @@
 import { initLayout } from "./ui.js";
 import { listStudents } from "./data.js";
 import { el, escapeHtml, debounce } from "./utils.js";
+import { belinguaLabel } from "./engine.js";
 
 let state = { students: [], q: "", semester: "" };
 
-const STATUS_ID = {
-  safe: "AMAN",
-  warn: "PERHATIAN",
-  danger: "MENDESAK",
-};
-
-function badgeForOverall(catStatuses) {
-  // keep engine overall (safe/warn/danger) → Indonesian badge
-  const order = { danger: 3, warn: 2, safe: 1 };
-  const worst = catStatuses.reduce((w, s) => (order[s] || 0) > (order[w] || 0) ? s : w, "safe");
-  return STATUS_ID[worst] || "AMAN";
-}
-
+// Kolom ini hanya menampilkan data mentah. Urgensi (Aman/Perhatian/Mendesak)
+// dihitung engine.js dan tampil di halaman detail, supaya tidak ada dua aturan berbeda.
 function belinguaBadge(v) {
-  const map = {
-    lulus: ["safe", "AMAN"],
-    proses: ["warn", "PERHATIAN"],
-    belum_ambil: ["danger", "MENDESAK"],
-  };
-  const [cls, label] = map[v] || ["neutral", String(v).toUpperCase()];
-  return `<span class="badge ${cls}">${label}</span>`;
+  const cls = { lulus: "safe", proses: "info", belum_ambil: "neutral" }[v] || "neutral";
+  return `<span class="badge ${cls}">${escapeHtml(belinguaLabel(v))}</span>`;
 }
 
 function overallBadge(s) {
-  // Lightweight: use belingua + SKS approximation if engine not available per-row.
-  // Students table just shows raw data here — not priority. Keep simple English `status`.
+  // Status akademik mahasiswa (bukan status kelulusan).
   const map = { aktif: ["safe", "Aktif"], cuti: ["warn", "Cuti"], lulus: ["info", "Lulus"], do: ["danger", "DO"] };
   const [cls, label] = map[s.status] || ["neutral", String(s.status).toUpperCase()];
   return `<span class="badge ${cls}">${label}</span>`;
@@ -55,7 +39,7 @@ function render() {
         <thead>
           <tr>
             <th>NIM</th><th>Nama</th><th>Program</th><th>SEM</th>
-            <th>SKS</th><th>Comserv</th><th>SAT</th><th>Belingua</th><th>Status</th>
+            <th>SKS</th><th>Comserv</th><th>SAT</th><th>Belingua</th><th>Status Akademik</th>
             <th class="text-right">Aksi</th>
           </tr>
         </thead>

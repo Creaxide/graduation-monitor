@@ -306,7 +306,7 @@ function toExportRow(r) {
   return {
     NIM: r.student.nim,
     Name: r.student.name,
-    Program: r.student.programs?.name || "-",
+    Program: r.student.programs?.name || "",
     Angkatan: r.student.angkatan,
     Semester: r.student.current_semester,
     SKS_passed: r.student.total_sks_passed,
@@ -314,9 +314,9 @@ function toExportRow(r) {
     SAT_hours: r.student.sat_hours,
     Belingua: r.student.belingua_status,
     Overall_status: STATUS_LABEL[r.overall],
-    Priority_1: r.priorities[0]?.label || "-",
-    Priority_2: r.priorities[1]?.label || "-",
-    Priority_3: r.priorities[2]?.label || "-",
+    Priority_1: r.priorities[0]?.label || "",
+    Priority_2: r.priorities[1]?.label || "",
+    Priority_3: r.priorities[2]?.label || "",
     Failed_courses: r.failed.map((f) => f.nama_mk).join("; "),
   };
 }
@@ -350,6 +350,27 @@ function exportPdf(rows) {
 // Hours (comserv, sat) may be fractional.
 const INTEGER_TOTAL_CATEGORIES = new Set(["sks", "belingua", "sertifikasi"]);
 
+// Belingua bukan angka 0/1, melainkan status dengan tiga nilai seperti di database
+// (belum_ambil / proses / lulus). Target per semester disimpan sebagai fraksi
+// 0 / 0.5 / 1 agar tetap kompatibel dengan engine (lihat BELINGUA_PROGRESS).
+const BELINGUA_TARGETS = [
+  { value: 0, label: "Belum Menjalankan" },
+  { value: 0.5, label: "Sedang Menjalankan" },
+  { value: 1, label: "Lulus" },
+];
+
+function belinguaTargetValue(raw) {
+  const n = Number(raw || 0);
+  if (n >= 1) return 1;
+  if (n >= 0.5) return 0.5;
+  return 0;
+}
+
+function belinguaTargetLabel(raw) {
+  const v = belinguaTargetValue(raw);
+  return BELINGUA_TARGETS.find((o) => o.value === v)?.label || BELINGUA_TARGETS[0].label;
+}
+
 function canEditTargets() {
   return state.profile?.role !== "kaprodi";
 }
@@ -364,27 +385,35 @@ function renderSettings() {
     grouped[r.category].push(r);
   }
   const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
+  const selectStyle = "min-width:128px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px;font-size:11px;";
   host.innerHTML = `
     <div class="table-wrap"><table class="data">
       <thead><tr><th>Category</th><th>Curriculum total</th>${semesters.map((s) => `<th>Sem ${s}</th>`).join("")}</tr></thead>
       <tbody>
         ${Object.values(grouped).map((rows) => {
           const r = rows[0];
+          const isBelingua = r.category === "belingua";
+          const totalCell = isBelingua
+            ? ""
+            : editable
+              ? `<input type="number" step="${INTEGER_TOTAL_CATEGORIES.has(r.category) ? "1" : "any"}" min="0" data-req="${r.id}" data-field="total" value="${formatNumber(r.total_required)}" style="width:84px;text-align:right;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px;" />`
+              : formatNumber(r.total_required);
           return `<tr data-req="${r.id}">
-            <td><strong>${escapeHtml(r.label)}</strong>${r.unit ? ` <span class="muted small">(${r.unit})</span>` : ""}</td>
-            <td class="mono">${
-              editable
-                ? `<input type="number" step="${INTEGER_TOTAL_CATEGORIES.has(r.category) ? "1" : "any"}" min="0" data-req="${r.id}" data-field="total" value="${formatNumber(r.total_required)}" style="width:84px;text-align:right;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px;" />`
-                : formatNumber(r.total_required)
-            }</td>
+            <td><strong>${escapeHtml(r.label)}</strong></td>
             ${semesters.map((s) => {
+              if (isBelingua) {
+                const current = belinguaTargetValue(r.targets?.[s]);
+                if (!editable) return `<td class="mono">${belinguaTargetLabel(current)}</td>`;
+                const opts = BELINGUA_TARGETS.map((o) => `<option value="${o.value}"${o.value === current ? " selected" : ""}>${o.label}</option>`).join("");
+                return `<td><select data-req="${r.id}" data-sem="${s}" data-belingua="1" style="${selectStyle}" title="target status Belingua per semester">${opts}</select></td>`;
+              }
               const frac = Number(r.targets?.[s] || 0);
               const isInt = INTEGER_TOTAL_CATEGORIES.has(r.category);
               const rawTarget = frac * Number(r.total_required || 0);
               const target = isInt ? Math.round(rawTarget) : Math.round(rawTarget * 100) / 100;
               return editable
                 ? `<td><input type="number" step="${isInt ? "1" : "0.01"}" min="0" max="${formatNumber(r.total_required)}" data-req="${r.id}" data-sem="${s}" value="${target}" style="width:64px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px 6px;" title="target kumulatif per semester (${r.unit || "jumlah"})" /></td>`
-                : `<td class="mono">${target > 0 ? formatNumber(target) : '<span class="muted">-</span>'}</td>`;
+                : `<td class="mono">${target > 0 ? formatNumber(target) : ""}</td>`;
             }).join("")}
           </tr>`;
         }).join("")}
@@ -406,10 +435,15 @@ async function saveSettings() {
     for (const r of state.requirements) {
       byId[r.id] = { id: r.id, category: r.category, total_required: r.total_required, targets: { ...(r.targets || {}) } };
     }
-    document.querySelectorAll("#settings-host input[data-req]").forEach((input) => {
+    document.querySelectorAll("#settings-host input[data-req], #settings-host select[data-req]").forEach((input) => {
       const id = input.dataset.req;
       const row = byId[id];
       if (!row) return;
+      if (input.dataset.belingua) {
+        const v = parseFloat(String(input.value).replace(",", "."));
+        if (!Number.isNaN(v)) row.targets[input.dataset.sem] = v;
+        return;
+      }
       const v = parseFloat(String(input.value).replace(",", "."));
       if (input.dataset.field === "total") {
         if (!Number.isNaN(v) && v > 0) {

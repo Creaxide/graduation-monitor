@@ -1,6 +1,16 @@
 -- =============================================================================
 -- Seed data for local development / demo
 -- Run AFTER schema.sql in the Supabase SQL Editor.
+--
+-- Re-runnable / idempotent:
+--   * master rows (programs, advisors, requirements, students) are upserted,
+--     so re-running refreshes stale values instead of duplicating them;
+--   * child rows (failed_courses, certifications) upsert on their natural keys.
+--
+-- Curriculum totals are the graduation config used by the UI:
+--   146 SKS, 30 Comserv hours, 120 SAT points, Belingua by semester 4,
+--   1 required certification. Targets are the cumulative fraction of the
+--   curriculum total a student must have reached by the end of each semester.
 -- =============================================================================
 
 -- Programs ------------------------------------------------------------------
@@ -14,11 +24,13 @@ insert into advisors (kode_dosen, name) values
   ('D001', 'Dr. Reynold Suherman'),
   ('D002', 'Gilbert Viant Tokona Gultom, M.Kom'),
   ('D003', 'Joseph Mario Danubio, M.Sc')
-on conflict (kode_dosen) do nothing;
+on conflict (kode_dosen) do update set name = excluded.name;
 
--- Requirements (targets = cumulative fraction of total required per semester) -
+-- Requirements (targets = cumulative fraction of total_required per semester) -
+-- Inserted for EVERY program so no category is ever silently treated as
+-- "0 required" (which the engine would read as met).
 insert into requirements (program_id, category, label, unit, total_required, targets)
-select p.id, v.category, v.label, v.unit, v.total_required, v.targets::jsonb
+select p.id, c.category, c.label, c.unit, c.total_required, c.targets::jsonb
 from programs p
 cross join (values
   ('sks','SKS','SKS',146,
@@ -31,38 +43,55 @@ cross join (values
    '{"1":0.0,"2":0.0,"3":0.0,"4":1.0,"5":1.0,"6":1.0,"7":1.0,"8":1.0}'),
   ('sertifikasi','Sertifikasi','',1,
    '{"1":0.0,"2":0.0,"3":0.0,"4":0.0,"5":0.3,"6":0.5,"7":1.0,"8":1.0}')
-) as v(category, label, unit, total_required, targets)
-where p.code = 'CS'
+) as c(category, label, unit, total_required, targets)
+where p.code in ('CS', 'IS')
 on conflict (program_id, category) do update set
-  label = excluded.label,
-  unit = excluded.unit,
+  label          = excluded.label,
+  unit           = excluded.unit,
   total_required = excluded.total_required,
-  targets = excluded.targets;
+  targets        = excluded.targets;
 
 -- Students ------------------------------------------------------------------
+-- belingua_status is kept consistent with the semester: before semester 4 the
+-- Belingua target is 0 (nothing required), from semester 4 onward the target is
+-- 100%, so 'lulus' is required to stay on track.
 insert into students
   (nim, name, program_id, advisor_id, angkatan, current_semester, status,
    total_sks_passed, comserv_hours, sat_hours, belingua_status, belingua_score)
 select v.nim, v.name,
-       (select id from programs where code = 'CS'),
+       (select id from programs where code = v.program_code),
        (select id from advisors where kode_dosen = v.kode_dosen),
        v.angkatan, v.sem, v.status, v.sks, v.comserv, v.sat, v.belingua, v.score
 from (values
-  ('2702314920','Andi Pratama',        'D001', 2023, 6, 'aktif',  126, 26, 20, 'proses',      480),
-  ('2702314921','Bella Kartika',       'D001', 2023, 6, 'aktif',   92, 12,  8, 'belum_ambil', null),
-  ('2702314922','Chandra Wijaya',      'D001', 2022, 8, 'aktif',  138, 38, 30, 'lulus',       560),
-  ('2702314923','Dewi Anggraini',      'D001', 2024, 4, 'aktif',   60, 14, 12, 'belum_ambil', null),
-  ('2702314924','Eko Nugroho',         'D002', 2023, 6, 'aktif',  108, 20, 16, 'proses',      455),
-  ('2702352622','Gilbert Tobing',      'D002', 2023, 6, 'aktif',  120, 30, 24, 'lulus',       590),
-  ('2702352623','Hana Salsabila',      'D002', 2024, 4, 'aktif',   72, 10,  6, 'belum_ambil', null),
-  ('2702352624','Irfan Maulana',       'D002', 2022, 8, 'aktif',  132, 34, 28, 'lulus',       545),
-  ('2702107493','Joseph D.',           'D003', 2023, 6, 'aktif',  100, 18, 14, 'proses',      470),
-  ('2702107494','Kevin Sanjaya',       'D003', 2024, 4, 'aktif',   48,  6,  4, 'belum_ambil', null),
-  ('2702376452','M. Andri Wibowo',     'D003', 2023, 6, 'aktif',  130, 28, 26, 'lulus',       555),
-  ('2702376453','Nadia Puspita',       'D003', 2025, 2, 'aktif',   24,  2,  2, 'belum_ambil', null),
-  ('2702314925','Oscar Lim',           'D001', 2024, 4, 'cuti',    36,  4,  4, 'belum_ambil', null)
-) as v(nim, name, kode_dosen, angkatan, sem, status, sks, comserv, sat, belingua, score)
-on conflict (nim) do nothing;
+  ('2702314920','Andi Pratama',      'CS','D001', 2023, 6, 'aktif', 126, 26, 20, 'proses',       480),
+  ('2702314921','Bella Kartika',     'CS','D001', 2023, 6, 'aktif',  92, 12,  8, 'belum_ambil',  null),
+  ('2702314922','Chandra Wijaya',    'CS','D001', 2022, 8, 'aktif', 138, 38, 30, 'lulus',        560),
+  ('2702314923','Dewi Anggraini',    'CS','D001', 2024, 4, 'aktif',  60, 14, 12, 'belum_ambil',  null),
+  ('2702314924','Eko Nugroho',       'CS','D002', 2023, 6, 'aktif', 108, 20, 16, 'proses',       455),
+  ('2702352622','Gilbert Tobing',    'CS','D002', 2023, 6, 'aktif', 120, 30, 70, 'lulus',        590),
+  ('2702352623','Hana Salsabila',    'CS','D002', 2024, 4, 'aktif',  66, 11, 33, 'lulus',        500),
+  ('2702352624','Irfan Maulana',     'CS','D002', 2022, 8, 'aktif', 132, 34, 28, 'lulus',        545),
+  ('2702107493','Joseph D.',         'CS','D003', 2023, 6, 'aktif', 100, 18, 14, 'proses',       470),
+  ('2702107494','Kevin Sanjaya',     'CS','D003', 2024, 4, 'aktif',  48,  6,  4, 'belum_ambil',  null),
+  ('2702376452','M. Andri Wibowo',   'CS','D003', 2023, 6, 'aktif', 130, 28, 68, 'lulus',        555),
+  ('2702376453','Nadia Puspita',     'CS','D003', 2025, 2, 'aktif',  24,  2,  2, 'belum_ambil',  null),
+  ('2702314925','Oscar Lim',         'CS','D001', 2024, 4, 'cuti',   36,  4,  4, 'belum_ambil',  null),
+  ('2702416100','Rizky Ramadhan',    'IS','D001', 2024, 4, 'aktif',  64, 10,  9, 'proses',       460),
+  ('2702416101','Sinta Lestari',     'IS','D002', 2023, 6, 'aktif', 118, 24, 68, 'lulus',        570),
+  ('2702416102','Taufik Hidayat',    'IS','D003', 2022, 8, 'aktif', 140, 32, 34, 'lulus',        600)
+) as v(nim, name, program_code, kode_dosen, angkatan, sem, status, sks, comserv, sat, belingua, score)
+on conflict (nim) do update set
+  name             = excluded.name,
+  program_id       = excluded.program_id,
+  advisor_id       = excluded.advisor_id,
+  angkatan         = excluded.angkatan,
+  current_semester = excluded.current_semester,
+  status           = excluded.status,
+  total_sks_passed = excluded.total_sks_passed,
+  comserv_hours    = excluded.comserv_hours,
+  sat_hours        = excluded.sat_hours,
+  belingua_status  = excluded.belingua_status,
+  belingua_score   = excluded.belingua_score;
 
 -- Failed courses ------------------------------------------------------------
 insert into failed_courses (student_id, kode_mk, nama_mk, sks, nilai, semester_taken)
@@ -76,29 +105,39 @@ join (values
   ('2702107493','SCIE6064','Fisika Dasar',3,'D',2),
   ('2702107493','COMP6123','Struktur Data',4,'D',3),
   ('2702314920','COMP6083','Basis Data',4,'D',4),
-  ('2702352623','MATH6031','Kalkulus',3,'D',1)
+  ('2702352623','MATH6031','Kalkulus',3,'D',1),
+  ('2702416100','COMP6267','Pemrograman Web',4,'D',3)
 ) as v(nim, kode_mk, nama_mk, sks, nilai, semester_taken) on s.nim = v.nim
-on conflict (student_id, kode_mk, semester_taken) do nothing;
+on conflict (student_id, kode_mk, semester_taken) do update set
+  nama_mk = excluded.nama_mk,
+  sks     = excluded.sks,
+  nilai   = excluded.nilai;
 
 -- Certifications ------------------------------------------------------------
--- The 3rd value in each tuple is the "required" flag; obtained is derived from
--- whether an obtained_at date is present.
+-- `obtained` is derived from whether an obtained_at date is present. The
+-- engine counts DISTINCT obtained certification names against the category's
+-- curriculum total, so duplicates can no longer inflate the requirement.
 insert into certifications (student_id, name, is_required, obtained, obtained_at)
 select s.id, v.name, v.is_required, (v.obtained_at is not null), v.obtained_at::date
 from students s
 join (values
   ('2702314920','Sertifikasi Kompetensi Pemrograman', true,  '2025-06-01'),
   ('2702314920','Sertifikasi Jaringan Dasar',         false, '2025-08-15'),
-  ('2702314921','Sertifikasi Kompetensi Pemrograman', false, null),
+  ('2702314921','Sertifikasi Kompetensi Pemrograman', true,  null),
   ('2702314921','Sertifikasi Jaringan Dasar',         false, null),
   ('2702352622','Sertifikasi Kompetensi Pemrograman', true,  '2025-05-10'),
   ('2702352622','Sertifikasi Jaringan Dasar',         true,  '2025-09-01'),
-  ('2702107493','Sertifikasi Kompetensi Pemrograman', false, null),
+  ('2702107493','Sertifikasi Kompetensi Pemrograman', true,  null),
   ('2702107493','Sertifikasi Jaringan Dasar',         false, null),
   ('2702376452','Sertifikasi Kompetensi Pemrograman', true,  '2025-07-20'),
-  ('2702376452','Sertifikasi Jaringan Dasar',         true,  '2025-10-05')
+  ('2702376452','Sertifikasi Jaringan Dasar',         true,  '2025-10-05'),
+  ('2702416101','Sertifikasi Kompetensi Pemrograman', true,  '2025-06-18'),
+  ('2702416102','Sertifikasi Kompetensi Pemrograman', true,  '2025-04-22')
 ) as v(nim, name, is_required, obtained_at) on s.nim = v.nim
-on conflict (student_id, name) do nothing;
+on conflict (student_id, name) do update set
+  is_required = excluded.is_required,
+  obtained    = excluded.obtained,
+  obtained_at = excluded.obtained_at;
 
 -- =============================================================================
 -- Linking users to advisors
