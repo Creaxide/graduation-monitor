@@ -30,20 +30,26 @@ on conflict (kode_dosen) do update set name = excluded.name;
 -- Requirements (targets = cumulative fraction of total_required per semester) -
 -- Inserted for EVERY program so no category is ever silently treated as
 -- "0 required" (which the engine would read as met).
+--
+-- SKS / Comserv / SAT disebar rata ke 8 semester dengan nilai bulat
+-- (nilai kumulatif per semester):
+--   SKS     146 -> 18, 37, 55, 73, 91, 110, 128, 146
+--   Comserv  30 ->  4,  8, 11, 15, 19,  23,  26,  30
+--   SAT     120 -> 15, 30, 45, 60, 75,  90, 105, 120
 insert into requirements (program_id, category, label, unit, total_required, targets)
 select p.id, c.category, c.label, c.unit, c.total_required, c.targets::jsonb
 from programs p
 cross join (values
   ('sks','SKS','SKS',146,
-   '{"1":0.12,"2":0.25,"3":0.375,"4":0.5,"5":0.625,"6":0.75,"7":0.875,"8":1.0}'),
+   '{"1":0.1232876712328767,"2":0.2534246575342466,"3":0.3767123287671233,"4":0.5,"5":0.6232876712328767,"6":0.7534246575342466,"7":0.8767123287671232,"8":1.0}'),
   ('comserv','Comserv','jam',30,
-   '{"1":0.05,"2":0.10,"3":0.20,"4":0.30,"5":0.40,"6":0.55,"7":0.75,"8":1.0}'),
+   '{"1":0.13333333333333333,"2":0.26666666666666666,"3":0.36666666666666664,"4":0.5,"5":0.6333333333333333,"6":0.7666666666666666,"7":0.8666666666666667,"8":1.0}'),
   ('sat','SAT','poin',120,
-   '{"1":0.06,"2":0.12,"3":0.20,"4":0.30,"5":0.40,"6":0.55,"7":0.75,"8":1.0}'),
+   '{"1":0.125,"2":0.25,"3":0.375,"4":0.5,"5":0.625,"6":0.75,"7":0.875,"8":1.0}'),
   ('belingua','Belingua','',1,
    '{"1":0.0,"2":0.0,"3":0.0,"4":1.0,"5":1.0,"6":1.0,"7":1.0,"8":1.0}'),
   ('sertifikasi','Sertifikasi','',1,
-   '{"1":0.0,"2":0.0,"3":0.0,"4":0.0,"5":0.3,"6":0.5,"7":1.0,"8":1.0}')
+   '{"1":0.0,"2":0.0,"3":0.0,"4":0.0,"5":0.3,"6":0.5,"7":0.7,"8":1.0}')
 ) as c(category, label, unit, total_required, targets)
 where p.code in ('CS', 'IS')
 on conflict (program_id, category) do update set

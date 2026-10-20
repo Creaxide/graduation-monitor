@@ -345,13 +345,24 @@ function exportPdf(rows) {
 
 // --------------------------------------------------------------- settings ---
 
-// Categories counted in whole units; their curriculum total must stay an integer.
-// Hours (comserv, sat) may be fractional.
-const INTEGER_TOTAL_CATEGORIES = new Set(["sks", "belingua", "sertifikasi"]);
+// Kategori yang dihitung dalam unit bulat: total kurikulum dan target
+// per semester selalu berupa bilangan bulat.
+const INTEGER_TOTAL_CATEGORIES = new Set(["sks", "comserv", "sat", "belingua", "sertifikasi"]);
+
+// Kategori yang target per semester-nya dinyatakan dalam unit bulat.
+// Belingua & Sertifikasi memakai total 1 sehingga target-nya berupa fraksi
+// (0.3 / 0.5 / 0.7) dan tidak boleh dibulatkan.
+const INTEGER_UNITS_CATEGORIES = new Set(["sks", "comserv", "sat"]);
 
 // Urutan tampilan kategori bersifat tetap supaya baris tidak berpindah tempat
 // saat data dimuat ulang (urutan hasil query tidak dijamin stabil).
 const CATEGORY_ORDER = ["sks", "comserv", "sat", "belingua", "sertifikasi"];
+
+// Kategori dengan target numerik (bukan status) yang bisa disebar rata per semester.
+const SPREADABLE_CATEGORIES = new Set(["sks", "comserv", "sat"]);
+
+// Semester yang tampil di tabel konfigurasi.
+const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 // Belingua bukan angka 0/1, melainkan status dengan tiga nilai seperti di database
 // (belum_ambil / proses / lulus). Target per semester disimpan sebagai fraksi
@@ -389,9 +400,10 @@ function renderSettings() {
   }
   const order = CATEGORY_ORDER.filter((c) => grouped[c])
     .concat(Object.keys(grouped).filter((c) => !CATEGORY_ORDER.includes(c)));
-  const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
+  const semesters = SEMESTERS;
   const selectStyle = "min-width:128px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--input-text);border-radius:6px;padding:5px 7px;font-size:11px;";
   const inputStyle = "background:var(--input-bg);border:1px solid var(--input-border);color:var(--input-text);border-radius:6px;padding:5px 7px;";
+  const programCodes = state.programs.map((p) => p.code).join(", ") || "semua program";
   host.innerHTML = `
     <div class="table-wrap"><table class="data">
       <thead><tr><th>Category</th><th>Curriculum total</th>${semesters.map((s) => `<th>Sem ${s}</th>`).join("")}</tr></thead>
@@ -405,7 +417,7 @@ function renderSettings() {
             : editable
               ? `<input type="number" step="${INTEGER_TOTAL_CATEGORIES.has(r.category) ? "1" : "any"}" min="0" data-req="${r.id}" data-field="total" value="${formatNumber(r.total_required)}" style="width:84px;text-align:right;${inputStyle}" />`
               : formatNumber(r.total_required);
-          return `<tr data-req="${r.id}">
+          return `<tr data-req="${r.id}" data-cat="${r.category}" data-total="${formatNumber(r.total_required)}">
             <td><strong>${escapeHtml(r.label)}</strong></td>
             <td>${totalCell}</td>
             ${semesters.map((s) => {
@@ -416,7 +428,7 @@ function renderSettings() {
                 return `<td><select data-req="${r.id}" data-sem="${s}" data-belingua="1" style="${selectStyle}" title="target status Belingua per semester">${opts}</select></td>`;
               }
               const frac = Number(r.targets?.[s] || 0);
-              const isInt = INTEGER_TOTAL_CATEGORIES.has(r.category);
+              const isInt = INTEGER_UNITS_CATEGORIES.has(r.category);
               const rawTarget = frac * Number(r.total_required || 0);
               const target = isInt ? Math.round(rawTarget) : Math.round(rawTarget * 100) / 100;
               return editable
@@ -427,44 +439,103 @@ function renderSettings() {
         }).join("")}
       </tbody>
     </table></div>
+    <div class="small muted" style="margin-top:10px; font-size:11px;">
+      Nilai target di bawah berlaku untuk seluruh program (${escapeHtml(programCodes)}) dan ditulis ke
+      semua baris requirement kategori tersebut. Gunakan <strong>Sebar Rata</strong> untuk
+      membagi kurikulum secara merata ke 8 semester, lalu <strong>Simpan konfigurasi</strong>.
+    </div>
     <div class="mt-16" style="display:flex; gap:8px; justify-content:flex-end;">
+      ${editable ? `<button class="btn sm" id="spread-targets-btn" type="button">Sebar Rata</button>` : ""}
       ${editable ? `<button class="btn primary sm" id="save-targets-btn" type="button">Simpan konfigurasi</button>` : ""}
     </div>`;
 
   const saveBtn = el("save-targets-btn");
   if (saveBtn) saveBtn.addEventListener("click", saveSettings);
+  const spreadBtn = el("spread-targets-btn");
+  if (spreadBtn) spreadBtn.addEventListener("click", spreadTargetsEvenly);
+}
+
+// Membagi target tiap semester secara merata (kumulatif) dengan pembulatan
+// bilangan bulat, sehingga total kurikulum tetap tercapai di semester terakhir.
+function spreadTargetsEvenly() {
+  const host = el("settings-host");
+  let touched = 0;
+  host.querySelectorAll("tbody tr[data-cat]").forEach((tr) => {
+    const cat = tr.dataset.cat;
+    if (!SPREADABLE_CATEGORIES.has(cat)) return;
+    const totalInput = tr.querySelector('input[data-field="total"]');
+    const total = Math.round(Number(totalInput?.value) || Number(tr.dataset.total) || 0);
+    if (!total) return;
+    const n = SEMESTERS.length;
+    // Kurikulum dibagi rata: tiap semester mendapat bagian yang sama
+    // (pembulatan ke atas), nilai kumulatif dan seluruhnya bilangan bulat.
+    SEMESTERS.forEach((s) => {
+      const acc = s === n ? total : Math.round((total * s) / n);
+      const input = tr.querySelector(`input[data-sem="${s}"]`);
+      if (input) input.value = String(acc);
+    });
+    touched++;
+  });
+  if (!touched) {
+    toast("Tidak ada kategori numerik untuk disebar.", "warn");
+    return;
+  }
+  toast("Target disebar rata ke 8 semester. Klik Simpan konfigurasi.", "info");
 }
 
 async function saveSettings() {
   const btn = el("save-targets-btn");
   setBusy(btn, true, "Menyimpan...");
   try {
-    const byId = {};
+    // Nilai dikumpulkan per kategori, lalu ditulis ke SEMUA baris requirement
+    // kategori tersebut (tiap program). Kalau hanya satu baris yang ditulis,
+    // urutan baris dari database bisa membuat baris yang tampil berganti dan
+    // perubahan terlihat "hilang" setelah reload.
+    const byCategory = new Map();
     for (const r of state.requirements) {
-      byId[r.id] = { id: r.id, category: r.category, total_required: r.total_required, targets: { ...(r.targets || {}) } };
+      if (!byCategory.has(r.category)) {
+        byCategory.set(r.category, {
+          total: Number(r.total_required) || 0,
+          targets: { ...(r.targets || {}) },
+        });
+      }
     }
+
     document.querySelectorAll("#settings-host input[data-req], #settings-host select[data-req]").forEach((input) => {
-      const id = input.dataset.req;
-      const row = byId[id];
+      const row = state.requirements.find((r) => r.id === input.dataset.req);
       if (!row) return;
+      const entry = byCategory.get(row.category);
+      if (!entry) return;
+      const v = parseFloat(String(input.value).replace(",", "."));
+      if (Number.isNaN(v)) return;
       if (input.dataset.belingua) {
-        const v = parseFloat(String(input.value).replace(",", "."));
-        if (!Number.isNaN(v)) row.targets[input.dataset.sem] = v;
+        entry.targets[input.dataset.sem] = v;
         return;
       }
-      const v = parseFloat(String(input.value).replace(",", "."));
       if (input.dataset.field === "total") {
-        if (!Number.isNaN(v) && v > 0) {
-          row.total_required = INTEGER_TOTAL_CATEGORIES.has(row.category) ? Math.round(v) : v;
+        if (v > 0) {
+          entry.total = INTEGER_TOTAL_CATEGORIES.has(row.category) ? Math.round(v) : v;
         }
       } else if (input.dataset.sem) {
-        const total = Number(row.total_required) || 0;
-        if (!Number.isNaN(v) && v >= 0 && total > 0) {
-          row.targets[input.dataset.sem] = Math.min(1, v / total);
+        const total = Number(entry.total) || 0;
+        if (v >= 0 && total > 0) {
+          entry.targets[input.dataset.sem] = Math.min(1, v / total);
         }
       }
     });
-    await updateRequirements(Object.values(byId));
+
+    const rows = state.requirements.map((r) => {
+      const entry = byCategory.get(r.category);
+      if (!entry) return { id: r.id, category: r.category, total_required: r.total_required, targets: r.targets };
+      return {
+        id: r.id,
+        category: r.category,
+        total_required: entry.total,
+        targets: { ...entry.targets },
+      };
+    });
+
+    await updateRequirements(rows);
     const reqs = await listRequirements();
     state.requirements = reqs;
     renderSettings();
