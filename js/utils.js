@@ -85,7 +85,13 @@ export function toCsv(rows, headers) {
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const lines = [cols.join(",")];
-  for (const row of rows) lines.push(cols.map((c) => escape(row[c])).join(","));
+  for (const row of rows) {
+    // Baris bisa berupa array (sesuai urutan header) atau object (kunci = header).
+    const values = Array.isArray(row)
+      ? cols.map((_, i) => row[i])
+      : cols.map((c) => row[c]);
+    lines.push(values.map(escape).join(","));
+  }
   return lines.join("\n");
 }
 
