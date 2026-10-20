@@ -352,6 +352,10 @@ function exportPdf(rows) {
 // Hours (comserv, sat) may be fractional.
 const INTEGER_TOTAL_CATEGORIES = new Set(["sks", "belingua", "sertifikasi"]);
 
+// Urutan tampilan kategori bersifat tetap supaya baris tidak berpindah tempat
+// saat data dimuat ulang (urutan hasil query tidak dijamin stabil).
+const CATEGORY_ORDER = ["sks", "comserv", "sat", "belingua", "sertifikasi"];
+
 // Belingua bukan angka 0/1, melainkan status dengan tiga nilai seperti di database
 // (belum_ambil / proses / lulus). Target per semester disimpan sebagai fraksi
 // 0 / 0.5 / 1 agar tetap kompatibel dengan engine (lihat BELINGUA_PROGRESS).
@@ -386,6 +390,8 @@ function renderSettings() {
     grouped[r.category] = grouped[r.category] || [];
     grouped[r.category].push(r);
   }
+  const order = CATEGORY_ORDER.filter((c) => grouped[c])
+    .concat(Object.keys(grouped).filter((c) => !CATEGORY_ORDER.includes(c)));
   const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
   const selectStyle = "min-width:128px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--input-text);border-radius:6px;padding:5px 7px;font-size:11px;";
   const inputStyle = "background:var(--input-bg);border:1px solid var(--input-border);color:var(--input-text);border-radius:6px;padding:5px 7px;";
@@ -393,7 +399,8 @@ function renderSettings() {
     <div class="table-wrap"><table class="data">
       <thead><tr><th>Category</th><th>Curriculum total</th>${semesters.map((s) => `<th>Sem ${s}</th>`).join("")}</tr></thead>
       <tbody>
-        ${Object.values(grouped).map((rows) => {
+        ${order.map((cat) => {
+          const rows = grouped[cat];
           const r = rows[0];
           const isBelingua = r.category === "belingua";
           const totalCell = isBelingua

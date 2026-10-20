@@ -59,7 +59,7 @@ export async function listStudents() {
 }
 
 export async function listRequirements() {
-  return unwrap(await supabase.from("requirements").select("*"));
+  return unwrap(await supabase.from("requirements").select("*").order("category"));
 }
 
 export async function listPrograms() {
