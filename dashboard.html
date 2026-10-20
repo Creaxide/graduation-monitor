@@ -28,7 +28,6 @@
     </header>
 
     <div id="alert" class="hidden"></div>
-    <div id="dummy-banner" class="alert info hidden"></div>
 
     <section class="grid cols-4 mb-24" id="kpi-row">
       <div class="figma-card stat-card stat-card--total">
@@ -84,9 +83,6 @@
     </section>
 
     <div class="table-shell">
-      <div class="flex gap-8 wrap mb-16 no-print" id="test-controls" style="justify-content:flex-start;">
-        <span class="small" id="dummy-note" style="align-self:center; color:rgba(255,255,255,0.85);"></span>
-      </div>
       <div id="table-host">
         <div class="spinner"></div>
       </div>
@@ -95,39 +91,6 @@
     <div class="flex center gap-8 mt-24" style="justify-content:center; color: var(--text-muted); font-size: 12px; font-weight: 500;">
       <span>ℹ️</span>
       <span>Klik baris mahasiswa untuk melihat detail dan rekomendasi prioritas kelulusan.</span>
-    </div>
-
-    <!-- Floating Tools (Optional/Support) -->
-    <div style="position:fixed; bottom:20px; right:20px; display:flex; flex-direction:column; gap:10px; z-index:50;">
-       <button class="btn amber hidden" id="add-student-btn">+ Tambah Mahasiswa</button>
-       <div id="sidebar-tools"></div> <!-- Container for dummy tools box -->
-    </div>
-  </div>
-
-  <div class="modal-backdrop" id="add-modal">
-    <div class="modal">
-      <div class="modal-head">
-        <h2>Tambah data dummy</h2>
-        <button class="x" id="add-close" type="button">&times;</button>
-      </div>
-      <form id="add-form">
-        <div class="grid cols-2" style="gap:0 14px">
-          <div class="field"><label for="a-name">Nama</label><input type="text" id="a-name" required /></div>
-          <div class="field"><label for="a-nim">NIM</label><input type="text" id="a-nim" placeholder="otomatis jika kosong" /></div>
-          <div class="field"><label for="a-program">Program</label>
-            <select id="a-program"><option value="prog-cs">Computer Science</option><option value="prog-is">Information Systems</option></select></div>
-          <div class="field"><label for="a-semester">Semester</label><input type="number" id="a-semester" min="1" max="14" step="1" value="6" /></div>
-          <div class="field"><label for="a-sks">Total SKS lulus</label><input type="number" id="a-sks" min="0" step="1" value="90" /></div>
-          <div class="field"><label for="a-comserv">Jam Comserv</label><input type="number" id="a-comserv" min="0" step="0.01" value="10" /></div>
-          <div class="field"><label for="a-sat">Poin SAT</label><input type="number" id="a-sat" min="0" step="0.01" value="10" /></div>
-          <div class="field"><label for="a-belingua">Status Belingua</label>
-            <select id="a-belingua"><option value="belum_ambil">Belum ambil</option><option value="proses">Proses</option><option value="lulus">Lulus</option></select></div>
-        </div>
-        <div class="flex gap-8" style="justify-content:flex-end; margin-top: 10px;">
-          <button type="button" class="btn" id="add-cancel">Batal</button>
-          <button type="submit" class="btn primary">Simpan & Lihat Detail</button>
-        </div>
-      </form>
     </div>
   </div>
 

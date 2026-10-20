@@ -7,49 +7,6 @@ recommendation engine.
 - **Frontend:** HTML, CSS, vanilla JavaScript (ES modules, no build step)
 - **Backend:** [Supabase](https://supabase.com) (PostgreSQL + Auth + REST API)
 
-## Demo mode (no backend required)
-
-The app ships with a browser-only **dummy data** mode so you can test the UI and
-the recommendation engine immediately. Set the flag in `js/config.js`:
-
-```js
-export const USE_MOCK = true; // false -> use Supabase
-```
-
-Then serve the folder over HTTP and open it. On the login page, use one of the
-demo accounts shown under **AKUN DEMO**:
-
-| Email | Role |
-|---|---|
-| `dosen@binus.ac.id` | Dosen AA |
-| `kaprodi@binus.ac.id` | Kaprodi |
-
-Any password works in demo mode. After signing in, the profile in the header
-reflects the chosen account (`Dosen AA` or `Kaprodi`).
-
-On the dashboard, use **Generate dummy data** (sidebar) to create 40 randomized
-students, or **+ Add student** to craft a single clear-cut case and jump
-straight to its recommendation. **Clear dummy data** removes everything.
-
-Dummy data is generated in memory and stored in `sessionStorage`, so it resets
-when the tab closes. No Supabase project is needed while `USE_MOCK = true`.
-
-The engine (`js/engine.js`) tests cleanly against the dummy set: priorities are
-always returned in descending urgency order (`evaluateStudent(...).priorities`).
-
-### Generate dummy data against Supabase
-
-The sidebar **Generate** button also works with `USE_MOCK = false`: it creates
-the chosen number of random students (with sample failed courses and
-certifications) and **inserts them into Supabase** through the same API the app
-uses. It reads your existing `programs`, `advisors` and `requirements` to
-produce realistic gaps for the recommendation engine.
-
-You must be signed in as a Dosen AA — the `students`/`failed_courses`/
-`certifications` write policies are dosen-only (Kaprodi is read-only). The
-button appends rows; it never deletes existing data.
-
-
 ## Features
 
 - **Login** via Supabase Auth (campus SSO-compatible), role-aware.
@@ -91,16 +48,14 @@ css/styles.css        Design system (tokens + light/dark theme)
 Binusian_logolightmode.png   Logo (light theme)
 Binusian_logodarkmode.png    Logo (dark theme)
 js/
-  config.js           <-- USE_MOCK flag + Supabase URL/anon key
-  data.js             Data access layer (auto-selects mock or Supabase)
+  config.js           <-- Supabase URL/anon key
+  data.js             Data access layer
   supabase-data.js    Supabase implementation
-  mock-data.js        In-browser dummy data + generator
-  dummy.js            Shared random data generator (mock + Supabase)
   errors.js           Shared DataError type
   supabase.js         Supabase client (lazy-loaded)
   engine.js           Rule-based recommendation engine
   theme.js            Light/dark/system theme manager
-  ui.js               Sidebar/layout/auth guard + dummy-data buttons
+  ui.js               Layout/header/auth guard
   utils.js            Helpers
   dashboard.js / student.js / students.js / import-export.js
 sql/
@@ -109,8 +64,6 @@ sql/
 ```
 
 ## Setup (Supabase)
-
-Set `USE_MOCK = false` in `js/config.js` first.
 
 ### 1. Create a Supabase project
 
@@ -142,8 +95,8 @@ in the Figma login screen:
 | `dosen@binus.ac.id` | `dosen_aa` |
 | `kaprodi@binus.ac.id` | `kaprodi` |
 
-In the demo/UI both accounts accept any password, against Supabase they use
-real Supabase Auth passwords. A `profiles` row is created automatically per
+In the login page these accounts are listed as demo accounts; they use real
+Supabase Auth passwords. A `profiles` row is created automatically per
 user. Then run the matching SQL in the SQL Editor:
 
 ```sql

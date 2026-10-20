@@ -1,11 +1,10 @@
-import { initLayout, mountTestControls } from "./ui.js";
+import { initLayout } from "./ui.js";
 import {
   loadDashboard, listFailedCourses, listCertifications,
-  isMock, mockHasData, mockAddStudent,
 } from "./data.js";
 import { evaluateStudent } from "./engine.js";
 import {
-  el, escapeHtml, debounce, toast,
+  el, escapeHtml, debounce,
 } from "./utils.js";
 
 let state = { rows: [], requirements: [], filter: { q: "", semester: "", status: "" } };
@@ -128,50 +127,6 @@ function wireFilters() {
   el("f-status").addEventListener("change", (e) => { state.filter.status = e.target.value; renderTable(applyFilters()); });
 }
 
-function wireDummyTools() {
-  if (!isMock) return;
-  const banner = el("dummy-banner");
-  if (banner) {
-    banner.classList.remove("hidden");
-    if (!mockHasData()) {
-      banner.className = "alert warn";
-      banner.innerHTML = "Belum ada data dummy. Gunakan tombol <strong>+ Tambah Dummy</strong> untuk mengisi data uji.";
-    } else {
-      banner.className = "alert info";
-      banner.innerHTML = `<strong>Mode Demo.</strong> Menampilkan ${state.rows.length} mahasiswa hasil generate. Data tersimpan di sesi browser saat ini.`;
-    }
-  }
-
-  const addBtn = el("add-student-btn");
-  addBtn.classList.remove("hidden");
-  const modal = el("add-modal");
-  const close = () => modal.classList.remove("open");
-  addBtn.addEventListener("click", () => modal.classList.add("open"));
-  el("add-close").addEventListener("click", close);
-  el("add-cancel").addEventListener("click", close);
-  modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
-
-  el("add-form").addEventListener("submit", (e) => {
-    e.preventDefault();
-    try {
-      const student = mockAddStudent({
-        name: el("a-name").value.trim() || undefined,
-        nim: el("a-nim").value.trim() || undefined,
-        program_id: el("a-program").value,
-        current_semester: Number(el("a-semester").value),
-        total_sks_passed: Number(el("a-sks").value),
-        comserv_hours: Number(el("a-comserv").value),
-        sat_hours: Number(el("a-sat").value),
-        belingua_status: el("a-belingua").value,
-      });
-      toast("Mahasiswa berhasil ditambahkan.", "success");
-      window.location.href = `student.html?id=${student.id}`;
-    } catch (err) {
-      toast(err.message, "error");
-    }
-  });
-}
-
 (async function main() {
   const session = await initLayout({
     active: "dashboard.html",
@@ -180,7 +135,6 @@ function wireDummyTools() {
   });
   if (!session) return;
   wireFilters();
-  mountTestControls(session.profile);
   try {
     const { students, requirements } = await loadDashboard();
     state.requirements = requirements;
@@ -188,7 +142,6 @@ function wireDummyTools() {
     updateKpis();
     populateSemesterFilter();
     renderTable(applyFilters());
-    wireDummyTools();
   } catch (err) {
     el("table-host").innerHTML = "";
     const box = el("alert");

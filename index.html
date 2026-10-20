@@ -71,7 +71,7 @@
   </main>
 
   <script type="module">
-    import { getSession, signIn, isMock } from "./js/data.js";
+    import { getSession, signIn } from "./js/data.js";
     import { setBusy } from "./js/utils.js";
     import { initTheme, mountThemeToggle } from "./js/theme.js";
 
@@ -86,11 +86,6 @@
       alertBox.style.maxWidth = "380px";
       alertBox.style.margin = "0 auto 16px";
       alertBox.textContent = message;
-    }
-
-    if (isMock) {
-      document.getElementById("email").value = "dosen@binus.ac.id";
-      document.getElementById("password").value = "demo1234";
     }
 
     (async () => {

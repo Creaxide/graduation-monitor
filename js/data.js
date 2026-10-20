@@ -1,26 +1,12 @@
 import { DataError } from "./errors.js";
-import { USE_MOCK } from "./config.js";
 
 export { DataError };
-export const isMock = USE_MOCK;
 
 let implPromise = null;
 
 function impl() {
-  if (!implPromise) {
-    implPromise = USE_MOCK
-      ? import("./mock-data.js")
-      : import("./supabase-data.js");
-  }
+  if (!implPromise) implPromise = import("./supabase-data.js");
   return implPromise;
-}
-
-// In mock mode the active module is known synchronously, which lets pages show
-// demo controls before any data call resolves. In Supabase mode pages wait for
-// the first async call, at which point the client has loaded.
-let active = null;
-if (USE_MOCK) {
-  import("./mock-data.js").then((m) => { active = m; });
 }
 
 function required(name) {
@@ -52,31 +38,3 @@ export const insertCertifications = required("insertCertifications");
 export const updateRequirements = required("updateRequirements");
 export const logAudit = required("logAudit");
 export const studentIdsByNim = required("studentIdsByNim");
-
-// Generate + persist random students using the active backend (mock or Supabase).
-export const seedDummyData = required("seedDummyData");
-
-// ---------------------------------------------------- dummy-data controls --
-
-function notAvailable() {
-  throw new DataError(
-    "Dummy data tools require demo mode. Set USE_MOCK = true in js/config.js."
-  );
-}
-
-export function mockHasData() {
-  return USE_MOCK ? !!active?.mockHasData?.() : false;
-}
-
-export function mockGenerate(opts) {
-  return USE_MOCK ? active.mockGenerate(opts) : notAvailable();
-}
-
-export function mockAddStudent(overrides) {
-  return USE_MOCK ? active.mockAddStudent(overrides) : notAvailable();
-}
-
-export function mockClear() {
-  if (USE_MOCK) active.mockClear();
-}
-

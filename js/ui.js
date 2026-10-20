@@ -1,8 +1,5 @@
-import {
-  getCurrentUser, getProfile, signOut, isMock,
-  mockHasData, mockClear, seedDummyData,
-} from "./data.js";
-import { escapeHtml, toast, setBusy, el } from "./utils.js";
+import { getCurrentUser, getProfile, signOut } from "./data.js";
+import { escapeHtml } from "./utils.js";
 import { initTheme, mountThemeToggle } from "./theme.js";
 
 const NAV = [
@@ -90,36 +87,6 @@ function setPageHeading(title, subtitle) {
   }
 }
 
-export function mountTestControls(profile) {
-  const btn = el("dummy-btn");
-  // Kaprodi is read-only: hide every control that writes.
-  if (profile?.role === "kaprodi") {
-    el("test-controls")?.classList.add("hidden");
-    return;
-  }
-  const clear = el("dummy-clear");
-  const note = el("dummy-note");
-  if (!btn) return;
-
-  if (note) {
-    note.textContent = isMock
-      ? "Menghasilkan data dummy lokal."
-      : "Menghasilkan data uji ke Supabase.";
-  }
-  if (clear && isMock) {
-    clear.classList.remove("hidden");
-    clear.addEventListener("click", () => {
-      if (!mockHasData()) return toast("Tidak ada data dummy untuk dihapus.", "warn");
-      if (!window.confirm("Hapus semua data dummy?")) return;
-      mockClear();
-      toast("Data dummy dibersihkan.", "info");
-      setTimeout(() => window.location.reload(), 400);
-    });
-  }
-
-  btn.addEventListener("click", async () => handleGenerate(btn, 1));
-}
-
 function wireChrome() {
   const logout = document.getElementById("logout-btn");
   if (logout) {
@@ -129,31 +96,4 @@ function wireChrome() {
     });
   }
 
-}
-
-export async function handleGenerate(button, forceOne = 0) {
-  const countInput = document.getElementById("dummy-count");
-  const count = forceOne ? 1 : Math.min(100, Math.max(1, Number(countInput?.value) || 10));
-
-  if (isMock) {
-    if (mockHasData() && !window.confirm("Data dummy sudah ada. Hasilkan ulang dan ganti semuanya?")) return;
-  } else if (!window.confirm(`Masukkan ${count} data mahasiswa acak ke Supabase? Tindakan ini menulis ke basis data langsung.`)) {
-    return;
-  }
-
-  setBusy(button, true, "...");
-  try {
-    const summary = await seedDummyData(count);
-    const parts = [`${summary.students} mahasiswa`];
-    if (summary.failed) parts.push(`${summary.failed} mata kuliah tidak lulus`);
-    if (summary.certs) parts.push(`${summary.certs} sertifikasi`);
-    toast(`Berhasil memasukkan ${parts.join(", ")}.`, "success");
-    if (summary.errors && summary.errors.length) {
-      toast(`${summary.errors.length} data gagal — ${summary.errors[0]}`, "warn");
-    }
-    setTimeout(() => window.location.reload(), 800);
-  } catch (err) {
-    toast(err.message || "Gagal menghasilkan data dummy.", "error");
-    setBusy(button, false);
-  }
 }

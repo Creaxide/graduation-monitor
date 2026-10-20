@@ -387,7 +387,7 @@ a:hover { text-decoration: underline; }
 
 /* legacy .app-shell still present — repurpose to column layout */
 .app-shell { display: block; min-height: auto; }
-.sidebar { display: none !important; }           /* hide dark sidebar; its dummy box moves elsewhere */
+.sidebar { display: none !important; }           /* hide the legacy dark sidebar */
 .main { display: block; min-width: 0; }
 .topbar { display: none !important; }            /* page titles now in .content head */
 .page-wrap, .content {
@@ -689,22 +689,6 @@ table.data tbody tr:hover td { background: var(--table-row-hover); }
 }
 .dropzone.dragover { border-color: var(--binus-blue); background: #f0f9ff; color: var(--binus-blue-dark); }
 [data-theme="dark"] .dropzone.dragover { border-color: #3b82f6; background: rgba(59, 130, 246, 0.12); color: #9fc0f7; }
-
-/* Keep the old sidebar dummy box visible as a floating card on the dashboard */
-.dummy-box {
-  border: 1.5px dashed var(--card-border);
-  border-radius: 10px;
-  padding: 12px;
-  background: var(--table-row-alt);
-  display: flex; flex-direction: column; gap: 8px;
-}
-.dummy-box .dummy-tag { font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #ffd479; }
-[data-theme="dark"] .dummy-box .dummy-tag { color: #f0b429; }
-.dummy-box .dummy-row { display: flex; gap: 8px; }
-.dummy-box .dummy-row input[type="number"] { width: 56px; padding: 7px 8px; text-align: center; background: var(--input-bg); border: 1.5px solid var(--input-border); color: var(--input-text); border-radius: 8px; font-family: inherit; font-size: 12px; }
-.dummy-box .dummy-row input[type="number"]:focus { outline: none; border-color: var(--binus-blue); }
-.dummy-box .dummy-row .dummy-btn { flex: 1; }
-.dummy-box .dummy-note { font-size: 10px; color: var(--on-card-soft); }
 
 /* Breadcrumbs */
 .breadcrumb { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
