@@ -43,13 +43,13 @@ function priorityText(p) {
     return { title: "Kejar kekurangan SKS", desc: `Susun kontrak studi maksimal dan prioritaskan ${gap} SKS yang belum lulus.` };
   }
   if (p.category === "comserv") {
-    return { title: "Community Service", desc: `Kurang ${Math.ceil(p.gap)} jam dari target ${formatNumber(p.total)} jam` };
+    return { title: "Community Service", desc: `Kurang ${Math.ceil(p.gap)} jam dari target ${formatNumber(p.targetValue)} jam semster ini` };
   }
   if (p.category === "sat") {
-    return { title: "SAT (Student Activity)", desc: `Kurang ${Math.ceil(p.gap)} jam dari target ${formatNumber(p.total)} Point` };
+    return { title: "SAT (Student Activity)", desc: `Kurang ${Math.ceil(p.gap)} point dari target ${formatNumber(p.targetValue)} Point semester ini` };
   }
   if (p.category === "belingua") {
-    return { title: "Belingua", desc: `Status saat ini: ${belinguaLabel(p.raw.status)}. Belum memenuhi syarat kemampuan bahasa Inggris.` };
+    return { title: "Belingua", desc: `Status saat ini: ${belinguaLabel(p.raw.status)}. Segera mulai menyelesaikan beelingua.` };
   }
   if (p.category === "sertifikasi") {
     return { title: "Sertifikasi", desc: `Kurang ${Math.ceil(p.gap)} sertifikat dari target.` };
