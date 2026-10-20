@@ -19,13 +19,79 @@ const CERT_FIELDS = ["cert_name", "cert_required", "cert_obtained", "cert_obtain
 const TEMPLATE = {
   headers: ["nim", ...STUDENT_FIELDS, ...COURSE_FIELDS, ...CERT_FIELDS],
   sample: [
-    ["2702314920", "Andi Pratama", "CS", "D001", "2023", "6", "aktif", "126", "26", "20", "proses", "480", "", "", "", "", "", "Sertifikasi Kompetensi Pemrograman", "true", "true", "2025-06-01"],
-    ["2702314921", "Bella Kartika", "IS", "D002", "2023", "5", "aktif", "110", "24", "18", "belum_ambil", "450", "COMP6047", "Algoritma dan Pemrograman", "4", "D", "2", "", "", "", ""],
-    ["2702314921", "", "", "", "", "", "", "", "", "", "", "", "COMP6048", "Struktur Data", "4", "E", "3", "", "", "", ""],
-    ["2702314922", "Chandra Wijaya", "CS", "D001", "2022", "7", "aktif", "130", "30", "25", "proses", "500", "", "", "", "", "", "", "", "", ""],
+    ["2702314921", "Bella Kartika", "CS", "D001", "2023", "6", "aktif", "110", "24", "18", "proses", "450", "COMP6047", "Algoritma dan Pemrograman", "4", "D", "2", "Sertifikasi Kompetensi Pemrograman", "true", "true", "2025-06-01"],
   ],
   hint: "Satu file untuk semua data. Wajib: nim (mahasiswa baru juga wajib name). Kolom MK tidak lulus (kode_mk, nama_mk wajib bila diisi) dan sertifikasi (cert_name wajib bila diisi) boleh dikosongkan. Untuk banyak MK/sertifikasi per mahasiswa, ulangi NIM di baris baru. cert_required/cert_obtained menerima true/false atau 1/0.",
 };
+
+// Contoh 1 mahasiswa untuk ditampilkan di halaman sebagai panduan format.
+const TEMPLATE_EXAMPLE = {
+  nim: "2702314921",
+  name: "Bella Kartika",
+  program_code: "CS",
+  advisor_kode: "D001",
+  angkatan: "2023",
+  current_semester: "6",
+  status: "aktif",
+  total_sks_passed: "110",
+  comserv_hours: "24",
+  sat_hours: "18",
+  belingua_status: "proses",
+  belingua_score: "450",
+  kode_mk: "COMP6047",
+  nama_mk: "Algoritma dan Pemrograman",
+  sks: "4",
+  nilai: "D",
+  semester_taken: "2",
+  cert_name: "Sertifikasi Kompetensi Pemrograman",
+  cert_required: "true",
+  cert_obtained: "true",
+  cert_obtained_at: "2025-06-01",
+};
+
+const TEMPLATE_EXAMPLE_GROUPS = [
+  {
+    title: "Identitas Mahasiswa",
+    fields: [
+      ["nim", "NIM"],
+      ["name", "Nama"],
+      ["program_code", "Kode Program"],
+      ["advisor_kode", "Kode Dosen"],
+      ["angkatan", "Angkatan"],
+      ["current_semester", "Semester Saat Ini"],
+      ["status", "Status"],
+    ],
+  },
+  {
+    title: "Capaian",
+    fields: [
+      ["total_sks_passed", "Total SKS Lulus"],
+      ["comserv_hours", "Jam Comserv"],
+      ["sat_hours", "Poin SAT"],
+      ["belingua_status", "Status Belingua"],
+      ["belingua_score", "Skor Belingua"],
+    ],
+  },
+  {
+    title: "Mata Kuliah Tidak Lulus",
+    fields: [
+      ["kode_mk", "Kode MK"],
+      ["nama_mk", "Nama MK"],
+      ["sks", "SKS MK"],
+      ["nilai", "Nilai"],
+      ["semester_taken", "Semester Diambil"],
+    ],
+  },
+  {
+    title: "Sertifikasi",
+    fields: [
+      ["cert_name", "Nama Sertifikasi"],
+      ["cert_required", "Wajib"],
+      ["cert_obtained", "Diperoleh"],
+      ["cert_obtained_at", "Tanggal Diperoleh"],
+    ],
+  },
+];
 
 let state = { students: [], requirements: [], programs: [], advisors: [], selectedFile: null, profile: null, canEditRequirements: false };
 
@@ -498,6 +564,33 @@ function clampInt(v, min, max) { return Math.min(max, Math.max(min, toInt(v))); 
 
 function updateTemplateUI() {
   el("template-hint").textContent = `${TEMPLATE.hint} Kolom: ${TEMPLATE.headers.join(", ")}`;
+  renderTemplateExample();
+}
+
+function renderTemplateExample() {
+  const host = el("template-example");
+  if (!host) return;
+  const groups = TEMPLATE_EXAMPLE_GROUPS.map((g) => `
+    <div style="margin-bottom:14px;">
+      <div style="font-size:10px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px;">${escapeHtml(g.title)}</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:8px;">
+        ${g.fields.map(([key, label]) => `
+          <div style="background:var(--input-bg); border:1px solid var(--input-border); border-radius:8px; padding:8px 10px;">
+            <div style="font-size:10px; color:var(--text-muted);">${escapeHtml(label)}</div>
+            <div class="mono" style="font-size:12px; font-weight:600; color:var(--text-strong); word-break:break-word;">${escapeHtml(TEMPLATE_EXAMPLE[key] || "—")}</div>
+            <div style="font-size:10px; color:var(--text-muted);">${escapeHtml(key)}</div>
+          </div>`).join("")}
+      </div>
+    </div>`).join("");
+
+  host.innerHTML = `
+    <div class="theme-surface" style="border-radius:10px; padding:16px 18px;">
+      ${groups}
+      <div style="font-size:11px; color:var(--text-muted);">
+        Contoh di atas adalah 1 baris template untuk 1 mahasiswa (beserta 1 MK tidak lulus dan 1 sertifikasi).
+        Tombol Unduh Template menghasilkan contoh yang sama dalam bentuk berkas CSV.
+      </div>
+    </div>`;
 }
 
 function wire() {
