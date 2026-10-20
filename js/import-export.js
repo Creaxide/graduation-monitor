@@ -403,6 +403,7 @@ function renderSettings() {
               : formatNumber(r.total_required);
           return `<tr data-req="${r.id}">
             <td><strong>${escapeHtml(r.label)}</strong></td>
+            <td>${totalCell}</td>
             ${semesters.map((s) => {
               if (isBelingua) {
                 const current = belinguaTargetValue(r.targets?.[s]);
