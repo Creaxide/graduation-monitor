@@ -57,9 +57,32 @@ function priorityText(p) {
   return { title: p.label, desc: priorityReason(p) };
 }
 
-function riskTextFor(overall) {
-  if (overall === "danger") return "Berisiko tidak lulus tepat waktu. Tindak lanjuti rekomendasi prioritas segera.";
-  if (overall === "warn") return "Perlu perhatian. Berpotensi lulus tepat waktu jika rekomendasi ditindaklanjuti semester ini.";
+// Cara menyebut kekurangan satu indikator dalam kalimat ringkas. Formatnya
+// sengaja sama dengan daftar "Rekomendasi prioritas" di atasnya, supaya angka
+// yang dibaca Dosen di kedua tempat itu sama.
+function categoryShortfallText(cat) {
+  if (cat.category === "belingua") {
+    return `Belingua belum lulus (${belinguaLabel(cat.raw?.status)})`;
+  }
+  if (cat.category === "sertifikasi") {
+    return `kurang ${Math.ceil(cat.gap)} sertifikat dari target semester ini`;
+  }
+  const unit = cat.category === "sks" ? "SKS" : cat.category === "comserv" ? "jam" : "poin";
+  return `kurang ${formatNumber(cat.gap)} ${unit} dari target semester ini`;
+}
+
+// Ringkasan risiko selalu menyebut penyebabnya saat status turun, supaya badge
+// SEDANG tidak terlihat bertentangan dengan indikator yang masih MENDESAK.
+function riskTextFor(result) {
+  if (result.overall === "danger") return "Berisiko tidak lulus tepat waktu. Tindak lanjuti rekomendasi prioritas segera.";
+  if (result.overall === "warn") {
+    const urgent = result.categories.filter((c) => c.status === "danger");
+    if (urgent.length === 1) {
+      const c = urgent[0];
+      return `Perlu perhatian. Satu indikator masih mendesak (${c.label} ${categoryShortfallText(c)}), tetapi masih ada ${c.remainingSemesters} semester untuk mengejarnya.`;
+    }
+    return "Perlu perhatian. Berpotensi lulus tepat waktu jika rekomendasi ditindaklanjuti semester ini.";
+  }
   return "Sesuai target. Pertahankan progres agar lulus tepat waktu.";
 }
 
@@ -229,7 +252,7 @@ function openStudentReport(result) {
       <div class="risk">
         <div>
           <div style="font-size:11px;font-weight:800;letter-spacing:0.06em;color:#0b7fb8;">ESTIMASI RISIKO</div>
-          <div style="font-size:12px;margin-top:4px;">${escapeHtml(riskTextFor(result.overall))}</div>
+          <div style="font-size:12px;margin-top:4px;">${escapeHtml(riskTextFor(result))}</div>
         </div>
         <span class="pill">${overallId}</span>
       </div>
@@ -425,7 +448,7 @@ function render(result) {
               </span>
             </div>
             <div style="font-size:12px; color:rgba(255,255,255,0.92); line-height:1.4;">
-              ${escapeHtml(riskTextFor(result.overall))}
+              ${escapeHtml(riskTextFor(result))}
             </div>
           </div>
         </section>

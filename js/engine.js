@@ -1,6 +1,11 @@
 export const GRADUATION_SEMESTER = 8;
 export const MAX_SEMESTER = 14;
 
+// Batas "hampir memenuhi target": kategori dengan capaian >= 75% dari target
+// semester hanya menaikkan ringkasan risiko ke PERHATIAN, bukan MENDESAK,
+// selama masih ada lebih dari 2 semester untuk mengejar kekurangannya.
+export const NEAR_MISS_RATIO = 0.75;
+
 export const CATEGORY_META = {
   sks: { label: "SKS", unit: "SKS", icon: "SKS" },
   comserv: { label: "Comserv", unit: "jam", icon: "CS" },
@@ -257,10 +262,18 @@ export function evaluateStudent(student, requirements, failedCourses = [], certi
     .sort((a, b) => b.urgency - a.urgency)
     .map((c, i) => ({ ...c, rank: i + 1 }));
 
-  const overall = categories.reduce(
-    (worst, c) => (STATUS_RANK[c.status] > STATUS_RANK[worst] ? c.status : worst),
-    "safe"
-  );
+  // Overall bukan sekadar status terburuk. Satu indikator yang tertinggal tipis
+  // (masih >= NEAR_MISS_RATIO dari target semester) dan masih punya lebih dari
+  // 2 semester tidak boleh menenggelamkan indikator lain yang sudah aman.
+  // Badge per kategori tetap jujur MENDESAK; hanya ringkasannya yang SEDANG.
+  // Semester 7-8 tetap ketat: di sana tidak ada lagi waktu untuk mengejar.
+  const urgent = categories.filter((c) => c.status === "danger");
+  const nearMiss = urgent.length === 1
+    && urgent[0].remainingSemesters > 2
+    && urgent[0].ratio >= NEAR_MISS_RATIO;
+  const overall = urgent.length === 0
+    ? (categories.some((c) => c.status === "warn") ? "warn" : "safe")
+    : nearMiss ? "warn" : "danger";
 
   const failed = failedCourses.map((f) => ({
     ...f,
