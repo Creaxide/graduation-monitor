@@ -60,6 +60,10 @@ create table if not exists students (
   belingua_score   numeric,
   -- false = mahasiswa tidak dipantau lagi di dashboard (diredupkan), data tetap utuh.
   is_active      boolean not null default true,
+  -- Alasan mahasiswa dinonaktifkan dari pemantauan (diisi Dosen AA saat menonaktifkan).
+  deactivate_reason text,
+  -- Waktu mahasiswa terakhir dinonaktifkan dari pemantauan.
+  deactivated_at   timestamptz,
   created_at     timestamptz default now(),
   updated_at     timestamptz default now()
 );
@@ -317,6 +321,10 @@ alter table students alter column sat_hours type numeric(6,2);
 -- Keaktifan mahasiswa (menambah kolom untuk database yang dibuat sebelum fitur ini ada).
 alter table students add column if not exists is_active boolean not null default true;
 create index if not exists idx_students_active on students (advisor_id, is_active);
+
+-- Alasan & waktu penonaktifan (fitur alasan nonaktif).
+alter table students add column if not exists deactivate_reason text;
+alter table students add column if not exists deactivated_at timestamptz;
 
 alter table requirements drop constraint if exists requirements_sks_total_integral;
 alter table requirements add constraint requirements_sks_total_integral

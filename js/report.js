@@ -38,7 +38,7 @@ export function priorityText(p) {
     return { title: "Kejar kekurangan SKS", desc: `Susun kontrak studi maksimal dan prioritaskan ${gap} SKS yang belum lulus.` };
   }
   if (p.category === "comserv") {
-    return { title: "Community Service", desc: `Kurang ${Math.ceil(p.gap)} jam dari target ${formatNumber(p.targetValue)} jam semster ini` };
+    return { title: "Community Service", desc: `Kurang ${Math.ceil(p.gap)} jam dari target ${formatNumber(p.targetValue)} jam semester ini` };
   }
   if (p.category === "sat") {
     return { title: "SAT (Student Activity)", desc: `Kurang ${Math.ceil(p.gap)} point dari target ${formatNumber(p.targetValue)} Point semester ini` };

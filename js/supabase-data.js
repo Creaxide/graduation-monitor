@@ -116,21 +116,38 @@ export async function updateStudent(id, patch) {
 
 // Aktif / nonaktifkan banyak mahasiswa sekaligus dalam satu request.
 // Nonaktif bukan penghapusan: hanya berhenti dipantau di dashboard.
-export async function setStudentsActive(ids, active) {
+//
+// `reason` hanya dipakai saat menonaktifkan: alasan ini disimpan di
+// deactivate_reason supaya bisa dibaca lagi di halaman detail mahasiswa.
+// Saat diaktifkan kembali, alasan lama dibersihkan (riwayat tetap ada di
+// audit log).
+export async function setStudentsActive(ids, active, reason = "") {
   const clean = (ids || []).filter(Boolean);
   if (!clean.length) return [];
+  const text = String(reason || "").trim();
+  const patch = active
+    ? { is_active: true, deactivate_reason: null, deactivated_at: null }
+    : {
+        is_active: false,
+        deactivate_reason: text || null,
+        deactivated_at: new Date().toISOString(),
+      };
   const rows = unwrap(
     await supabase
       .from("students")
-      .update({ is_active: Boolean(active) })
+      .update(patch)
       .in("id", clean)
-      .select("id, is_active")
+      .select("id, is_active, deactivate_reason, deactivated_at")
   );
   await logAudit({
     entity: "students",
     entity_id: clean.join(","),
     action: active ? "activate_students" : "deactivate_students",
-    detail: { ids: clean, count: clean.length },
+    detail: {
+      ids: clean,
+      count: clean.length,
+      reason: active ? null : text || null,
+    },
   });
   return rows;
 }

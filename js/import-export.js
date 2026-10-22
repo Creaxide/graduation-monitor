@@ -10,7 +10,7 @@ import {
   el, escapeHtml, formatNumber, toast, downloadFile, toCsv, setBusy, printHtmlDocument,
 } from "./utils.js";
 
-const STUDENT_FIELDS = ["name", "program_code", "advisor_kode", "angkatan", "current_semester", "status", "total_sks_passed", "comserv_hours", "sat_hours", "belingua_status", "belingua_score", "is_active"];
+const STUDENT_FIELDS = ["name", "program_code", "advisor_kode", "angkatan", "current_semester", "status", "total_sks_passed", "comserv_hours", "sat_hours", "belingua_status", "belingua_score", "is_active", "deactivate_reason"];
 const COURSE_FIELDS = ["kode_mk", "nama_mk", "sks", "nilai", "semester_taken"];
 const CERT_FIELDS = ["cert_name", "cert_required", "cert_obtained", "cert_obtained_at"];
 
@@ -19,9 +19,9 @@ const CERT_FIELDS = ["cert_name", "cert_required", "cert_obtained", "cert_obtain
 const TEMPLATE = {
   headers: ["nim", ...STUDENT_FIELDS, ...COURSE_FIELDS, ...CERT_FIELDS],
   sample: [
-    ["2702314921", "Bella Kartika", "CS", "D001", "2023", "6", "aktif", "110", "24", "18", "proses", "450", "true", "COMP6047", "Algoritma dan Pemrograman", "4", "D", "2", "Sertifikasi Kompetensi Pemrograman", "true", "true", "2025-06-01"],
+    ["2702314921", "Bella Kartika", "CS", "D001", "2023", "6", "aktif", "110", "24", "18", "proses", "450", "true", "", "COMP6047", "Algoritma dan Pemrograman", "4", "D", "2", "Sertifikasi Kompetensi Pemrograman", "true", "true", "2025-06-01"],
   ],
-  hint: "Satu file untuk semua data. Wajib: nim (mahasiswa baru juga wajib name). Kolom MK tidak lulus (kode_mk, nama_mk wajib bila diisi) dan sertifikasi (cert_name wajib bila diisi) boleh dikosongkan. Untuk banyak MK/sertifikasi per mahasiswa, ulangi NIM di baris baru. cert_required/cert_obtained/is_active menerima true/false atau 1/0.",
+  hint: "Satu file untuk semua data. Wajib: nim (mahasiswa baru juga wajib name). Kolom MK tidak lulus (kode_mk, nama_mk wajib bila diisi) dan sertifikasi (cert_name wajib bila diisi) boleh dikosongkan. Untuk banyak MK/sertifikasi per mahasiswa, ulangi NIM di baris baru. cert_required/cert_obtained/is_active menerima true/false atau 1/0. deactivate_reason diisi kalau is_active=false (alasan mahasiswa dinonaktifkan dari pemantauan).",
 };
 
 let state = { students: [], requirements: [], programs: [], advisors: [], selectedFile: null, profile: null, canEditRequirements: false };
@@ -134,6 +134,15 @@ async function runImport() {
       if (merged.belingua_score) patch.belingua_score = toNum(merged.belingua_score);
       if (merged.angkatan) patch.angkatan = toInt(merged.angkatan);
       if (merged.is_active) patch.is_active = truthy(merged.is_active);
+      // Alasan nonaktif hanya relevan kalau mahasiswa memang dinonaktifkan.
+      if (merged.deactivate_reason) {
+        patch.deactivate_reason = String(merged.deactivate_reason).trim().slice(0, 500);
+      }
+      // CSV menyatakan mahasiswa ini nonaktif: catat waktu penonaktifannya juga.
+      if (patch.is_active === false) {
+        patch.deactivate_reason = patch.deactivate_reason || "Dinonaktifkan lewat import CSV.";
+        patch.deactivated_at = new Date().toISOString();
+      }
 
       const program = resolveProgram(merged.program_code);
       const advisor = resolveAdvisor(merged.advisor_kode);
@@ -162,6 +171,8 @@ async function runImport() {
           belingua_status: patch.belingua_status || "belum_ambil",
           belingua_score: patch.belingua_score ?? null,
           is_active: patch.is_active ?? true,
+          deactivate_reason: patch.is_active === false ? patch.deactivate_reason ?? null : null,
+          deactivated_at: patch.is_active === false ? patch.deactivated_at ?? null : null,
         };
         try { await insertStudent(row); stats.students++; }
         catch (e) { fail(line, e.message); failedNims.add(nim); }
@@ -319,6 +330,7 @@ function toExportRow(r) {
     Belingua: r.student.belingua_status,
     Overall_status: STATUS_LABEL[r.overall],
     Is_active: r.student.is_active === false ? "false" : "true",
+    Deactivate_reason: r.student.deactivate_reason || "",
     Priority_1: r.priorities[0]?.label || "",
     Priority_2: r.priorities[1]?.label || "",
     Priority_3: r.priorities[2]?.label || "",

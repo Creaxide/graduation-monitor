@@ -788,3 +788,73 @@ table.data tbody tr.is-inactive .btn-detail { opacity: 0.7; }
 .bulk-count { font-size: 13px; font-weight: 600; }
 .bulk-count b { font-weight: 800; }
 .bulk-actions { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+
+/* ---------------------------------------------------------------------------
+   Alasan nonaktif mahasiswa
+   --------------------------------------------------------------------------- */
+
+/* Alasan di dalam baris tabel (dashboard & daftar mahasiswa). */
+table.data tbody td .cell-reason {
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--on-card-faint);
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+table.data tbody td .cell-reason.muted { opacity: 0.65; font-style: italic; }
+
+/* Pilihan alasan siap pakai di modal. */
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; }
+.chip {
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--on-card);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.12s ease;
+}
+.chip:hover { filter: brightness(1.08); }
+.chip:focus-visible { outline: 2px solid var(--binus-blue-dark); outline-offset: 2px; }
+
+/* Kotak alasan di halaman detail mahasiswa. */
+.inactive-note {
+  margin-bottom: 18px;
+  padding: 14px 18px;
+  border-radius: var(--card-radius);
+  border: 1.5px solid rgba(220, 38, 38, 0.45);
+  background: rgba(220, 38, 38, 0.10);
+  color: var(--text-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.inactive-note-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.inactive-note-head strong { font-size: 14px; font-weight: 800; }
+.inactive-note-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 999px;
+  background: #dc2626; color: #fff;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
+}
+.inactive-note-body { display: flex; flex-direction: column; gap: 8px; }
+.inactive-note-row { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.inactive-note-label {
+  flex: 0 0 120px;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.inactive-note-value { flex: 1 1 240px; font-size: 13px; line-height: 1.5; }
+.inactive-note-value em { opacity: 0.7; }
+.inactive-note-foot {
+  font-size: 11px; line-height: 1.5;
+  color: var(--text-muted);
+  border-top: 1px solid var(--card-border);
+  padding-top: 9px;
+}

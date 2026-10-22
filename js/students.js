@@ -61,6 +61,12 @@ function render() {
               <td class="nim">${escapeHtml(s.nim)}</td>
               <td style="font-weight:700">${escapeHtml(s.name)}${
                 isActive(s) ? "" : ' <span class="badge off">NONAKTIF</span>'
+              }${
+                isActive(s)
+                  ? ""
+                  : `<div class="cell-reason" title="${escapeHtml(s.deactivate_reason || "")}">Alasan: ${
+                      s.deactivate_reason ? escapeHtml(s.deactivate_reason) : "tidak dicatat"
+                    }</div>`
               }</td>
               <td style="color:rgba(255,255,255,0.92)">${escapeHtml(s.programs?.code || "-")}</td>
               <td style="text-align:center">${s.current_semester}</td>

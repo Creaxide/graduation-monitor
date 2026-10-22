@@ -106,9 +106,57 @@ function render(result) {
   const fakultasLine = (s.programs?.name || "").includes("Sistem") ? "Fakultas Teknologi Informasi" : facultyName;
   const ipkText = s.ipk != null && s.ipk !== "" ? Number(s.ipk).toFixed(2).replace(".", ",") : "-";
 
+  // Mahasiswa yang dinonaktifkan: alasannya yang dicatat saat penonaktifan
+  // ditampilkan di atas supaya langsung terlihat tanpa membuka menu lain.
+  const isInactive = s.is_active === false;
+  const reasonText = String(s.deactivate_reason || "").trim();
+  let deactivatedAt = "";
+  if (s.deactivated_at) {
+    const d = new Date(s.deactivated_at);
+    if (!Number.isNaN(d.getTime())) {
+      deactivatedAt = d.toLocaleString("id-ID", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+  }
+  const inactiveBanner = isInactive
+    ? `
+    <section class="inactive-note">
+      <div class="inactive-note-head">
+        <span class="inactive-note-badge">NONAKTIF</span>
+        <strong>Mahasiswa ini sedang tidak dipantau.</strong>
+      </div>
+      <div class="inactive-note-body">
+        <div class="inactive-note-row">
+          <span class="inactive-note-label">Alasan</span>
+          <span class="inactive-note-value">${
+            reasonText ? escapeHtml(reasonText) : "<em>Tidak dicatat.</em>"
+          }</span>
+        </div>
+        ${
+          deactivatedAt
+            ? `<div class="inactive-note-row">
+                 <span class="inactive-note-label">Dinonaktifkan</span>
+                 <span class="inactive-note-value">${escapeHtml(deactivatedAt)}</span>
+               </div>`
+            : ""
+        }
+      </div>
+      <div class="inactive-note-foot">
+        Data akademik mahasiswa tetap tersimpan dan tidak dihapus. Gunakan menu
+        <strong>Aktifkan</strong> di dashboard untuk mengembalikannya ke pemantauan.
+      </div>
+    </section>`
+    : "";
+
   document.title = `${s.name} \u2014 Detail Mahasiswa`;
 
   el("host").innerHTML = `
+    ${inactiveBanner}
     <section class="blue-shell" style="display:flex; gap:16px; align-items:flex-start; padding:18px 20px; flex-wrap:wrap;">
       <div style="display:flex; gap:16px; flex:1; min-width:280px; align-items:center;">
         <div class="profile-avatar">${escapeHtml(initials)}</div>
@@ -116,6 +164,7 @@ function render(result) {
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <h1 style="margin:0; font-size:20px; font-weight:800; color:#fff;">${escapeHtml(s.name)}</h1>
             <span class="pill-aktif" style="display:inline-flex;align-items:center;gap:6px;">${statusDot} ${escapeHtml(String(s.status || "aktif").toUpperCase())}</span>
+            ${isInactive ? '<span class="badge off" style="vertical-align:middle;">NONAKTIF</span>' : ""}
           </div>
           <div style="margin-top:4px; color:rgba(255,255,255,0.9); font-size:12px;">${escapeHtml(programName)} \u00b7 ${escapeHtml(fakultasLine)}</div>
           <div class="hero-note" style="display:flex; align-items:center; gap:6px; margin-top:6px; color:#fde68a; font-size:11px; font-weight:600;">

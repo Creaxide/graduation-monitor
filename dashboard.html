@@ -116,6 +116,36 @@
     </div>
   </div>
 
+  <!-- Modal alasan nonaktifkan -->
+  <div class="modal-backdrop" id="deactivate-modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="deactivate-modal-title">
+      <div class="modal-head">
+        <h2 id="deactivate-modal-title">Alasan Nonaktifkan</h2>
+        <button class="x" id="deactivate-close" type="button" aria-label="Tutup">&times;</button>
+      </div>
+      <p id="deactivate-target" class="small" style="margin:0 0 14px; color:var(--text-muted);"></p>
+      <div class="field">
+        <label for="deactivate-reason">Alasan <span style="font-weight:600; opacity:.7">(wajib diisi)</span></label>
+        <textarea id="deactivate-reason" rows="4" maxlength="500"
+          placeholder="Contoh: Cuti akademik semester ini, alih program, selesai masa studi, dll."></textarea>
+        <div class="small" style="color:var(--text-muted);">
+          Alasan tersimpan di detail mahasiswa dan ikut diekspor ke CSV.
+        </div>
+      </div>
+      <div class="chip-row" id="deactivate-chips">
+        <button type="button" class="chip" data-reason="Cuti akademik semester ini">Cuti akademik</button>
+        <button type="button" class="chip" data-reason="Alih program studi">Alih program</button>
+        <button type="button" class="chip" data-reason="Selesai masa studi">Selesai masa studi</button>
+        <button type="button" class="chip" data-reason="Data mahasiswa perlu diperbarui">Perlu diperbarui</button>
+        <button type="button" class="chip" data-reason="Mahasiswa tidak dapat dihubungi">Tidak dapat dihubungi</button>
+      </div>
+      <div class="flex gap-8" style="justify-content:flex-end; margin-top:18px;">
+        <button type="button" class="btn" id="deactivate-cancel">Batal</button>
+        <button type="button" class="btn primary" id="deactivate-confirm">Nonaktifkan</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="js/dashboard.js"></script>
 </body>
 </html>

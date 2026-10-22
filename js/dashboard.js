@@ -153,12 +153,19 @@ function renderTable(rows, counts) {
           } aria-label="Pilih ${escapeHtml(s.name)}"></td>`
         : "";
       const offBadge = active ? "" : ' <span class="badge off">NONAKTIF</span>';
+      // Alasan nonaktif ditampilkan langsung di tabel supaya tidak perlu
+      // membuka detail tiap mahasiswa.
+      const reasonCell = active
+        ? ""
+        : s.deactivate_reason
+          ? `<div class="cell-reason" title="${escapeHtml(s.deactivate_reason)}">Alasan: ${escapeHtml(s.deactivate_reason)}</div>`
+          : `<div class="cell-reason muted">Tanpa alasan</div>`;
 
       return `
         <tr data-id="${s.id}" class="${active ? "" : "is-inactive"}${checked ? " is-selected" : ""}">
           ${checkCell}
           <td class="nim">${escapeHtml(s.nim)}</td>
-          <td style="font-weight:700">${escapeHtml(s.name)}${offBadge}</td>
+          <td style="font-weight:700">${escapeHtml(s.name)}${offBadge}${reasonCell}</td>
           <td style="text-align:center">${s.current_semester}</td>
           <td>${renderFigmaBadge(catStatus(r, "sks"))}</td>
           <td>${renderFigmaBadge(catStatus(r, "comserv"))}</td>
@@ -291,36 +298,156 @@ function syncBulkBar() {
     </div>`;
 }
 
-async function applyActive(active) {
-  const ids = [...state.selected].filter((id) => {
-    const row = state.rows.find((r) => r.student.id === id);
-    return row && isActive(row.student) !== active;
-  });
+async function applyActive(ids, active, reason = "") {
   if (!ids.length) {
     toast(`Tidak ada mahasiswa yang perlu di${active ? "aktifkan" : "nonaktifkan"}.`, "info");
-    return;
+    return false;
   }
 
-  const verb = active ? "Mengaktifkan" : "Menonaktifkan";
-  if (!window.confirm(`${verb} ${ids.length} mahasiswa? Data mahasiswa tidak dihapus, hanya ${active ? "dipantau kembali" : "berhenti dipantau"}.`)) {
-    return;
+  if (active) {
+    const ok = window.confirm(
+      `Aktifkan kembali ${ids.length} mahasiswa? Data mahasiswa tidak dihapus, hanya dipantau kembali.`
+    );
+    if (!ok) return false;
   }
 
   const buttons = Array.from(document.querySelectorAll("#bulk-bar button[data-bulk]"));
   buttons.forEach((b) => (b.disabled = true));
   try {
-    await setStudentsActive(ids, active);
+    await setStudentsActive(ids, active, reason);
+    const stamp = active ? null : new Date().toISOString();
     state.rows.forEach((r) => {
-      if (ids.includes(r.student.id)) r.student.is_active = active;
+      if (!ids.includes(r.student.id)) return;
+      r.student.is_active = active;
+      r.student.deactivate_reason = active ? null : reason || null;
+      r.student.deactivated_at = active ? null : stamp;
     });
     state.selected.clear();
     updateKpis();
     render();
     toast(`${ids.length} mahasiswa ${active ? "diaktifkan kembali" : "dinonaktifkan"}.`, "success");
+    return true;
   } catch (err) {
     toast(`Gagal ${active ? "mengaktifkan" : "menonaktifkan"} mahasiswa: ${err.message}`, "error");
     syncBulkBar();
+    return false;
   }
+}
+
+// ------------------------------------------------------------ alasan nonaktif --
+
+// Satu aksi nonaktifkan berlaku untuk beberapa mahasiswa sekaligus, jadi
+// alasannya disimpan sekali lalu ditulis ke semua mahasiswa yang dipilih.
+let pendingDeactivateIds = [];
+
+function idsToToggle(active) {
+  return [...state.selected].filter((id) => {
+    const row = state.rows.find((r) => r.student.id === id);
+    return row && isActive(row.student) !== active;
+  });
+}
+
+function openDeactivateModal(ids) {
+  if (!state.canEdit) {
+    toast("Akun Kaprodi hanya bisa melihat data, tidak bisa mengubahnya.", "warn");
+    return;
+  }
+  pendingDeactivateIds = ids;
+
+  const names = ids
+    .map((id) => state.rows.find((r) => r.student.id === id)?.student.name)
+    .filter(Boolean);
+  const target = el("deactivate-target");
+  if (target) {
+    const preview = names.slice(0, 3).join(", ");
+    const more = names.length > 3 ? `, +${names.length - 3} lainnya` : "";
+    target.textContent =
+      ids.length === 1
+        ? `Mahasiswa: ${preview}`
+        : `${ids.length} mahasiswa: ${preview}${more}`;
+  }
+
+  const box = el("deactivate-reason");
+  if (box) box.value = "";
+
+  const modal = el("deactivate-modal");
+  if (modal) modal.classList.add("open");
+  setTimeout(() => box?.focus(), 30);
+}
+
+function closeDeactivateModal() {
+  pendingDeactivateIds = [];
+  const modal = el("deactivate-modal");
+  if (modal) modal.classList.remove("open");
+}
+
+async function confirmDeactivate() {
+  const ids = pendingDeactivateIds;
+  if (!ids.length) {
+    closeDeactivateModal();
+    return;
+  }
+  const box = el("deactivate-reason");
+  const reason = String(box?.value || "").trim();
+  if (!reason) {
+    toast("Alasan nonaktifkan wajib diisi.", "warn");
+    box?.focus();
+    return;
+  }
+
+  const btn = el("deactivate-confirm");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Menyimpan...";
+  }
+  try {
+    const ok = await applyActive(ids, false, reason);
+    if (ok) closeDeactivateModal();
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Nonaktifkan";
+    }
+  }
+}
+
+function wireDeactivateModal() {
+  const modal = el("deactivate-modal");
+  if (!modal) return;
+
+  const box = el("deactivate-reason");
+  el("deactivate-close")?.addEventListener("click", closeDeactivateModal);
+  el("deactivate-cancel")?.addEventListener("click", closeDeactivateModal);
+  el("deactivate-confirm")?.addEventListener("click", confirmDeactivate);
+
+  el("deactivate-chips")?.addEventListener("click", (e) => {
+    const chip = e.target.closest(".chip");
+    if (!chip) return;
+    const reason = chip.dataset.reason || "";
+    if (!box) return;
+    // Klik chip yang sama untuk menghapus alasan yang sudah terpasang,
+    // supaya alasan tidak terduplikasi kalau tidak sengaja diklik dua kali.
+    const current = String(box.value || "").trim();
+    if (current === reason) {
+      box.value = "";
+    } else if (current.includes(reason)) {
+      box.value = current.replace(reason, "").replace(/\s{2,}/g, " ").trim();
+    } else {
+      box.value = current ? `${current} ${reason}` : reason;
+    }
+    box.focus();
+  });
+
+  // Klik di area gelap di luar modal = batal.
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeDeactivateModal();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal.classList.contains("open")) {
+      closeDeactivateModal();
+    }
+  });
 }
 
 function wireBulkBar() {
@@ -335,7 +462,12 @@ function wireBulkBar() {
       render();
       return;
     }
-    applyActive(action === "activate");
+    if (action === "deactivate") {
+      // Menonaktifkan selalu lewat modal supaya alasannya tercatat.
+      openDeactivateModal(idsToToggle(false));
+      return;
+    }
+    applyActive(idsToToggle(true), true);
   });
 }
 
@@ -404,6 +536,7 @@ function wireFilters() {
 
   wireFilters();
   wireBulkBar();
+  wireDeactivateModal();
   try {
     const { students, requirements } = await loadDashboard();
     state.requirements = requirements;
