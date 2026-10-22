@@ -1,11 +1,14 @@
 import { initLayout } from "./ui.js";
 import { loadStudentBundle } from "./data.js";
-import { evaluateStudent, priorityReason, recommendationSentence, belinguaLabel } from "./engine.js";
-import { el, escapeHtml, formatNumber, toast } from "./utils.js";
+import { evaluateStudent, recommendationSentence, belinguaLabel } from "./engine.js";
+import { buildStudentReportHtml, priorityText, riskTextFor } from "./report.js";
+import { el, escapeHtml, formatNumber, toast, printHtmlDocument } from "./utils.js";
 
 const params = new URLSearchParams(window.location.search);
 const studentId = params.get("id");
 let current = null;
+// Petunjuk "pilih Simpan ke PDF" cukup ditampilkan sekali per halaman.
+let printHintShown = false;
 
 function statusId(status) {
   const map = { safe: "AMAN", warn: "PERHATIAN", danger: "MENDESAK", info: "BELUM WAJIB" };
@@ -37,246 +40,31 @@ function progressText(cat) {
   return `${formatNumber(actual)} / ${formatNumber(cat.total)} ${unit}`;
 }
 
-function priorityText(p) {
-  if (p.category === "sks") {
-    const gap = Math.max(0, Math.ceil(p.gap));
-    return { title: "Kejar kekurangan SKS", desc: `Susun kontrak studi maksimal dan prioritaskan ${gap} SKS yang belum lulus.` };
-  }
-  if (p.category === "comserv") {
-    return { title: "Community Service", desc: `Kurang ${Math.ceil(p.gap)} jam dari target ${formatNumber(p.targetValue)} jam semster ini` };
-  }
-  if (p.category === "sat") {
-    return { title: "SAT (Student Activity)", desc: `Kurang ${Math.ceil(p.gap)} point dari target ${formatNumber(p.targetValue)} Point semester ini` };
-  }
-  if (p.category === "belingua") {
-    return { title: "Belingua", desc: `Status saat ini: ${belinguaLabel(p.raw.status)}. Segera mulai menyelesaikan beelingua.` };
-  }
-  if (p.category === "sertifikasi") {
-    return { title: "Sertifikasi", desc: `Kurang ${Math.ceil(p.gap)} sertifikat dari target.` };
-  }
-  return { title: p.label, desc: priorityReason(p) };
-}
-
-// Cara menyebut kekurangan satu indikator dalam kalimat ringkas. Formatnya
-// sengaja sama dengan daftar "Rekomendasi prioritas" di atasnya, supaya angka
-// yang dibaca Dosen di kedua tempat itu sama.
-function categoryShortfallText(cat) {
-  if (cat.category === "belingua") {
-    return `Belingua belum lulus (${belinguaLabel(cat.raw?.status)})`;
-  }
-  if (cat.category === "sertifikasi") {
-    return `kurang ${Math.ceil(cat.gap)} sertifikat dari target semester ini`;
-  }
-  const unit = cat.category === "sks" ? "SKS" : cat.category === "comserv" ? "jam" : "poin";
-  return `kurang ${formatNumber(cat.gap)} ${unit} dari target semester ini`;
-}
-
-// Ringkasan risiko selalu menyebut penyebabnya saat status turun, supaya badge
-// SEDANG tidak terlihat bertentangan dengan indikator yang masih MENDESAK.
-function riskTextFor(result) {
-  if (result.overall === "danger") return "Berisiko tidak lulus tepat waktu. Tindak lanjuti rekomendasi prioritas segera.";
-  if (result.overall === "warn") {
-    const urgent = result.categories.filter((c) => c.status === "danger");
-    if (urgent.length === 1) {
-      const c = urgent[0];
-      return `Perlu perhatian. Satu indikator masih mendesak (${c.label} ${categoryShortfallText(c)}), tetapi masih ada ${c.remainingSemesters} semester untuk mengejarnya.`;
-    }
-    return "Perlu perhatian. Berpotensi lulus tepat waktu jika rekomendasi ditindaklanjuti semester ini.";
-  }
-  return "Sesuai target. Pertahankan progres agar lulus tepat waktu.";
-}
-
+// Unduh laporan mahasiswa: cetak dokumen laporan ke dialog cetak, lalu
+// pengguna memilih "Simpan ke PDF" sebagai tujuan printer.
+//
+// Dokumen dicetak dari iframe tersembunyi (bukan popup) supaya Firefox
+// tidak memblokir jendela dan tidak mencetak halaman kosong.
 function openStudentReport(result) {
-  const s = result.student;
-  const win = window.open("", "_blank", "width=900,height=760");
-  const isFirefox = /firefox/i.test(navigator.userAgent || "");
-  if (!win) return;
-
-  const d = new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
-  const overallId = result.overall === "danger" ? "MENDESAK" : result.overall === "warn" ? "PERLU PERHATIAN" : "AMAN";
-  const overallColor = result.overall === "danger" ? "#dc2626" : result.overall === "warn" ? "#f59e0b" : "#16a34a";
-
-  const labelMap = { sks: "SKS", comserv: "Community Service", sat: "SAT (Student Activity)", belingua: "Belingua", sertifikasi: "Sertifikasi" };
-  const sertCat = result.categories.find((c) => c.category === "sertifikasi");
-  const certTotal = Math.max(1, Math.round(sertCat?.total || 0));
-  const certActual = Math.min(Math.round(sertCat?.actual || 0), certTotal);
-  const totalOf = (k) => result.categories.find((c) => c.category === k)?.total ?? 0;
-  const valueMap = {
-    sks: `${formatNumber(s.total_sks_passed)} / ${formatNumber(totalOf("sks"))} SKS`,
-    comserv: `${formatNumber(s.comserv_hours)} / ${formatNumber(totalOf("comserv"))} Jam`,
-    sat: `${formatNumber(s.sat_hours)} / ${formatNumber(totalOf("sat"))} Point`,
-    belingua: belinguaLabel(s.belingua_status),
-    sertifikasi: `${certActual} / ${certTotal} sertifikat`,
-  };
-
-  const catRows = result.categories
-    .map((c) => {
-      const badgeBg = c.status === "danger" ? "#dc2626" : c.status === "warn" ? "#f59e0b" : c.status === "info" ? "#2563eb" : "#16a34a";
-      const badgeTxt = c.status === "danger" ? "MENDESAK" : c.status === "warn" ? "PERHATIAN" : c.status === "info" ? "BELUM WAJIB" : "AMAN";
-      const pct = c.targetValue > 0 ? Math.min(100, Math.round((c.actual / c.targetValue) * 100)) : 100;
-      const barBg = c.status === "danger" ? "#dc2626" : c.status === "warn" ? "#f59e0b" : c.status === "info" ? "#2563eb" : "#16a34a";
-      return `
-        <tr>
-          <td><strong>${escapeHtml(labelMap[c.category] || c.label)}</strong></td>
-          <td>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <div style="flex:1;height:8px;background:#eef2f7;border-radius:999px;overflow:hidden;">
-                <div style="height:100%;width:${Math.min(100, Math.max(0, pct))}%;background:${barBg};"></div>
-              </div>
-              <span style="font-size:11px;color:#334155;white-space:nowrap;">${escapeHtml(valueMap[c.category] || "")}</span>
-            </div>
-          </td>
-          <td style="text-align:right;"><span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:800;color:#fff;background:${badgeBg};">${badgeTxt}</span></td>
-        </tr>`;
-    })
-    .join("");
-
-  const priorityRows = result.priorities.length
-    ? result.priorities
-        .slice(0, 3)
-        .map((p, i) => {
-          const t = priorityText(p);
-          const numBg = i === 0 ? "#dc2626" : i === 1 ? "#f59e0b" : "#3b82f6";
-          const badgeBg = p.status === "danger" ? "#dc2626" : p.status === "warn" ? "#f59e0b" : "#16a34a";
-          const badgeTxt = p.status === "danger" ? "MENDESAK" : p.status === "warn" ? "PERHATIAN" : "AMAN";
-          return `
-            <tr class="prio">
-              <td class="prio-num"><span style="width:26px;height:26px;border-radius:7px;display:inline-grid;place-items:center;color:#fff;font-weight:800;font-size:12px;background:${numBg};">${i + 1}</span></td>
-              <td>
-                <div class="prio-title">${escapeHtml(t.title)}</div>
-                <div class="prio-desc">${escapeHtml(t.desc)}</div>
-              </td>
-              <td style="text-align:right;white-space:nowrap;"><span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:800;color:#fff;background:${badgeBg};">${badgeTxt}</span></td>
-            </tr>`;
-        })
-        .join("")
-    : `<tr><td colspan="3" style="color:#334155;">Semua indikator memenuhi target semester ini. Pertahankan progres.</td></tr>`;
-
-  const failedRows = result.failed.length
-    ? result.failed
-        .map(
-          (f) => `
-          <tr>
-            <td><strong>${escapeHtml(f.nama_mk)}</strong><br><span style="color:#64748b;font-size:11px;">${escapeHtml(f.kode_mk)}</span></td>
-            <td style="text-align:center;"><span style="display:inline-block;min-width:26px;padding:3px 0;border-radius:7px;background:#dc2626;color:#fff;font-weight:800;font-size:11px;">${escapeHtml(f.nilai || "-")}</span></td>
-            <td style="text-align:center;">${f.semester_taken ? `Sem ${f.semester_taken}` : "-"}</td>
-            <td>Ulang di semester ${f.retake_semester}</td>
-          </tr>`
-        )
-        .join("")
-    : `<tr><td colspan="4" style="color:#334155;">Tidak ada nilai bermasalah.</td></tr>`;
-
-  const initials = (s.name || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
-  const angkatan = s.angkatan || "-";
-
-  win.document.write(
-    `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Laporan Kelulusan \u2014 ${escapeHtml(s.name)}</title>
-    <style>
-      @page { size: A4; margin: 10mm 12mm; }
-      * { box-sizing: border-box; }
-      body { font-family: "Inter", system-ui, "Segoe UI", Roboto, Arial, sans-serif; color: #0f1f2e; margin: 0; padding: 0; }
-      .sheet { max-width: none; margin: 0 auto; padding: 8px 4px 4px; }
-      .brand { display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #1596c9; padding-bottom: 8px; margin-bottom: 10px; }
-      .brand-mark { width: 38px; height: 38px; border-radius: 8px; background: #0b2a4a; color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 10px; line-height: 1.1; text-align: center; }
-      .brand-text h1 { margin: 0; font-size: 14px; font-weight: 800; }
-      .brand-text small { color: #64748b; font-size: 11px; }
-      .meta { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
-      .meta h2 { margin: 0 0 2px; font-size: 13px; }
-      .meta .date { font-size: 11px; color: #64748b; }
-      .identity { display: flex; gap: 12px; align-items: center; background: #1596c9; color: #fff; border-radius: 10px; padding: 9px 12px; margin: 8px 0 10px; }
-      .avatar { width: 42px; height: 42px; border-radius: 50%; background: #0b4a67; display: grid; place-items: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
-      .who h3 { margin: 0; font-size: 14px; }
-      .who p { margin: 2px 0 0; font-size: 11px; opacity: 0.92; }
-      .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 10px; }
-      .fact { background: #f3f9ff; border: 1px solid #cfeaf6; border-radius: 8px; padding: 6px 8px; }
-      .fact .k { font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase; color: #0b7fb8; font-weight: 800; }
-      .fact .v { font-size: 13px; font-weight: 800; margin-top: 1px; }
-      h4.sec { margin: 12px 0 6px; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: #0b7fb8; border-bottom: 2px solid #1596c9; padding-bottom: 3px; }
-      table { width: 100%; border-collapse: collapse; font-size: 11px; }
-      thead th { background: #f58220; color: #fff; text-align: left; padding: 5px 8px; font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase; }
-      thead th:first-child { border-radius: 6px 0 0 0; }
-      thead th:last-child { border-radius: 0 6px 0 0; }
-      tbody td { padding: 5px 8px; border-bottom: 1px solid #e6edf3; vertical-align: middle; }
-      tbody tr:last-child td { border-bottom: none; }
-      .prio-title { font-weight: 700; font-size: 11px; }
-      .prio-desc { color: #64748b; font-size: 10px; margin-top: 1px; }
-      .risk { border: 1px solid #cfeaf6; background: #f3f9ff; border-radius: 8px; padding: 8px 10px; margin-top: 10px; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
-      .risk .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 10px; font-weight: 800; color: #fff; background: ${overallColor}; }
-      .foot { margin-top: 12px; font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 8px; display: flex; justify-content: space-between; gap: 10px; }
-      .sig { margin-top: 18px; display: flex; justify-content: space-between; font-size: 11px; page-break-inside: avoid; }
-      .sig div { text-align: center; width: 200px; }
-      .sig .line { margin-top: 40px; border-top: 1px solid #0f1f2e; padding-top: 5px; }
-      .nopagebreak { page-break-inside: avoid; }
-      /* Browsers strip backgrounds unless told otherwise (Chrome + Firefox). */
-      *, *::before, *::after {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        color-adjust: exact;
-      }
-      @media print { .sheet { max-width: none; padding: 0; } }
-    </style></head><body>
-    <div class="sheet">
-      <div class="brand">
-        <div class="brand-mark">BINUS<small style="display:block;font-size:8px;font-weight:400;">UNIV</small></div>
-        <div class="brand-text">
-          <h1>Sistem Monitoring Kelulusan Mahasiswa</h1>
-          <small>School of Computer Science \u00b7 BINUS University</small>
-        </div>
-      </div>
-      <div class="meta">
-        <div>
-          <h2>Laporan Rekomendasi Prioritas Kelulusan</h2>
-          <div class="date">Dibuat: ${escapeHtml(d)} \u00b7 Semester ${s.current_semester}</div>
-        </div>
-        <div class="pill" style="display:inline-block;padding:5px 14px;border-radius:999px;font-size:11px;font-weight:800;color:#fff;background:${overallColor};">STATUS: ${overallId}</div>
-      </div>
-      <div class="identity">
-        <div class="avatar">${escapeHtml(initials)}</div>
-        <div class="who">
-          <h3>${escapeHtml(s.name)}</h3>
-          <p>NIM ${escapeHtml(s.nim || "-")} \u00b7 ${escapeHtml(s.programs?.name || "Teknik Informatika")} \u00b7 Angkatan ${escapeHtml(String(angkatan))}</p>
-        </div>
-      </div>
-      <div class="facts">
-        <div class="fact"><div class="k">SKS Lulus</div><div class="v">${formatNumber(s.total_sks_passed)} / ${formatNumber(totalOf("sks"))}</div></div>
-        <div class="fact"><div class="k">Comserv</div><div class="v">${formatNumber(s.comserv_hours)} / ${formatNumber(totalOf("comserv"))} Jam</div></div>
-        <div class="fact"><div class="k">SAT</div><div class="v">${formatNumber(s.sat_hours)} / ${formatNumber(totalOf("sat"))} Point</div></div>
-        <div class="fact"><div class="k">Belingua</div><div class="v">${escapeHtml(belinguaLabel(s.belingua_status))}</div></div>
-      </div>
-      <h4 class="sec">Progress Kelulusan</h4>
-      <table><tbody>${catRows}</tbody></table>
-      <h4 class="sec">Rekomendasi Prioritas</h4>
-      <table><thead><tr><th style="width:34px;">No</th><th>Rekomendasi</th><th style="text-align:right;">Status</th></tr></thead><tbody>${priorityRows}</tbody></table>
-      <h4 class="sec">Riwayat Nilai Bermasalah</h4>
-      <table><thead><tr><th>Mata Kuliah</th><th style="text-align:center;">Nilai</th><th style="text-align:center;">Semester</th><th>Rekomendasi</th></tr></thead><tbody>${failedRows}</tbody></table>
-      <div class="risk">
-        <div>
-          <div style="font-size:11px;font-weight:800;letter-spacing:0.06em;color:#0b7fb8;">ESTIMASI RISIKO</div>
-          <div style="font-size:12px;margin-top:4px;">${escapeHtml(riskTextFor(result))}</div>
-        </div>
-        <span class="pill">${overallId}</span>
-      </div>
-      <div class="sig">
-        <div>Mengetahui,<br>Dosen Academic Advisor<br><div class="line">${escapeHtml(result.profile?.full_name || "(Nama Dosen AA)")}</div></div>
-        <div>Bekasi, ${escapeHtml(d)}<br>Dosen Pembimbing<br><div class="line">&nbsp;</div></div>
-      </div>
-      <div class="foot">
-        <span>Rekomendasi bersifat pendukung keputusan (rule-based, target normatif semester ${s.current_semester}).</span>
-        <span>Halaman 1 dari 1</span>
-      </div>
-    </div>
-    </body></html>`
-  );
-  win.document.close();
-  win.focus();
-  if (isFirefox && !sessionStorage.getItem("fx-print-hint")) {
-    sessionStorage.setItem("fx-print-hint", "1");
+  const html = buildStudentReportHtml(result);
+  if (!printHintShown) {
+    printHintShown = true;
     toast(
-      "Di Firefox, centang 'Print backgrounds' pada dialog cetak agar PDF tetap berwarna.",
+      'Pada dialog cetak, pilih "Simpan ke PDF" (Firefox) atau "Save as PDF" (Chrome) sebagai printer tujuan.',
       "info"
     );
   }
-  setTimeout(() => win.print(), 400);
+  const started = printHtmlDocument(html, {
+    title: `Laporan Kelulusan \u2014 ${result.student.name}`,
+    onError: () =>
+      toast("Gagal membuka dialog cetak. Coba lagi atau tekan Ctrl+P (Cmd+P) untuk mencetak halaman.", "error"),
+  });
+  if (!started) {
+    toast(
+      "Browser memblokir jendela cetak. Izinkan pop-up untuk situs ini lalu coba lagi.",
+      "error"
+    );
+  }
 }
 
 function render(result) {

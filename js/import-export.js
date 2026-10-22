@@ -7,7 +7,7 @@ import {
 } from "./data.js";
 import { evaluateStudent, STATUS_LABEL, normalizeStudentStatus, normalizeBelinguaStatus } from "./engine.js";
 import {
-  el, escapeHtml, formatNumber, toast, downloadFile, toCsv, setBusy,
+  el, escapeHtml, formatNumber, toast, downloadFile, toCsv, setBusy, printHtmlDocument,
 } from "./utils.js";
 
 const STUDENT_FIELDS = ["name", "program_code", "advisor_kode", "angkatan", "current_semester", "status", "total_sks_passed", "comserv_hours", "sat_hours", "belingua_status", "belingua_score", "is_active"];
@@ -266,9 +266,12 @@ async function runExport() {
       const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
       downloadFile(`student-monitoring-${stamp}.xlsx`, new Blob([out], { type: "application/octet-stream" }));
     } else {
-      exportPdf(rows);
+      const printed = exportPdf(rows);
       logAudit({ entity: "students", action: "export_pdf", detail: { count: rows.length } });
-      toast("PDF print dialog opened.", "success");
+      toast(
+        printed ? "PDF print dialog opened." : "Browser memblokir jendela cetak. Izinkan pop-up lalu coba lagi.",
+        printed ? "success" : "error"
+      );
       setBusy(btn, false);
       return;
     }
@@ -324,14 +327,18 @@ function toExportRow(r) {
 }
 
 function exportPdf(rows) {
-  const win = window.open("", "_blank", "width=1000,height=760");
-  if (!win) return;
   const head = Object.keys(rows[0]);
   const body = rows.map((r) => `<tr>${head.map((h) => `<td>${escapeHtml(r[h])}</td>`).join("")}</tr>`).join("");
-  win.document.write(`
-    <!DOCTYPE html><html><head><title>Student Monitoring Report</title>
+  const html = `
+    <!DOCTYPE html><html><head><meta charset="utf-8"><title>Student Monitoring Report</title>
     <style>
-      body{font-family:"Segoe UI",Arial,sans-serif;padding:24px;color:#1a2233}
+      /* Margin atas/bawah @page dibuat 0 supaya Firefox tidak menggambar
+         header/footer bawaan dialog cetak (judul, URL, tanggal, nomor
+         halaman): Firefox hanya menggambarnya kalau margin @page lebih besar
+         dari tinggi font header (10pt ~ 15px). Jaraknya dikembalikan lewat
+         padding body. */
+      @page { size: A4; margin: 0 12mm; }
+      body{font-family:"Segoe UI",Arial,sans-serif;padding:8mm 0 0;color:#1a2233}
       h1{font-size:18px;margin:0 0 4px} .sub{color:#64708a;font-size:12px;margin-bottom:16px}
       table{border-collapse:collapse;width:100%;font-size:11px}
       th,td{border:1px solid #d5dbe6;padding:6px 8px;text-align:left}
@@ -340,10 +347,10 @@ function exportPdf(rows) {
     <h1>Student Graduation Monitoring Report</h1>
     <div class="sub">Generated ${new Date().toLocaleString("en-GB")}</div>
     <table><thead><tr>${head.map((h) => `<th>${escapeHtml(h)}</th>`).join("")}</tr></thead>
-    <tbody>${body}</tbody></table></body></html>`);
-  win.document.close();
-  win.focus();
-  setTimeout(() => win.print(), 300);
+    <tbody>${body}</tbody></table></body></html>`;
+  // Dicetak lewat iframe, bukan popup: di Firefox popup yang dibuka setelah
+  // await akan diblokir, sedangkan iframe tidak butuh izin pop-up apa pun.
+  return printHtmlDocument(html, { title: "Student Monitoring Report" });
 }
 
 // --------------------------------------------------------------- settings ---
