@@ -29,6 +29,7 @@ export const listCertifications = required("listCertifications");
 export const loadDashboard = required("loadDashboard");
 export const loadStudentBundle = required("loadStudentBundle");
 export const updateStudent = required("updateStudent");
+export const setStudentsActive = required("setStudentsActive");
 export const insertStudent = required("insertStudent");
 export const upsertFailedCourse = required("upsertFailedCourse");
 export const deleteFailedCourse = required("deleteFailedCourse");

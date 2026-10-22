@@ -76,11 +76,33 @@
             <option value="safe">Aman</option>
           </select>
         </div>
+        <div class="field" style="min-width:170px">
+          <select id="f-active" aria-label="Filter keaktifan mahasiswa">
+            <option value="semua">Keaktifan: Semua</option>
+            <option value="aktif">Keaktifan: Aktif</option>
+            <option value="nonaktif">Keaktifan: Nonaktif</option>
+          </select>
+        </div>
+        <div class="field" style="min-width:200px">
+          <select id="f-sort" aria-label="Urutkan daftar mahasiswa">
+            <option value="risk">Urutkan: Risiko tertinggi</option>
+            <option value="name">Urutkan: Nama (A-Z)</option>
+            <option value="semester">Urutkan: Semester</option>
+            <option value="nim">Urutkan: NIM</option>
+            <option value="sks">Urutkan: SKS paling kritis</option>
+            <option value="comserv">Urutkan: Comserv paling kritis</option>
+            <option value="sat">Urutkan: SAT paling kritis</option>
+            <option value="belingua">Urutkan: Belingua paling kritis</option>
+            <option value="sertifikasi">Urutkan: Sertifikasi paling kritis</option>
+          </select>
+        </div>
       </div>
       <div class="count-row">
         <div class="small" id="count-label">0 mahasiswa bimbingan ditemukan</div>
       </div>
     </section>
+
+    <div id="bulk-bar" class="bulk-bar hidden" aria-live="polite"></div>
 
     <div class="table-shell">
       <div id="table-host">
@@ -90,7 +112,7 @@
 
     <div class="flex center gap-8 mt-24" style="justify-content:center; color: var(--text-muted); font-size: 12px; font-weight: 500;">
       <span>ℹ️</span>
-      <span>Klik baris mahasiswa untuk melihat detail dan rekomendasi prioritas kelulusan.</span>
+      <span>Klik baris mahasiswa untuk melihat detail. Centang beberapa mahasiswa untuk menonaktifkannya dari pemantauan.</span>
     </div>
   </div>
 

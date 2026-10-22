@@ -3,7 +3,9 @@ import { listStudents } from "./data.js";
 import { el, escapeHtml, debounce } from "./utils.js";
 import { belinguaLabel, normalizeBelinguaStatus } from "./engine.js";
 
-let state = { students: [], q: "", semester: "" };
+let state = { students: [], q: "", semester: "", active: "semua" };
+
+const isActive = (s) => s.is_active !== false;
 
 // Kolom ini hanya menampilkan data mentah. Urgensi (Aman/Perhatian/Mendesak)
 // dihitung engine.js dan tampil di halaman detail, supaya tidak ada dua aturan berbeda.
@@ -25,8 +27,13 @@ function render() {
   const rows = state.students.filter((s) => {
     if (term && !(s.name.toLowerCase().includes(term) || s.nim.toLowerCase().includes(term))) return false;
     if (state.semester && String(s.current_semester) !== String(state.semester)) return false;
+    if (state.active === "aktif" && !isActive(s)) return false;
+    if (state.active === "nonaktif" && isActive(s)) return false;
     return true;
   });
+
+  // Nonaktif selalu di bawah.
+  rows.sort((a, b) => (isActive(a) === isActive(b) ? 0 : isActive(a) ? -1 : 1));
 
   const host = el("table-host");
   if (!rows.length) {
@@ -48,9 +55,13 @@ function render() {
           ${rows
             .map(
               (s) => `
-            <tr onclick="window.location.href='student.html?id=${s.id}'" style="cursor:pointer;">
+            <tr onclick="window.location.href='student.html?id=${s.id}'" class="${
+                isActive(s) ? "" : "is-inactive"
+              }" style="cursor:pointer;">
               <td class="nim">${escapeHtml(s.nim)}</td>
-              <td style="font-weight:700">${escapeHtml(s.name)}</td>
+              <td style="font-weight:700">${escapeHtml(s.name)}${
+                isActive(s) ? "" : ' <span class="badge off">NONAKTIF</span>'
+              }</td>
               <td style="color:rgba(255,255,255,0.92)">${escapeHtml(s.programs?.code || "-")}</td>
               <td style="text-align:center">${s.current_semester}</td>
               <td class="mono">${s.total_sks_passed}</td>
@@ -78,6 +89,7 @@ function populateSemesterFilter() {
 function wire() {
   el("q").addEventListener("input", debounce((e) => { state.q = e.target.value; render(); }, 200));
   el("f-semester").addEventListener("change", (e) => { state.semester = e.target.value; render(); });
+  el("f-active").addEventListener("change", (e) => { state.active = e.target.value; render(); });
 }
 
 (async function main() {

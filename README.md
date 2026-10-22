@@ -10,7 +10,11 @@ recommendation engine.
 ## Features
 
 - **Login** via Supabase Auth (campus SSO-compatible), role-aware.
-- **Dashboard** — KPI summary, searchable/filterable advisee list, urgency badges.
+- **Dashboard** — KPI summary, searchable/filterable advisee list, urgency badges,
+  sortable columns (NIM, name, semester, every requirement category), and bulk
+  "nonaktifkan/aktifkan" for students who are no longer monitored. Students that
+  are set inactive stay in the list (dimmed, labelled NONAKTIF, always sorted
+  last) but no longer count toward the KPIs; their data is never deleted.
 - **Student detail** — per-category progress vs. normative semester targets,
   priority recommendations with reasons, failed-course retake plan, certifications.
 - **Import / Export** — CSV/XLSX import with row-level validation report;

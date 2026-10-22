@@ -745,3 +745,46 @@ table.data tbody tr:hover td { background: var(--table-row-hover); }
   .site-header, .nav-pills, .btn-keluar, .btn-theme { display: none !important; }
   .card, .blue-shell { box-shadow: none; border-color: #ddd; }
 }
+
+/* ---------------------------------------------------------------------------
+   Sorting kolom, seleksi massal & status keaktifan mahasiswa
+   --------------------------------------------------------------------------- */
+table.data thead th.sortable { cursor: pointer; user-select: none; }
+table.data thead th.sortable:hover { filter: brightness(1.08); }
+table.data thead th.sortable:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
+table.data thead th.sortable .arw { margin-left: 5px; font-size: 9px; opacity: 0.55; }
+table.data thead th.sortable.on .arw { opacity: 1; }
+table.data thead th.check-cell,
+table.data tbody td.check-cell { width: 36px; padding-right: 0; text-align: center; }
+table.data input[type="checkbox"] {
+  width: 16px; height: 16px; accent-color: var(--binus-blue-dark);
+  cursor: pointer; vertical-align: middle;
+}
+table.data tbody tr.is-selected td { background: rgba(255, 255, 255, 0.12); }
+
+/* Mahasiswa nonaktif: tetap terlihat, diredupkan, dan selalu di baris bawah. */
+table.data tbody tr.is-inactive td,
+table.data tbody tr.is-inactive td .nim { color: var(--on-card-faint); }
+table.data tbody tr.is-inactive .badge { opacity: 0.5; }
+table.data tbody tr.is-inactive .badge.off { opacity: 1; }
+table.data tbody tr.is-inactive .btn-detail { opacity: 0.7; }
+.badge.off {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  color: #ffffff;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+/* Bar aksi untuk mahasiswa yang dicentang */
+.bulk-bar {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin-bottom: 16px; padding: 12px 16px;
+  background: var(--card-bg); border: 1.5px solid var(--card-border);
+  border-radius: var(--card-radius); box-shadow: var(--card-shadow);
+  color: var(--on-card);
+}
+.bulk-bar.hidden { display: none; }
+.bulk-count { font-size: 13px; font-weight: 600; }
+.bulk-count b { font-weight: 800; }
+.bulk-actions { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }

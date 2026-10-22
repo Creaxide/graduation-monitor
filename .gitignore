@@ -18,6 +18,12 @@ desktop.ini
 .vscode/
 .idea/
 
+# Agent tooling artifacts
+.openchamber/
+
+# Local data backups (ad-hoc restore scripts, not part of the schema)
+sql/backup_*.sql
+
 # Build output
 dist/
 build/

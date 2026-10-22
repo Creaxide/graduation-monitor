@@ -58,12 +58,15 @@ create table if not exists students (
   belingua_status  text not null default 'belum_ambil'
                      check (belingua_status in ('belum_ambil','proses','lulus')),
   belingua_score   numeric,
+  -- false = mahasiswa tidak dipantau lagi di dashboard (diredupkan), data tetap utuh.
+  is_active      boolean not null default true,
   created_at     timestamptz default now(),
   updated_at     timestamptz default now()
 );
 
 create index if not exists idx_students_advisor on students (advisor_id);
 create index if not exists idx_students_program on students (program_id);
+create index if not exists idx_students_active on students (advisor_id, is_active);
 
 -- Requirement targets: total required + normative cumulative target per semester.
 create table if not exists requirements (
@@ -310,6 +313,10 @@ create trigger trg_students_touch
 
 alter table students alter column comserv_hours type numeric(6,2);
 alter table students alter column sat_hours type numeric(6,2);
+
+-- Keaktifan mahasiswa (menambah kolom untuk database yang dibuat sebelum fitur ini ada).
+alter table students add column if not exists is_active boolean not null default true;
+create index if not exists idx_students_active on students (advisor_id, is_active);
 
 alter table requirements drop constraint if exists requirements_sks_total_integral;
 alter table requirements add constraint requirements_sks_total_integral

@@ -114,6 +114,27 @@ export async function updateStudent(id, patch) {
   return unwrap(await supabase.from("students").update(sanitizeStudentFields(patch)).eq("id", id).select().single());
 }
 
+// Aktif / nonaktifkan banyak mahasiswa sekaligus dalam satu request.
+// Nonaktif bukan penghapusan: hanya berhenti dipantau di dashboard.
+export async function setStudentsActive(ids, active) {
+  const clean = (ids || []).filter(Boolean);
+  if (!clean.length) return [];
+  const rows = unwrap(
+    await supabase
+      .from("students")
+      .update({ is_active: Boolean(active) })
+      .in("id", clean)
+      .select("id, is_active")
+  );
+  await logAudit({
+    entity: "students",
+    entity_id: clean.join(","),
+    action: active ? "activate_students" : "deactivate_students",
+    detail: { ids: clean, count: clean.length },
+  });
+  return rows;
+}
+
 export async function insertStudent(row) {
   return unwrap(await supabase.from("students").insert(sanitizeStudentFields(row)).select().single());
 }
