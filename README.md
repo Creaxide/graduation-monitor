@@ -167,6 +167,11 @@ student's overall status, but it is no longer displayed as *Aman* either.
 
 ## Notes
 
+- Database yang dibuat sebelum fitur alasan nonaktif harus menjalankan
+  `sql/fix_deactivate_columns.sql` (atau ulangi `sql/schema.sql`) sekali di
+  Supabase SQL Editor. Tanpa kolom `deactivate_reason` / `deactivated_at`,
+  PostgreSQL menolak update keaktifan mahasiswa; aplikasi tetap bisa
+  mengaktifkan/nonaktifkan lewat fallback, tetapi alasannya tidak tersimpan.
 - Import templates are downloadable from the Import / Export page.
 - The engine is advisory only (decision support); final guidance rests with the
   Academic Advisor.

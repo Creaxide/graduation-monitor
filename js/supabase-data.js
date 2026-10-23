@@ -121,6 +121,20 @@ export async function updateStudent(id, patch) {
 // deactivate_reason supaya bisa dibaca lagi di halaman detail mahasiswa.
 // Saat diaktifkan kembali, alasan lama dibersihkan (riwayat tetap ada di
 // audit log).
+// Kolom alasan nonaktif ditambahkan belakangan (lihat sql/schema.sql dan
+// sql/fix_deactivate_columns.sql). Kalau database belum dimigrasi, PostgREST
+// menolak SELURUH update karena kolomnya tidak dikenal. Aksi aktif/nonaktif
+// harus tetap jalan lewat kolom is_active, jadi error "kolom tidak ada"
+// ditangani terpisah di bawah.
+const MISSING_COLUMN_CODES = new Set(["42703", "PGRST204"]);
+let warnedMissingDeactivateColumns = false;
+
+function isMissingColumnError(error) {
+  if (!error) return false;
+  if (MISSING_COLUMN_CODES.has(error.code)) return true;
+  return /does not exist|could not find the .*column/i.test(String(error.message || ""));
+}
+
 export async function setStudentsActive(ids, active, reason = "") {
   const clean = (ids || []).filter(Boolean);
   if (!clean.length) return [];
@@ -132,13 +146,42 @@ export async function setStudentsActive(ids, active, reason = "") {
         deactivate_reason: text || null,
         deactivated_at: new Date().toISOString(),
       };
-  const rows = unwrap(
-    await supabase
+
+  let result = await supabase
+    .from("students")
+    .update(patch)
+    .in("id", clean)
+    .select("id, is_active, deactivate_reason, deactivated_at");
+
+  if (result.error && isMissingColumnError(result.error)) {
+    // Database lama: kolom deactivate_reason/deactivated_at belum ada.
+    // Jangan gagalkan aksi inti — ubah is_active saja agar mahasiswa tetap
+    // bisa diaktifkan/dinonaktifkan kembali.
+    if (!warnedMissingDeactivateColumns) {
+      warnedMissingDeactivateColumns = true;
+      console.warn(
+        "Kolom students.deactivate_reason / deactivated_at belum ada di database. " +
+          "Jalankan sql/fix_deactivate_columns.sql supaya alasan nonaktif ikut tersimpan."
+      );
+    }
+    result = await supabase
       .from("students")
-      .update(patch)
+      .update({ is_active: active })
       .in("id", clean)
-      .select("id, is_active, deactivate_reason, deactivated_at")
-  );
+      .select("id, is_active");
+  }
+
+  const rows = unwrap(result);
+  // UPDATE yang diizinkan RLS tapi tidak mengenai baris apa pun tidak
+  // menghasilkan error. Tanpa cek ini UI akan bilang "berhasil" padahal data
+  // di database tidak berubah.
+  if (!rows.length) {
+    throw new DataError(
+      "Tidak ada data mahasiswa yang berubah. Pastikan akun punya izin UPDATE " +
+        "pada tabel students dan sql/schema.sql sudah dijalankan."
+    );
+  }
+
   await logAudit({
     entity: "students",
     entity_id: clean.join(","),
