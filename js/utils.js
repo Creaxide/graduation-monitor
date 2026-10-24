@@ -231,6 +231,10 @@ function printHtmlViaPopup(html, { title = "Print" } = {}) {
   return true;
 }
 
+export function isActive(s) {
+  return s.is_active !== false;
+}
+
 export function weightedAverage(ratios) {
   if (!ratios.length) return 0;
   return ratios.reduce((a, b) => a + b, 0) / ratios.length;

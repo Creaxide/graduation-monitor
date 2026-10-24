@@ -27,3 +27,6 @@ sql/backup_*.sql
 # Build output
 dist/
 build/
+
+# Graphify knowledge graph output
+graphify-out/

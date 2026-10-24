@@ -1,11 +1,9 @@
 import { initLayout } from "./ui.js";
 import { listStudents } from "./data.js";
-import { el, escapeHtml, debounce } from "./utils.js";
+import { el, escapeHtml, debounce, isActive } from "./utils.js";
 import { belinguaLabel, normalizeBelinguaStatus } from "./engine.js";
 
 let state = { students: [], q: "", semester: "", active: "semua" };
-
-const isActive = (s) => s.is_active !== false;
 
 // Kolom ini hanya menampilkan data mentah. Urgensi (Aman/Perhatian/Mendesak)
 // dihitung engine.js dan tampil di halaman detail, supaya tidak ada dua aturan berbeda.

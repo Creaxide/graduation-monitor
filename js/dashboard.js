@@ -4,7 +4,7 @@ import {
 } from "./data.js";
 import { evaluateStudent, STATUS_RANK } from "./engine.js";
 import {
-  el, escapeHtml, debounce, toast,
+  el, escapeHtml, debounce, toast, isActive,
 } from "./utils.js";
 
 // Kolom yang bisa diurutkan. "risk" = tingkat keparahan overall, kolom kategori
@@ -34,13 +34,9 @@ const STATUS_ID = {
   safe: { label: "AMAN", cls: "safe" },
   warn: { label: "PERHATIAN", cls: "warn" },
   danger: { label: "MENDESAK", cls: "danger" },
-  // Kategori yang belum jatuh tempo (mis. Belingua belum wajib semester ini):
-  // belum selesai, jadi tidak boleh ditampilkan sebagai AMAN.
+  // Kategori yang belum jatuh tempo (mis. Belingua belum wajib semester ini):  // belum selesai, jadi tidak boleh ditampilkan sebagai AMAN.
   info: { label: "BELUM WAJIB", cls: "info" },
 };
-
-// Mahasiswa lama (sebelum kolom is_active ada) dianggap aktif.
-const isActive = (s) => s.is_active !== false;
 
 function renderFigmaBadge(statusKey) {
   const meta = STATUS_ID[statusKey] || { label: statusKey?.toUpperCase() || "-", cls: "neutral" };
