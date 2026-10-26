@@ -363,5 +363,6 @@ end $$;
 
 alter table requirements drop constraint if exists requirements_category_check;
 update requirements set category = 'beelingua' where category = 'belingua';
+update requirements set label = 'Beelingua' where category = 'beelingua' and label = 'Belingua';
 alter table requirements add constraint requirements_category_check
   check (category in ('sks','comserv','sat','beelingua','sertifikasi'));
