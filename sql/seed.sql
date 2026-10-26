@@ -9,7 +9,7 @@
 --     enforced by the unique guards created in schema.sql.
 --
 -- Curriculum totals are the graduation config used by the UI:
---   146 SKS, 30 Comserv hours, 120 SAT points, Belingua by semester 4,
+--   146 SKS, 30 Comserv hours, 120 SAT points, Beelingua by semester 4,
 --   1 required certification. Targets are the cumulative fraction of the
 --   curriculum total a student must have reached by the end of each semester.
 -- =============================================================================
@@ -46,7 +46,7 @@ cross join (values
    '{"1":0.13333333333333333,"2":0.26666666666666666,"3":0.36666666666666664,"4":0.5,"5":0.6333333333333333,"6":0.7666666666666666,"7":0.8666666666666667,"8":1.0}'),
   ('sat','SAT','poin',120,
    '{"1":0.125,"2":0.25,"3":0.375,"4":0.5,"5":0.625,"6":0.75,"7":0.875,"8":1.0}'),
-  ('belingua','Belingua','',1,
+  ('beelingua','Beelingua','',1,
    '{"1":0.0,"2":0.0,"3":0.0,"4":1.0,"5":1.0,"6":1.0,"7":1.0,"8":1.0}'),
   ('sertifikasi','Sertifikasi','',1,
    '{"1":0.0,"2":0.0,"3":0.0,"4":0.0,"5":0.3,"6":0.5,"7":0.7,"8":1.0}')
@@ -59,16 +59,16 @@ on conflict (program_id, category) do update set
   targets        = excluded.targets;
 
 -- Students ------------------------------------------------------------------
--- belingua_status is kept consistent with the semester: before semester 4 the
--- Belingua target is 0 (nothing required), from semester 4 onward the target is
+-- beelingua_status is kept consistent with the semester: before semester 4 the
+-- Beelingua target is 0 (nothing required), from semester 4 onward the target is
 -- 100%, so 'lulus' is required to stay on track.
 insert into students
   (nim, name, program_id, advisor_id, angkatan, current_semester, status,
-   total_sks_passed, comserv_hours, sat_hours, belingua_status, belingua_score)
+   total_sks_passed, comserv_hours, sat_hours, beelingua_status, beelingua_score)
 select v.nim, v.name,
        (select id from programs where code = v.program_code),
        (select id from advisors where kode_dosen = v.kode_dosen),
-       v.angkatan, v.sem, v.status, v.sks, v.comserv, v.sat, v.belingua, v.score
+       v.angkatan, v.sem, v.status, v.sks, v.comserv, v.sat, v.beelingua, v.score
 from (values
   ('2702314920','Andi Pratama',      'CS','D001', 2023, 6, 'aktif', 126, 26, 20, 'proses',       480),
   ('2702314921','Bella Kartika',     'CS','D001', 2023, 6, 'aktif',  92, 12,  8, 'belum_ambil',  null),
@@ -86,7 +86,7 @@ from (values
   ('2702416100','Rizky Ramadhan',    'IS','D001', 2024, 4, 'aktif',  64, 10,  9, 'proses',       460),
   ('2702416101','Sinta Lestari',     'IS','D002', 2023, 6, 'aktif', 118, 24, 68, 'lulus',        570),
   ('2702416102','Taufik Hidayat',    'IS','D003', 2022, 8, 'aktif', 140, 32, 34, 'lulus',        600)
-) as v(nim, name, program_code, kode_dosen, angkatan, sem, status, sks, comserv, sat, belingua, score)
+) as v(nim, name, program_code, kode_dosen, angkatan, sem, status, sks, comserv, sat, beelingua, score)
 on conflict (nim) do update set
   name             = excluded.name,
   program_id       = excluded.program_id,
@@ -97,8 +97,8 @@ on conflict (nim) do update set
   total_sks_passed = excluded.total_sks_passed,
   comserv_hours    = excluded.comserv_hours,
   sat_hours        = excluded.sat_hours,
-  belingua_status  = excluded.belingua_status,
-  belingua_score   = excluded.belingua_score;
+  beelingua_status  = excluded.beelingua_status,
+  beelingua_score   = excluded.beelingua_score;
 
 -- Failed courses ------------------------------------------------------------
 insert into failed_courses (student_id, kode_mk, nama_mk, sks, nilai, semester_taken)

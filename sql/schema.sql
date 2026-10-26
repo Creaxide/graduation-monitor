@@ -55,9 +55,9 @@ create table if not exists students (
   total_sks_passed int not null default 0,
   comserv_hours    numeric(6,2) not null default 0,
   sat_hours        numeric(6,2) not null default 0,
-  belingua_status  text not null default 'belum_ambil'
-                     check (belingua_status in ('belum_ambil','proses','lulus')),
-  belingua_score   numeric,
+  beelingua_status  text not null default 'belum_ambil'
+                     check (beelingua_status in ('belum_ambil','proses','lulus')),
+  beelingua_score   numeric,
   -- false = mahasiswa tidak dipantau lagi di dashboard (diredupkan), data tetap utuh.
   is_active      boolean not null default true,
   -- Alasan mahasiswa dinonaktifkan dari pemantauan (diisi Dosen AA saat menonaktifkan).
@@ -77,7 +77,7 @@ create table if not exists requirements (
   id            uuid primary key default gen_random_uuid(),
   program_id    uuid references programs (id) on delete cascade,
   category      text not null check (category in
-                   ('sks','comserv','sat','belingua','sertifikasi')),
+                   ('sks','comserv','sat','beelingua','sertifikasi')),
   label         text not null,
   unit          text not null default '',
   total_required numeric not null default 0,
@@ -329,3 +329,39 @@ alter table students add column if not exists deactivated_at timestamptz;
 alter table requirements drop constraint if exists requirements_sks_total_integral;
 alter table requirements add constraint requirements_sks_total_integral
   check (category <> 'sks' or total_required = trunc(total_required));
+
+-- ---------------------------------------------------------------------------
+-- 7. Rename Belingua -> Beelingua (safe to re-run)
+--    Databases created before the rename still use the belingua_* columns and
+--    the 'belingua' requirement category. Rename them in place so existing data
+--    keeps working; fresh databases already use the new names.
+-- ---------------------------------------------------------------------------
+
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'students' and column_name = 'belingua_status'
+  ) then
+    alter table public.students rename column belingua_status to beelingua_status;
+  end if;
+
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'students' and column_name = 'belingua_score'
+  ) then
+    alter table public.students rename column belingua_score to beelingua_score;
+  end if;
+
+  if exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.students'::regclass and conname = 'students_belingua_status_check'
+  ) then
+    alter table public.students rename constraint students_belingua_status_check to students_beelingua_status_check;
+  end if;
+end $$;
+
+alter table requirements drop constraint if exists requirements_category_check;
+update requirements set category = 'beelingua' where category = 'belingua';
+alter table requirements add constraint requirements_category_check
+  check (category in ('sks','comserv','sat','beelingua','sertifikasi'));

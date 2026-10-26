@@ -10,12 +10,12 @@ export const CATEGORY_META = {
   sks: { label: "SKS", unit: "SKS", icon: "SKS" },
   comserv: { label: "Comserv", unit: "jam", icon: "CS" },
   sat: { label: "SAT", unit: "point", icon: "SAT" },
-  belingua: { label: "Belingua", unit: "", icon: "BL" },
+  beelingua: { label: "Beelingua", unit: "", icon: "BL" },
   sertifikasi: { label: "Sertifikasi", unit: "", icon: "CT" },
 };
 
-// Satu sumber label untuk status Belingua (dipakai di tabel, detail, laporan PDF).
-export const BELINGUA_LABEL = {
+// Satu sumber label untuk status Beelingua (dipakai di tabel, detail, laporan PDF).
+export const BEELINGUA_LABEL = {
   lulus: "Lulus",
   proses: "Sedang Menjalankan",
   belum_ambil: "Belum Menjalankan",
@@ -33,8 +33,8 @@ export function sanitizeString(value) {
     .replace(/^_+|_+$/g, "");
 }
 
-// Alias status Belingua (Indonesia/Inggris/boolean) -> status kanonik.
-const BELINGUA_ALIASES = {
+// Alias status Beelingua (Indonesia/Inggris/boolean) -> status kanonik.
+const BEELINGUA_ALIASES = {
   lulus: "lulus", lulus_100: "lulus", passed: "lulus", pass: "lulus",
   sudah: "lulus", sudah_lulus: "lulus", true: "lulus", ya: "lulus", yes: "lulus", y: "lulus",
   proses: "proses", process: "proses", in_progress: "proses", on_progress: "proses",
@@ -43,27 +43,27 @@ const BELINGUA_ALIASES = {
   belum_lulus: "belum_ambil", false: "belum_ambil", tidak: "belum_ambil", no: "belum_ambil", n: "belum_ambil",
 };
 
-// Status Belingua bisa datang dalam beberapa bentuk: string kanonik
+// Status Beelingua bisa datang dalam beberapa bentuk: string kanonik
 // (belum_ambil / proses / lulus), boolean lama (true = lulus), atau angka
 // progres (0 / 0.5 / 1). Semua dipetakan ke satu status kanonik supaya label
 // selalu mencerminkan kondisi asli — mahasiswa yang sudah lulus tetap "Lulus".
-export function normalizeBelinguaStatus(status) {
+export function normalizeBeelinguaStatus(status) {
   if (typeof status === "boolean") return status ? "lulus" : "belum_ambil";
   if (typeof status === "number") {
     if (status > 1 || status < 0) return "belum_ambil";
     return status >= 1 ? "lulus" : status >= 0.5 ? "proses" : "belum_ambil";
   }
   const key = sanitizeString(status);
-  if (Object.prototype.hasOwnProperty.call(BELINGUA_LABEL, key)) return key;
+  if (Object.prototype.hasOwnProperty.call(BEELINGUA_LABEL, key)) return key;
   if (/^\d+(_\d+)?$/.test(key)) {
     const num = Number(key.replace("_", "."));
     return num >= 1 ? "lulus" : num >= 0.5 ? "proses" : "belum_ambil";
   }
-  return BELINGUA_ALIASES[key] || "belum_ambil";
+  return BEELINGUA_ALIASES[key] || "belum_ambil";
 }
 
-export function belinguaLabel(status) {
-  return BELINGUA_LABEL[normalizeBelinguaStatus(status)];
+export function beelinguaLabel(status) {
+  return BEELINGUA_LABEL[normalizeBeelinguaStatus(status)];
 }
 
 // Status akademik mahasiswa (bukan status kelulusan): aktif/cuti/lulus/do.
@@ -87,11 +87,11 @@ export function normalizeStudentStatus(status) {
 export function sanitizeStudentFields(row = {}) {
   const out = { ...row };
   if (out.status !== undefined) out.status = normalizeStudentStatus(out.status);
-  if (out.belingua_status !== undefined) out.belingua_status = normalizeBelinguaStatus(out.belingua_status);
+  if (out.beelingua_status !== undefined) out.beelingua_status = normalizeBeelinguaStatus(out.beelingua_status);
   return out;
 }
 
-const BELINGUA_PROGRESS = { lulus: 1, proses: 0.5, belum_ambil: 0 };
+const BEELINGUA_PROGRESS = { lulus: 1, proses: 0.5, belum_ambil: 0 };
 
 export function normativeTarget(req, semester) {
   const targets = req?.targets || {};
@@ -130,11 +130,11 @@ function actualValue(category, student, context) {
       return { actual: Number(student.comserv_hours) || 0, total: context.req.total_required };
     case "sat":
       return { actual: Number(student.sat_hours) || 0, total: context.req.total_required };
-    case "belingua": {
-      const status = normalizeBelinguaStatus(student.belingua_status);
-      const p = BELINGUA_PROGRESS[status] ?? 0;
+    case "beelingua": {
+      const status = normalizeBeelinguaStatus(student.beelingua_status);
+      const p = BEELINGUA_PROGRESS[status] ?? 0;
       const total = context.req.total_required || 1;
-      return { actual: p * total, total, status, score: student.belingua_score };
+      return { actual: p * total, total, status, score: student.beelingua_score };
     }
     case "sertifikasi": {
       const { obtained } = context.cert;
@@ -160,14 +160,14 @@ export const STATUS_LABEL = {
   info: "Info",
 };
 
-// Belingua itu biner (lulus / belum), bukan progres bertahap seperti SKS.
+// Beelingua itu biner (lulus / belum), bukan progres bertahap seperti SKS.
 // "Sedang menjalankan" belum berarti selesai, jadi tidak boleh mendapat label
-// AMAN: AMAN hanya diberikan bila Belingua sudah LULUS.
+// AMAN: AMAN hanya diberikan bila Beelingua sudah LULUS.
 // Kalau target semester ini belum jatuh tempo dan mahasiswa belum memulai,
 // kategorinya berstatus INFO (netral) — belum ada kewajiban, tapi juga belum
 // selesai, sehingga tidak boleh ditampilkan sebagai AMAN.
-function belinguaStatus(student, remainingSemesters, targetDue) {
-  const status = normalizeBelinguaStatus(student.belingua_status);
+function beelinguaStatus(student, remainingSemesters, targetDue) {
+  const status = normalizeBeelinguaStatus(student.beelingua_status);
   if (status === "lulus") return "safe";
   if (status === "proses") return remainingSemesters > 2 ? "warn" : "danger";
   // belum_ambil
@@ -187,17 +187,17 @@ export function evaluateCategory(category, student, requirements, certifications
   const remainingSemesters = Math.max(1, GRADUATION_SEMESTER - semester + 1);
   const targetFraction = normativeTarget(req, semester);
 
-  const isBelingua = category === "belingua";
-  const belinguaRaw = normalizeBelinguaStatus(student.belingua_status);
+  const isBeelingua = category === "beelingua";
+  const beelinguaRaw = normalizeBeelinguaStatus(student.beelingua_status);
 
   const ctx = {
     req,
     cert: certSummary(certifications),
     certifications,
-    // Status Belingua asli ikut disimpan supaya UI (progress bar, label,
+    // Status Beelingua asli ikut disimpan supaya UI (progress bar, label,
     // alasan prioritas) menampilkan kondisi sebenarnya — "Sedang Menjalankan"
     // tidak boleh tampil sebagai "Belum Menjalankan".
-    ...(isBelingua ? { status: belinguaRaw } : {}),
+    ...(isBeelingua ? { status: beelinguaRaw } : {}),
   };
   const { actual, total } = actualValue(category, student, ctx);
 
@@ -208,12 +208,12 @@ export function evaluateCategory(category, student, requirements, certifications
   const targetBase = total;
   const targetValue = targetFraction * targetBase;
 
-  const belinguaPassed = belinguaRaw === "lulus";
+  const beelinguaPassed = beelinguaRaw === "lulus";
 
-  // Belingua: selama belum lulus, seluruh target semester ini dianggap belum terpenuhi.
+  // Beelingua: selama belum lulus, seluruh target semester ini dianggap belum terpenuhi.
   // (actual 0.5 untuk "proses" hanya dipakai untuk progress bar, bukan untuk gap.)
-  const gap = isBelingua
-    ? (belinguaPassed ? 0 : targetValue)
+  const gap = isBeelingua
+    ? (beelinguaPassed ? 0 : targetValue)
     : Math.max(0, targetValue - actual);
   const ratio = targetValue > 0 ? actual / targetValue : 1;
   const gapFraction = targetBase > 0 ? gap / targetBase : 0;
@@ -221,10 +221,10 @@ export function evaluateCategory(category, student, requirements, certifications
   let status = targetValue === 0 && gap <= 0
     ? "safe"
     : statusFromRatio(ratio, gap, remainingSemesters);
-  // Status Belingua selalu dihitung dari status yang tercatat pada mahasiswa
+  // Status Beelingua selalu dihitung dari status yang tercatat pada mahasiswa
   // (lulus / proses / belum_ambil), bukan dari gap — supaya "Sedang
   // Menjalankan" tidak pernah ikut tampil sebagai AMAN.
-  if (isBelingua) status = belinguaStatus(student, remainingSemesters, targetValue > 0);
+  if (isBeelingua) status = beelinguaStatus(student, remainingSemesters, targetValue > 0);
 
   const urgency = gap > 0 ? (gapFraction * 100) / remainingSemesters : 0;
 
@@ -254,7 +254,7 @@ export function recommendedRetakeSemester(student) {
 }
 
 export function evaluateStudent(student, requirements, failedCourses = [], certifications = []) {
-  const categories = ["sks", "comserv", "sat", "belingua", "sertifikasi"]
+  const categories = ["sks", "comserv", "sat", "beelingua", "sertifikasi"]
     .map((c) => evaluateCategory(c, student, requirements, certifications));
 
   const priorities = categories
@@ -293,8 +293,8 @@ export function evaluateStudent(student, requirements, failedCourses = [], certi
 
 export function priorityReason(item) {
   const unit = item.unit ? ` ${item.unit}` : "";
-  if (item.category === "belingua") {
-    return `Belingua berstatus "${belinguaLabel(item.raw.status)}". Perlu lulus untuk memenuhi target semester ${item.semester}.`;
+  if (item.category === "beelingua") {
+    return `Beelingua berstatus "${beelinguaLabel(item.raw.status)}". Perlu lulus untuk memenuhi target semester ${item.semester}.`;
   }
   if (item.category === "sertifikasi") {
     return `Kurang ${item.gap} sertifikat dari target semester ini.`;
@@ -308,8 +308,8 @@ export function recommendationSentence(result) {
     return `${s.name} sudah sesuai target: semua syarat kelulusan memenuhi norma semester ${s.current_semester}.`;
   }
   const parts = result.priorities.slice(0, 3).map((p, i) => {
-    if (p.category === "belingua") {
-      return `Prioritas ${i + 1}: Belingua` + (p.gap > 0 ? " — belum lulus." : ".");
+    if (p.category === "beelingua") {
+      return `Prioritas ${i + 1}: Beelingua` + (p.gap > 0 ? " — belum lulus." : ".");
     }
     if (p.category === "sertifikasi") {
       return `Prioritas ${i + 1}: Sertifikasi — kurang ${p.gap}.`;

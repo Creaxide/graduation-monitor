@@ -1,7 +1,7 @@
 # Graduation Monitoring System (Sistem Monitoring Kelulusan Mahasiswa)
 
 Advisor dashboard for monitoring student graduation requirements (SKS, Comserv,
-SAT, Belingua, Certifications, Failed Courses) with a rule-based priority
+SAT, Beelingua, Certifications, Failed Courses) with a rule-based priority
 recommendation engine.
 
 - **Frontend:** HTML, CSS, vanilla JavaScript (ES modules, no build step)
@@ -149,19 +149,19 @@ Failed courses are listed separately with a recommended retake semester
 Targets are configurable per program in the `requirements` table and are shown
 read-only on the **Import / Export** page.
 
-### Status Belingua
+### Status Beelingua
 
-Belingua is binary, so its status is derived from the status recorded on the
+Beelingua is binary, so its status is derived from the status recorded on the
 student — never from a "gap" like SKS or Comserv:
 
-| `belingua_status` | Badge | Meaning |
+| `beelingua_status` | Badge | Meaning |
 |---|---|---|
 | `lulus` | **AMAN** | finished — the only state that may be *Aman* |
 | `proses` | **PERHATIAN** (or **MENDESAK** when ≤ 2 semesters left) | still in progress, not finished yet |
 | `belum_ambil` + target already due | **MENDESAK** | not started while the target is already due |
 | `belum_ambil` + target not due yet | **BELUM WAJIB** | not required this semester (neutral, does not affect the overall status) |
 
-So a student can never be reported as *Aman* while the Belingua is still
+So a student can never be reported as *Aman* while the Beelingua is still
 running. `BELUM WAJIB` is a neutral (`info`) status: it does not downgrade the
 student's overall status, but it is no longer displayed as *Aman* either.
 

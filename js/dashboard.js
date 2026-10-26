@@ -17,7 +17,7 @@ const SORT_COLUMNS = {
   sks: { type: "risk" },
   comserv: { type: "risk" },
   sat: { type: "risk" },
-  belingua: { type: "risk" },
+  beelingua: { type: "risk" },
   sertifikasi: { type: "risk" },
 };
 
@@ -34,7 +34,7 @@ const STATUS_ID = {
   safe: { label: "AMAN", cls: "safe" },
   warn: { label: "PERHATIAN", cls: "warn" },
   danger: { label: "MENDESAK", cls: "danger" },
-  // Kategori yang belum jatuh tempo (mis. Belingua belum wajib semester ini):  // belum selesai, jadi tidak boleh ditampilkan sebagai AMAN.
+  // Kategori yang belum jatuh tempo (mis. Beelingua belum wajib semester ini):  // belum selesai, jadi tidak boleh ditampilkan sebagai AMAN.
   info: { label: "BELUM WAJIB", cls: "info" },
 };
 
@@ -166,7 +166,7 @@ function renderTable(rows, counts) {
           <td>${renderFigmaBadge(catStatus(r, "sks"))}</td>
           <td>${renderFigmaBadge(catStatus(r, "comserv"))}</td>
           <td>${renderFigmaBadge(catStatus(r, "sat"))}</td>
-          <td>${renderFigmaBadge(catStatus(r, "belingua"))}</td>
+          <td>${renderFigmaBadge(catStatus(r, "beelingua"))}</td>
           <td>${renderFigmaBadge(catStatus(r, "sertifikasi"))}</td>
           <td class="text-right">
             <a class="btn btn-detail" href="student.html?id=${s.id}">Detail</a>
@@ -187,7 +187,7 @@ function renderTable(rows, counts) {
             ${sortableTh("sks", "SKS")}
             ${sortableTh("comserv", "COMSERV")}
             ${sortableTh("sat", "SAT")}
-            ${sortableTh("belingua", "BILINGUA")}
+            ${sortableTh("beelingua", "BEELINGUA")}
             ${sortableTh("sertifikasi", "SERTIFIKASI")}
             <th></th>
           </tr>

@@ -5,12 +5,12 @@ import {
   listPrograms, listAdvisors, listRequirements, updateRequirements,
   insertFailedCourses, insertCertifications, logAudit,
 } from "./data.js";
-import { evaluateStudent, STATUS_LABEL, normalizeStudentStatus, normalizeBelinguaStatus } from "./engine.js";
+import { evaluateStudent, STATUS_LABEL, normalizeStudentStatus, normalizeBeelinguaStatus } from "./engine.js";
 import {
   el, escapeHtml, formatNumber, toast, downloadFile, toCsv, setBusy, printHtmlDocument,
 } from "./utils.js";
 
-const STUDENT_FIELDS = ["name", "program_code", "advisor_kode", "angkatan", "current_semester", "status", "total_sks_passed", "comserv_hours", "sat_hours", "belingua_status", "belingua_score", "is_active", "deactivate_reason"];
+const STUDENT_FIELDS = ["name", "program_code", "advisor_kode", "angkatan", "current_semester", "status", "total_sks_passed", "comserv_hours", "sat_hours", "beelingua_status", "beelingua_score", "is_active", "deactivate_reason"];
 const COURSE_FIELDS = ["kode_mk", "nama_mk", "sks", "nilai", "semester_taken"];
 const CERT_FIELDS = ["cert_name", "cert_required", "cert_obtained", "cert_obtained_at"];
 
@@ -130,8 +130,8 @@ async function runImport() {
       if (merged.total_sks_passed) patch.total_sks_passed = toInt(merged.total_sks_passed);
       if (merged.comserv_hours) patch.comserv_hours = toNum(merged.comserv_hours);
       if (merged.sat_hours) patch.sat_hours = toNum(merged.sat_hours);
-      if (merged.belingua_status) patch.belingua_status = normalizeBelinguaStatus(merged.belingua_status);
-      if (merged.belingua_score) patch.belingua_score = toNum(merged.belingua_score);
+      if (merged.beelingua_status) patch.beelingua_status = normalizeBeelinguaStatus(merged.beelingua_status);
+      if (merged.beelingua_score) patch.beelingua_score = toNum(merged.beelingua_score);
       if (merged.angkatan) patch.angkatan = toInt(merged.angkatan);
       if (merged.is_active) patch.is_active = truthy(merged.is_active);
       // Alasan nonaktif hanya relevan kalau mahasiswa memang dinonaktifkan.
@@ -168,8 +168,8 @@ async function runImport() {
           total_sks_passed: patch.total_sks_passed ?? 0,
           comserv_hours: patch.comserv_hours ?? 0,
           sat_hours: patch.sat_hours ?? 0,
-          belingua_status: patch.belingua_status || "belum_ambil",
-          belingua_score: patch.belingua_score ?? null,
+          beelingua_status: patch.beelingua_status || "belum_ambil",
+          beelingua_score: patch.beelingua_score ?? null,
           is_active: patch.is_active ?? true,
           deactivate_reason: patch.is_active === false ? patch.deactivate_reason ?? null : null,
           deactivated_at: patch.is_active === false ? patch.deactivated_at ?? null : null,
@@ -327,7 +327,7 @@ function toExportRow(r) {
     SKS_passed: r.student.total_sks_passed,
     Comserv_hours: r.student.comserv_hours,
     SAT_hours: r.student.sat_hours,
-    Belingua: r.student.belingua_status,
+    Beelingua: r.student.beelingua_status,
     Overall_status: STATUS_LABEL[r.overall],
     Is_active: r.student.is_active === false ? "false" : "true",
     Deactivate_reason: r.student.deactivate_reason || "",
@@ -369,16 +369,16 @@ function exportPdf(rows) {
 
 // Kategori yang dihitung dalam unit bulat: total kurikulum dan target
 // per semester selalu berupa bilangan bulat.
-const INTEGER_TOTAL_CATEGORIES = new Set(["sks", "comserv", "sat", "belingua", "sertifikasi"]);
+const INTEGER_TOTAL_CATEGORIES = new Set(["sks", "comserv", "sat", "beelingua", "sertifikasi"]);
 
 // Kategori yang target per semester-nya dinyatakan dalam unit bulat.
-// Belingua & Sertifikasi memakai total 1 sehingga target-nya berupa fraksi
+// Beelingua & Sertifikasi memakai total 1 sehingga target-nya berupa fraksi
 // (0.3 / 0.5 / 0.7) dan tidak boleh dibulatkan.
 const INTEGER_UNITS_CATEGORIES = new Set(["sks", "comserv", "sat"]);
 
 // Urutan tampilan kategori bersifat tetap supaya baris tidak berpindah tempat
 // saat data dimuat ulang (urutan hasil query tidak dijamin stabil).
-const CATEGORY_ORDER = ["sks", "comserv", "sat", "belingua", "sertifikasi"];
+const CATEGORY_ORDER = ["sks", "comserv", "sat", "beelingua", "sertifikasi"];
 
 // Kategori dengan target numerik (bukan status) yang bisa disebar rata per semester.
 const SPREADABLE_CATEGORIES = new Set(["sks", "comserv", "sat"]);
@@ -386,25 +386,25 @@ const SPREADABLE_CATEGORIES = new Set(["sks", "comserv", "sat"]);
 // Semester yang tampil di tabel konfigurasi.
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 
-// Belingua bukan angka 0/1, melainkan status dengan tiga nilai seperti di database
+// Beelingua bukan angka 0/1, melainkan status dengan tiga nilai seperti di database
 // (belum_ambil / proses / lulus). Target per semester disimpan sebagai fraksi
-// 0 / 0.5 / 1 agar tetap kompatibel dengan engine (lihat BELINGUA_PROGRESS).
-const BELINGUA_TARGETS = [
+// 0 / 0.5 / 1 agar tetap kompatibel dengan engine (lihat BEELINGUA_PROGRESS).
+const BEELINGUA_TARGETS = [
   { value: 0, label: "Belum Menjalankan" },
   { value: 0.5, label: "Sedang Menjalankan" },
   { value: 1, label: "Lulus" },
 ];
 
-function belinguaTargetValue(raw) {
+function beelinguaTargetValue(raw) {
   const n = Number(raw || 0);
   if (n >= 1) return 1;
   if (n >= 0.5) return 0.5;
   return 0;
 }
 
-function belinguaTargetLabel(raw) {
-  const v = belinguaTargetValue(raw);
-  return BELINGUA_TARGETS.find((o) => o.value === v)?.label || BELINGUA_TARGETS[0].label;
+function beelinguaTargetLabel(raw) {
+  const v = beelinguaTargetValue(raw);
+  return BEELINGUA_TARGETS.find((o) => o.value === v)?.label || BEELINGUA_TARGETS[0].label;
 }
 
 function canEditTargets() {
@@ -433,8 +433,8 @@ function renderSettings() {
         ${order.map((cat) => {
           const rows = grouped[cat];
           const r = rows[0];
-          const isBelingua = r.category === "belingua";
-          const totalCell = isBelingua
+          const isBeelingua = r.category === "beelingua";
+          const totalCell = isBeelingua
             ? ""
             : editable
               ? `<input type="number" step="${INTEGER_TOTAL_CATEGORIES.has(r.category) ? "1" : "any"}" min="0" data-req="${r.id}" data-field="total" value="${formatNumber(r.total_required)}" style="width:84px;text-align:right;${inputStyle}" />`
@@ -443,11 +443,11 @@ function renderSettings() {
             <td><strong>${escapeHtml(r.label)}</strong></td>
             <td>${totalCell}</td>
             ${semesters.map((s) => {
-              if (isBelingua) {
-                const current = belinguaTargetValue(r.targets?.[s]);
-                if (!editable) return `<td class="mono">${belinguaTargetLabel(current)}</td>`;
-                const opts = BELINGUA_TARGETS.map((o) => `<option value="${o.value}"${o.value === current ? " selected" : ""}>${o.label}</option>`).join("");
-                return `<td><select data-req="${r.id}" data-sem="${s}" data-belingua="1" style="${selectStyle}" title="target status Belingua per semester">${opts}</select></td>`;
+              if (isBeelingua) {
+                const current = beelinguaTargetValue(r.targets?.[s]);
+                if (!editable) return `<td class="mono">${beelinguaTargetLabel(current)}</td>`;
+                const opts = BEELINGUA_TARGETS.map((o) => `<option value="${o.value}"${o.value === current ? " selected" : ""}>${o.label}</option>`).join("");
+                return `<td><select data-req="${r.id}" data-sem="${s}" data-beelingua="1" style="${selectStyle}" title="target status Beelingua per semester">${opts}</select></td>`;
               }
               const frac = Number(r.targets?.[s] || 0);
               const isInt = INTEGER_UNITS_CATEGORIES.has(r.category);
@@ -530,7 +530,7 @@ async function saveSettings() {
       if (!entry) return;
       const v = parseFloat(String(input.value).replace(",", "."));
       if (Number.isNaN(v)) return;
-      if (input.dataset.belingua) {
+      if (input.dataset.beelingua) {
         entry.targets[input.dataset.sem] = v;
         return;
       }
@@ -590,7 +590,27 @@ function updateTemplateUI() {
   el("template-hint").textContent = `${TEMPLATE.hint} Kolom: ${TEMPLATE.headers.join(", ")}`;
 }
 
+// Tampilkan/sembunyikan panel Target Normatif. Tombol ini murni UI, jadi tetap
+// tersedia untuk kaprodi; hak baca-saja kaprodi diatur terpisah di wire() dan renderSettings().
+function wireSettingsToggle() {
+  const btn = el("toggle-settings");
+  const host = el("settings-host");
+  if (!btn || !host) return;
+  const apply = (hide) => {
+    host.classList.toggle("hidden", hide);
+    btn.setAttribute("aria-expanded", String(!hide));
+    btn.title = hide ? "Tampilkan konfigurasi semester" : "Sembunyikan konfigurasi semester";
+    const label = el("toggle-settings-label");
+    if (label) label.textContent = hide ? "Tampilkan" : "Sembunyikan";
+    const ico = btn.querySelector("svg");
+    if (ico) ico.style.transform = hide ? "rotate(180deg)" : "";
+  };
+  btn.addEventListener("click", () => apply(btn.getAttribute("aria-expanded") === "true"));
+}
+
 function wire() {
+  wireSettingsToggle();
+
   el("download-template").addEventListener("click", () => {
     downloadFile("template-data-lengkap.csv", toCsv(TEMPLATE.sample, TEMPLATE.headers));
   });

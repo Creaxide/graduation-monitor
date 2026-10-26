@@ -1,5 +1,5 @@
 import { escapeHtml, formatNumber } from "./utils.js";
-import { belinguaLabel, priorityReason, recommendationSentence } from "./engine.js";
+import { beelinguaLabel, priorityReason, recommendationSentence } from "./engine.js";
 
 // --------------------------------------------------------------- label status ---
 
@@ -25,7 +25,7 @@ const REPORT_SHORT_LABELS = {
   sks: "SKS",
   comserv: "Community Svc",
   sat: "SAT",
-  belingua: "Belingua",
+  beelingua: "Beelingua",
   sertifikat: "Sertifikasi",
   sertifikasi: "Sertifikasi",
 };
@@ -43,8 +43,8 @@ export function priorityText(p) {
   if (p.category === "sat") {
     return { title: "SAT (Student Activity)", desc: `Kurang ${Math.ceil(p.gap)} point dari target ${formatNumber(p.targetValue)} Point semester ini` };
   }
-  if (p.category === "belingua") {
-    return { title: "Belingua", desc: `Status saat ini: ${belinguaLabel(p.raw.status)}. Segera mulai menyelesaikan beelingua.` };
+  if (p.category === "beelingua") {
+    return { title: "Beelingua", desc: `Status saat ini: ${beelinguaLabel(p.raw.status)}. Segera mulai menyelesaikan Beelingua.` };
   }
   if (p.category === "sertifikasi") {
     return { title: "Sertifikasi", desc: `Kurang ${Math.ceil(p.gap)} sertifikat dari target.` };
@@ -56,8 +56,8 @@ export function priorityText(p) {
 // sengaja sama dengan daftar "Rekomendasi prioritas" di atasnya, supaya angka
 // yang dibaca Dosen di dua tempat itu sama.
 export function categoryShortfallText(cat) {
-  if (cat.category === "belingua") {
-    return `Belingua belum lulus (${belinguaLabel(cat.raw?.status)})`;
+  if (cat.category === "beelingua") {
+    return `Beelingua belum lulus (${beelinguaLabel(cat.raw?.status)})`;
   }
   if (cat.category === "sertifikasi") {
     return `kurang ${Math.ceil(cat.gap)} sertifikat dari target semester ini`;
@@ -297,7 +297,7 @@ export function buildStudentReportHtml(result) {
     sks: `${formatNumber(s.total_sks_passed)} / ${formatNumber(totalOf("sks"))} SKS`,
     comserv: `${formatNumber(s.comserv_hours)} / ${formatNumber(totalOf("comserv"))} Jam`,
     sat: `${formatNumber(s.sat_hours)} / ${formatNumber(totalOf("sat"))} Point`,
-    belingua: belinguaLabel(s.belingua_status),
+    beelingua: beelinguaLabel(s.beelingua_status),
     sertifikasi: `${certActual} / ${certTotal} sertifikat`,
   };
 

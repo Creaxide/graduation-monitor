@@ -1,6 +1,6 @@
 import { initLayout } from "./ui.js";
 import { loadStudentBundle } from "./data.js";
-import { evaluateStudent, recommendationSentence, belinguaLabel } from "./engine.js";
+import { evaluateStudent, recommendationSentence, beelinguaLabel } from "./engine.js";
 import { buildStudentReportHtml, priorityText, riskTextFor } from "./report.js";
 import { el, escapeHtml, formatNumber, toast, printHtmlDocument } from "./utils.js";
 
@@ -29,8 +29,8 @@ function statusBadge(status) {
 }
 
 function progressText(cat) {
-  if (cat.category === "belingua") {
-    return belinguaLabel(cat.raw.status);
+  if (cat.category === "beelingua") {
+    return beelinguaLabel(cat.raw.status);
   }
   if (cat.category === "sertifikasi") {
     return `${Math.min(cat.actual, cat.total)} / ${cat.total} sertifikat`;
@@ -75,7 +75,7 @@ function render(result) {
   const initials = (s.name || "AP").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
   const statusDot = `<span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;"></span>`;
 
-  const progressOrder = ["sks", "comserv", "sat", "belingua", "sertifikasi"];
+  const progressOrder = ["sks", "comserv", "sat", "beelingua", "sertifikasi"];
   const orderedCats = progressOrder
     .map((cat) => result.categories.find((c) => c.category === cat))
     .filter(Boolean);
@@ -206,7 +206,7 @@ function render(result) {
           <div style="padding: 0 18px 14px; display:flex; flex-direction:column; gap:12px;">
             ${orderedCats
               .map((cat) => {
-                const labelMap = { sks: "SKS", comserv: "Community Svc", sat: "SAT", belingua: "Belingua", sertifikasi: "Sertifikasi" };
+                const labelMap = { sks: "SKS", comserv: "Community Svc", sat: "SAT", beelingua: "Beelingua", sertifikasi: "Sertifikasi" };
                 const label = labelMap[cat.category] || cat.label;
                 const { cls, badge, bar } = statusBadge(cat.status);
                 const statusTxt = statusId(cat.status);

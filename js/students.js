@@ -1,16 +1,16 @@
 import { initLayout } from "./ui.js";
 import { listStudents } from "./data.js";
 import { el, escapeHtml, debounce, isActive } from "./utils.js";
-import { belinguaLabel, normalizeBelinguaStatus } from "./engine.js";
+import { beelinguaLabel, normalizeBeelinguaStatus } from "./engine.js";
 
 let state = { students: [], q: "", semester: "", active: "semua" };
 
 // Kolom ini hanya menampilkan data mentah. Urgensi (Aman/Perhatian/Mendesak)
 // dihitung engine.js dan tampil di halaman detail, supaya tidak ada dua aturan berbeda.
-function belinguaBadge(v) {
-  const status = normalizeBelinguaStatus(v);
+function beelinguaBadge(v) {
+  const status = normalizeBeelinguaStatus(v);
   const cls = { lulus: "safe", proses: "info", belum_ambil: "neutral" }[status] || "neutral";
-  return `<span class="badge ${cls}">${escapeHtml(belinguaLabel(status))}</span>`;
+  return `<span class="badge ${cls}">${escapeHtml(beelinguaLabel(status))}</span>`;
 }
 
 function overallBadge(s) {
@@ -45,7 +45,7 @@ function render() {
         <thead>
           <tr>
             <th>NIM</th><th>Nama</th><th>Program</th><th>SEM</th>
-            <th>SKS</th><th>Comserv</th><th>SAT</th><th>Belingua</th><th>Status Akademik</th>
+            <th>SKS</th><th>Comserv</th><th>SAT</th><th>Beelingua</th><th>Status Akademik</th>
             <th class="text-right">Aksi</th>
           </tr>
         </thead>
@@ -71,7 +71,7 @@ function render() {
               <td class="mono">${s.total_sks_passed}</td>
               <td class="mono">${s.comserv_hours}</td>
               <td class="mono">${s.sat_hours}</td>
-              <td>${belinguaBadge(s.belingua_status)}</td>
+              <td>${beelinguaBadge(s.beelingua_status)}</td>
               <td>${overallBadge(s)}</td>
               <td class="text-right">
                 <a class="btn btn-detail" href="student.html?id=${s.id}" onclick="event.stopPropagation()">Detail</a>
