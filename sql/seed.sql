@@ -59,14 +59,13 @@ on conflict (program_id, category) do update set
   targets        = excluded.targets;
 
 -- Students ------------------------------------------------------------------
--- Demo students with clear badge priorities:
---   MENDESAK (Urgent): Andi Pratama - Beelingua belum lulus semester 6, SKS kurang
---   PERHATIAN (Attention): Dewi Anggraini - Beelingua belum ambil semester 4
---   AMAN (Safe): Chandra Wijaya - lulus semua persyaratan
---   SINTA LESTARI (Safe): lulus semua, contoh lain
--- beelingua_status is kept consistent with the semester: before semester 4 the
--- Beelingua target is 0 (nothing required), from semester 4 onward the target is
--- 100%, so 'lulus' is required to stay on track.
+-- Demo students with varied semesters (1-8+) showing different badge states.
+-- Each student has unique NIM to demonstrate the full range of scenarios.
+-- Badge logic:
+--   - INFO (semester 1-2): Beelingua belum jatuh tempo
+--   - WARN (semester 3-4): Beelingua proses, target masih 0
+--   - DANGER (semester 5+): Beelingua target 100%, belum lulus
+--   - SAFE: Beelingua lulus
 insert into students
   (nim, name, program_id, advisor_id, angkatan, current_semester, status,
    total_sks_passed, comserv_hours, sat_hours, beelingua_status, beelingua_score)
@@ -75,31 +74,39 @@ select v.nim, v.name,
        (select id from advisors where kode_dosen = v.kode_dosen),
        v.angkatan, v.sem, v.status, v.sks, v.comserv, v.sat, v.beelingua, v.score
 from (values
-  -- MENDESAK (Urgent): Beelingua belum lulus semester 6, wajib kuliah semester 7
-  ('2702314920','Andi Pratama',      'CS','D001', 2023, 6, 'aktif', 126, 26, 20, 'proses',       480),
-  -- MENDESAK: Wajib kuliah semester 7 (target 75%, sudah 87% SKS)
-  ('2702314921','Bella Kartika',     'CS','D001', 2023, 6, 'aktif',  92, 12,  8, 'belum_ambil',  null),
-  -- AMAN (Safe): Lulus semua persyaratan
-  ('2702314922','Chandra Wijaya',    'CS','D001', 2022, 8, 'aktif', 138, 38, 30, 'lulus',        560),
-  -- PERHATIAN (Attention): Semester 4, Beelingua belum ambil, harus lulus semester 4
-  ('2702314923','Dewi Anggraini',    'CS','D001', 2024, 4, 'aktif',  60, 14, 12, 'belum_ambil',  null),
-  -- MENDESAK: SKS cukup tapi Beelingua proses semester 6
-  ('2702314924','Eko Nugroho',       'CS','D002', 2023, 6, 'aktif', 108, 20, 16, 'proses',       455),
-  -- AMAN (Safe): Lulus semua
-  ('2702352622','Gilbert Tobing',    'CS','D002', 2023, 6, 'aktif', 120, 30, 70, 'lulus',        590),
-  -- AMAN (Safe): Semester 8, lulus semua
+  -- Semester 1: INFO badge (Beelingua belum jatuh tempo semester 4)
+  ('2702314920','Andi Pratama',      'CS','D001', 2023, 1, 'aktif',  18,  4,  2, 'belum_ambil',  460),
+  ('2702314921','Bella Kartika',     'CS','D001', 2023, 1, 'aktif',  15,  3,  1, 'belum_ambil',  460),
+  ('2702376453','Nadia Puspita',     'CS','D003', 2025, 2, 'aktif',  24,  2,  2, 'belum_ambil',  460),
+  ('2702416100','Rizky Ramadhan',    'IS','D001', 2024, 2, 'aktif',  28,  4,  3, 'belum_ambil',  460),
+  -- Semester 3: AMAN (Beelingua target masih 0)
+  ('2702416102','Taufik Hidayat',    'IS','D003', 2022, 3, 'aktif',  60,  8, 10, 'lulus',        600),
+  -- Semester 4: target Beelingua jatuh tempo, bepelum_ambil -> DANGER
+  ('2702314923','Dewi Anggraini',    'CS','D001', 2024, 4, 'aktif',  60, 14, 12, 'belum_ambil',  460),
+  -- Semester 4: SAFE (lulus Beelingua)
   ('2702352623','Hana Salsabila',    'CS','D002', 2024, 4, 'aktif',  66, 11, 33, 'lulus',        500),
-  -- AMAN (Safe): Semester 8, lulus semua
-  ('2702352624','Irfan Maulana',     'CS','D002', 2022, 8, 'aktif', 132, 34, 28, 'lulus',        545),
-  ('2702107493','Joseph D.',         'CS','D003', 2023, 6, 'aktif', 100, 18, 14, 'proses',       470),
-  ('2702107494','Kevin Sanjaya',     'CS','D003', 2024, 4, 'aktif',  48,  6,  4, 'belum_ambil',  null),
+  ('2702416101','Sinta Lestari',     'IS','D002', 2023, 4, 'aktif',  60, 10, 15, 'lulus',        570),
+  -- Semester 5: DANGER territory (Beelingua target 100%, belum lulus)
+  ('2702314924','Eko Nugroho',       'CS','D002', 2023, 5, 'aktif',  95, 16, 22, 'proses',       455),
+  ('2702352624','Irfan Maulana',     'CS','D002', 2022, 5, 'aktif',  95, 18, 25, 'lulus',        545),
+  ('2702107493','Joseph D.',         'CS','D003', 2023, 5, 'aktif',  85, 15, 18, 'proses',       470),
+  ('2702107494','Kevin Sanjaya',     'CS','D003', 2024, 5, 'aktif',  55,  8,  9, 'belum_ambil',  460),
+  ('2702107494','Kevin Sanjaya',     'CS','D003', 2024, 5, 'aktif',  55,  8,  9, 'belum_ambil',  460),
+  -- Semester 6: DANGER territory
+  ('2702416105','Fira Nur',          'CS','D001', 2023, 6, 'aktif', 126, 26, 20, 'proses',       480),
+  ('2702416106','Doni Santoso',      'CS','D001', 2023, 6, 'aktif',  92, 12,  8, 'belum_ambil',  460),
+  ('2702352622','Gilbert Tobing',    'CS','D002', 2023, 6, 'aktif', 120, 30, 70, 'lulus',        590),
   ('2702376452','M. Andri Wibowo',   'CS','D003', 2023, 6, 'aktif', 130, 28, 68, 'lulus',        555),
-  ('2702376453','Nadia Puspita',     'CS','D003', 2025, 2, 'aktif',  24,  2,  2, 'belum_ambil',  null),
-  ('2702314925','Oscar Lim',         'CS','D001', 2024, 4, 'cuti',   36,  4,  4, 'belum_ambil',  null),
-  ('2702416100','Rizky Ramadhan',    'IS','D001', 2024, 4, 'aktif',  64, 10,  9, 'proses',       460),
-  -- AMAN (Safe): Lulus semua, contoh murid aman lainnya
-  ('2702416101','Sinta Lestari',     'IS','D002', 2023, 6, 'aktif', 118, 24, 68, 'lulus',        570),
-  ('2702416102','Taufik Hidayat',    'IS','D003', 2022, 8, 'aktif', 140, 32, 34, 'lulus',        600)
+  -- Semester 7: DANGER territory (harus lulus semester ini)
+  ('2702416107','Sari Wulandari',    'CS','D001', 2023, 7, 'aktif', 145, 28, 35, 'proses',       480),
+  ('2702416108','Agus Subroto',      'CS','D001', 2023, 7, 'aktif', 130, 20, 20, 'belum_ambil',  460),
+  ('2702416100','Rizky Ramadhan',    'IS','D001', 2024, 7, 'aktif', 115, 20, 22, 'proses',       460),
+  ('2702352624','Irfan Maulana',     'CS','D002', 2022, 7, 'aktif', 140, 32, 34, 'lulus',        545),
+  -- Semester 8: FINAL semester, lulus WAJIB
+  ('2702416109','Chandra Wijaya',    'CS','D001', 2022, 8, 'aktif', 138, 38, 30, 'lulus',        560),
+  ('2702416110','Gilbert Tobing',    'CS','D002', 2023, 8, 'aktif', 120, 30, 70, 'lulus',        590),
+  -- Semester 9-10: retake window
+  ('2702416111','Demo Retake',       'CS','D001', 2022, 9, 'aktif',  80, 15, 12, 'lulus',        560)
 ) as v(nim, name, program_code, kode_dosen, angkatan, sem, status, sks, comserv, sat, beelingua, score)
 on conflict (nim) do update set
   name             = excluded.name,
@@ -127,7 +134,10 @@ join (values
   ('2702107493','COMP6123','Struktur Data',4,'D',3),
   ('2702314920','COMP6083','Basis Data',4,'D',4),
   ('2702352623','MATH6031','Kalkulus',3,'D',1),
-  ('2702416100','COMP6267','Pemrograman Web',4,'D',3)
+  ('2702314921','MATH6031','Kalkulus',3,'E',1),
+  ('2702416108','COMP6047','Algoritma dan Pemrograman',4,'D',2),
+  ('2702416106','MATH6031','Kalkulus',3,'E',1),
+  ('2702416106','COMP6123','Struktur Data',4,'D',3)
 ) as v(nim, kode_mk, nama_mk, sks, nilai, semester_taken) on s.nim = v.nim
 on conflict (student_id, kode_mk, semester_taken) do update set
   nama_mk = excluded.nama_mk,
@@ -146,6 +156,10 @@ join (values
   ('2702314920','Sertifikasi Jaringan Dasar',         false, '2025-08-15'),
   ('2702314921','Sertifikasi Kompetensi Pemrograman', true,  null),
   ('2702314921','Sertifikasi Jaringan Dasar',         false, null),
+  ('2702416105','Sertifikasi Kompetensi Pemrograman', true,  '2025-05-01'),
+  ('2702416106','Sertifikasi Kompetensi Pemrograman', true,  null),
+  ('2702416108','Sertifikasi Kompetensi Pemrograman', true,  null),
+  ('2702416111','Sertifikasi Jaringan Dasar',         false, '2023-01-15'),
   ('2702352622','Sertifikasi Kompetensi Pemrograman', true,  '2025-05-10'),
   ('2702352622','Sertifikasi Jaringan Dasar',         true,  '2025-09-01'),
   ('2702107493','Sertifikasi Kompetensi Pemrograman', true,  null),
@@ -153,7 +167,10 @@ join (values
   ('2702376452','Sertifikasi Kompetensi Pemrograman', true,  '2025-07-20'),
   ('2702376452','Sertifikasi Jaringan Dasar',         true,  '2025-10-05'),
   ('2702416101','Sertifikasi Kompetensi Pemrograman', true,  '2025-06-18'),
-  ('2702416102','Sertifikasi Kompetensi Pemrograman', true,  '2025-04-22')
+  ('2702416102','Sertifikasi Kompetensi Pemrograman', true,  '2025-04-22'),
+  ('2702416109','Sertifikasi Kompetensi Pemrograman', true,  '2025-03-15'),
+  ('2702416110','Sertifikasi Kompetensi Pemrograman', true,  '2025-02-20'),
+  ('2702416111','Sertifikasi Kompetensi Pemrograman', true,  '2023-01-15')
 ) as v(nim, name, is_required, obtained_at) on s.nim = v.nim
 on conflict (student_id, name) do update set
   is_required = excluded.is_required,
