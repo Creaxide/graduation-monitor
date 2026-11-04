@@ -91,7 +91,6 @@ from (values
   ('2702352624','Irfan Maulana',     'CS','D002', 2022, 5, 'aktif',  95, 18, 25, 'lulus',        545),
   ('2702107493','Joseph D.',         'CS','D003', 2023, 5, 'aktif',  85, 15, 18, 'proses',       470),
   ('2702107494','Kevin Sanjaya',     'CS','D003', 2024, 5, 'aktif',  55,  8,  9, 'belum_ambil',  460),
-  ('2702107494','Kevin Sanjaya',     'CS','D003', 2024, 5, 'aktif',  55,  8,  9, 'belum_ambil',  460),
   -- Semester 6: DANGER territory
   ('2702416105','Fira Nur',          'CS','D001', 2023, 6, 'aktif', 126, 26, 20, 'proses',       480),
   ('2702416106','Doni Santoso',      'CS','D001', 2023, 6, 'aktif',  92, 12,  8, 'belum_ambil',  460),
@@ -100,8 +99,8 @@ from (values
   -- Semester 7: DANGER territory (harus lulus semester ini)
   ('2702416107','Sari Wulandari',    'CS','D001', 2023, 7, 'aktif', 145, 28, 35, 'proses',       480),
   ('2702416108','Agus Subroto',      'CS','D001', 2023, 7, 'aktif', 130, 20, 20, 'belum_ambil',  460),
-  ('2702416100','Rizky Ramadhan',    'IS','D001', 2024, 7, 'aktif', 115, 20, 22, 'proses',       460),
-  ('2702352624','Irfan Maulana',     'CS','D002', 2022, 7, 'aktif', 140, 32, 34, 'lulus',        545),
+  ('2702416112','Rizky Ramadhan II', 'IS','D001', 2024, 7, 'aktif', 115, 20, 22, 'proses',       460),
+  ('2702416113','Irfan Maulana II',  'CS','D002', 2022, 7, 'aktif', 140, 32, 34, 'lulus',        545),
   -- Semester 8: FINAL semester, lulus WAJIB
   ('2702416109','Chandra Wijaya',    'CS','D001', 2022, 8, 'aktif', 138, 38, 30, 'lulus',        560),
   ('2702416110','Gilbert Tobing',    'CS','D002', 2023, 8, 'aktif', 120, 30, 70, 'lulus',        590),
