@@ -161,15 +161,16 @@ export const STATUS_LABEL = {
 };
 
 // Beelingua itu biner (lulus / belum), bukan progres bertahap seperti SKS.
-// "Sedang menjalankan" belum berarti selesai, jadi tidak boleh mendapat label
+// "Sedang menjalankan" belum berartu selesai, jadi tidak boleh mendapat label
 // AMAN: AMAN hanya diberikan bila Beelingua sudah LULUS.
-// Kalau target semester ini belum jatuh tempo dan mahasiswa belum memulai,
-// kategorinya berstatus INFO (netral) — belum ada kewajiban, tapi juga belum
-// selesai, sehingga tidak boleh ditampilkan sebagai AMAN.
+// Kalau target semester sudah "lulus" (target = 100%) dan mahasiswa belum
+// lulus, maka badge MENDESAK — tidak ada waktu lagi untuk menjalankan.
+// Kalau masih ada target tetapi belum jatuh tempo, status INFO (netral).
 function beelinguaStatus(student, remainingSemesters, targetDue) {
   const status = normalizeBeelinguaStatus(student.beelingua_status);
   if (status === "lulus") return "safe";
-  if (status === "proses") return remainingSemesters > 2 ? "warn" : "danger";
+  // targetDue artinya target semester ini sudah "lulus" (threshold 100%)
+  if (status === "proses") return targetDue ? "danger" : (remainingSemesters > 2 ? "warn" : "danger");
   // belum_ambil
   return targetDue ? "danger" : "info";
 }
