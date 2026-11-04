@@ -170,7 +170,7 @@ function beelinguaStatus(student, remainingSemesters, targetDue) {
   const status = normalizeBeelinguaStatus(student.beelingua_status);
   if (status === "lulus") return "safe";
   // targetDue artinya target semester ini sudah "lulus" (threshold 100%)
-  if (status === "proses") return targetDue ? "danger" : (remainingSemesters > 2 ? "warn" : "danger");
+  if (status === "proses") return remainingSemesters < 1 ? "danger" : "warn";
   // belum_ambil
   return targetDue ? "danger" : "info";
 }
