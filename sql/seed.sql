@@ -59,6 +59,11 @@ on conflict (program_id, category) do update set
   targets        = excluded.targets;
 
 -- Students ------------------------------------------------------------------
+-- Demo students with clear badge priorities:
+--   MENDESAK (Urgent): Andi Pratama - Beelingua belum lulus semester 6, SKS kurang
+--   PERHATIAN (Attention): Dewi Anggraini - Beelingua belum ambil semester 4
+--   AMAN (Safe): Chandra Wijaya - lulus semua persyaratan
+--   SINTA LESTARI (Safe): lulus semua, contoh lain
 -- beelingua_status is kept consistent with the semester: before semester 4 the
 -- Beelingua target is 0 (nothing required), from semester 4 onward the target is
 -- 100%, so 'lulus' is required to stay on track.
@@ -70,13 +75,21 @@ select v.nim, v.name,
        (select id from advisors where kode_dosen = v.kode_dosen),
        v.angkatan, v.sem, v.status, v.sks, v.comserv, v.sat, v.beelingua, v.score
 from (values
+  -- MENDESAK (Urgent): Beelingua belum lulus semester 6, wajib kuliah semester 7
   ('2702314920','Andi Pratama',      'CS','D001', 2023, 6, 'aktif', 126, 26, 20, 'proses',       480),
+  -- MENDESAK: Wajib kuliah semester 7 (target 75%, sudah 87% SKS)
   ('2702314921','Bella Kartika',     'CS','D001', 2023, 6, 'aktif',  92, 12,  8, 'belum_ambil',  null),
+  -- AMAN (Safe): Lulus semua persyaratan
   ('2702314922','Chandra Wijaya',    'CS','D001', 2022, 8, 'aktif', 138, 38, 30, 'lulus',        560),
+  -- PERHATIAN (Attention): Semester 4, Beelingua belum ambil, harus lulus semester 4
   ('2702314923','Dewi Anggraini',    'CS','D001', 2024, 4, 'aktif',  60, 14, 12, 'belum_ambil',  null),
+  -- MENDESAK: SKS cukup tapi Beelingua proses semester 6
   ('2702314924','Eko Nugroho',       'CS','D002', 2023, 6, 'aktif', 108, 20, 16, 'proses',       455),
+  -- AMAN (Safe): Lulus semua
   ('2702352622','Gilbert Tobing',    'CS','D002', 2023, 6, 'aktif', 120, 30, 70, 'lulus',        590),
+  -- AMAN (Safe): Semester 8, lulus semua
   ('2702352623','Hana Salsabila',    'CS','D002', 2024, 4, 'aktif',  66, 11, 33, 'lulus',        500),
+  -- AMAN (Safe): Semester 8, lulus semua
   ('2702352624','Irfan Maulana',     'CS','D002', 2022, 8, 'aktif', 132, 34, 28, 'lulus',        545),
   ('2702107493','Joseph D.',         'CS','D003', 2023, 6, 'aktif', 100, 18, 14, 'proses',       470),
   ('2702107494','Kevin Sanjaya',     'CS','D003', 2024, 4, 'aktif',  48,  6,  4, 'belum_ambil',  null),
@@ -84,6 +97,7 @@ from (values
   ('2702376453','Nadia Puspita',     'CS','D003', 2025, 2, 'aktif',  24,  2,  2, 'belum_ambil',  null),
   ('2702314925','Oscar Lim',         'CS','D001', 2024, 4, 'cuti',   36,  4,  4, 'belum_ambil',  null),
   ('2702416100','Rizky Ramadhan',    'IS','D001', 2024, 4, 'aktif',  64, 10,  9, 'proses',       460),
+  -- AMAN (Safe): Lulus semua, contoh murid aman lainnya
   ('2702416101','Sinta Lestari',     'IS','D002', 2023, 6, 'aktif', 118, 24, 68, 'lulus',        570),
   ('2702416102','Taufik Hidayat',    'IS','D003', 2022, 8, 'aktif', 140, 32, 34, 'lulus',        600)
 ) as v(nim, name, program_code, kode_dosen, angkatan, sem, status, sks, comserv, sat, beelingua, score)
