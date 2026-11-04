@@ -1,3 +1,5 @@
+import { ALLOWED_EMAIL_DOMAINS } from "./config.js";
+
 export function el(id) {
   return document.getElementById(id);
 }
@@ -238,4 +240,35 @@ export function isActive(s) {
 export function weightedAverage(ratios) {
   if (!ratios.length) return 0;
   return ratios.reduce((a, b) => a + b, 0) / ratios.length;
+}
+
+// ------------------------------------------------------------------ akses --
+
+// Role yang boleh memakai aplikasi. Akun baru yang baru pertama kali
+// masuk dibuat dengan role 'pending' oleh trigger handle_new_user, supaya
+// setiap akun tidak otomatis mendapat akses dosen sampai admin mengubah role-nya.
+export const ALLOWED_ROLES = new Set(["dosen_aa", "kaprodi"]);
+
+export function isOAuthUser(user) {
+  return ((user && user.app_metadata && user.app_metadata.provider) || "email") !== "email";
+}
+
+export function isCampusEmail(email) {
+  const domains = ALLOWED_EMAIL_DOMAINS;
+  if (!domains || !domains.length) return true;
+  const domain = String(email || "").split("@")[1]?.toLowerCase() || "";
+  if (!domain) return false;
+  return domains.some((d) => domain === d || domain.endsWith("." + d));
+}
+
+// null = boleh masuk. Selain itu kode alasan yang ditampilkan di halaman login.
+// Setiap akun wajib punya profil dengan role yang dikenal. Akun tanpa profil
+// (mis. trigger handle_new_user tidak berjalan) selalu ditolak, tidak peduli
+// apakah itu akun email/password atau OAuth.
+export function accessDenialReason(user, profile) {
+  if (!user) return "no_session";
+  if (!isCampusEmail(user.email)) return "not_campus";
+  if (!profile) return "no_access";
+  if (!ALLOWED_ROLES.has(profile.role)) return "no_access";
+  return null;
 }

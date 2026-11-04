@@ -1,5 +1,5 @@
 import { getCurrentUser, getProfile, signOut } from "./data.js";
-import { escapeHtml } from "./utils.js";
+import { accessDenialReason, escapeHtml } from "./utils.js";
 import { initTheme, mountThemeToggle } from "./theme.js";
 
 const NAV = [
@@ -14,12 +14,21 @@ export async function initLayout({ active, title, subtitle }) {
     window.location.replace("index.html");
     return null;
   }
-  const profile = (await getProfile(user.id)) || {
-    full_name: "Dr. Ahmad Fauzi, M.T.",
-    role: "dosen_aa",
-  };
+  const profile = await getProfile(user.id);
 
-  renderHeader(profile, active);
+  // Akun yang belum diberi akses (profil tidak ada atau role tidak dikenal,
+  // atau email di luar domain kampus) langsung dikeluarkan dari halaman aplikasi.
+  const denial = accessDenialReason(user, profile);
+  if (denial) {
+    await signOut();
+    window.location.replace(`index.html?error=${denial}`);
+    return null;
+  }
+
+  renderHeader(
+    profile || { full_name: "Dr. Ahmad Fauzi, M.T.", role: "dosen_aa" },
+    active
+  );
   setPageHeading(title, subtitle);
   wireChrome();
   return { user, profile };

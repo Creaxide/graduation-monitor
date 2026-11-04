@@ -9,7 +9,9 @@ recommendation engine.
 
 ## Features
 
-- **Login** via Supabase Auth (campus SSO-compatible), role-aware.
+- **Login** via Supabase Auth, role-aware: email + password (BINUS campus
+  account). New accounts start with the `pending` role (no access) until an
+  admin grants a role.
 - **Dashboard** — KPI summary, searchable/filterable advisee list, urgency badges,
   sortable columns (NIM, name, semester, every requirement category), and bulk
   "nonaktifkan/aktifkan" for students who are no longer monitored. Students that
@@ -65,6 +67,7 @@ js/
 sql/
   schema.sql          Tables, RLS policies, triggers
   seed.sql            Demo data
+  schema.sql Role 'pending' + trigger handle_new_user (akun baru tanpa akses)
 ```
 
 ## Setup (Supabase)
@@ -119,7 +122,9 @@ Dosen can edit the semester targets (**konfigurasi semester**) directly on the
 fractions, then press **Simpan konfigurasi**. The Kaprodi view of the same
 table is read-only.
 
-### 4. Run the frontend
+
+
+### 5. Run the frontend
 
 Because the pages load ES modules, serve them over HTTP (not `file://`):
 
@@ -172,6 +177,7 @@ student's overall status, but it is no longer displayed as *Aman* either.
   Supabase SQL Editor. Tanpa kolom `deactivate_reason` / `deactivated_at`,
   PostgreSQL menolak update keaktifan mahasiswa; aplikasi tetap bisa
   mengaktifkan/nonaktifkan lewat fallback, tetapi alasannya tidak tersimpan.
+
 - Import templates are downloadable from the Import / Export page.
 - The engine is advisory only (decision support); final guidance rests with the
   Academic Advisor.

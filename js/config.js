@@ -7,3 +7,9 @@
 
 export const SUPABASE_URL = "https://ygbetsdjzjutehfjwauz.supabase.co";
 export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnYmV0c2Rqemp1dGVoZmp3YXV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3ODc3MDcsImV4cCI6MjEwNzM2MzcwN30.fwUaN2aNzUDlZoUjZV2YSAi1tzlRnw9cwkCT3fzQXDI";
+
+// Domain email yang boleh masuk ke aplikasi.
+// Kosongkan array ini untuk menerima semua domain (tidak disarankan).
+// Pembatasan yang mengikat dilakukan di lapisan profil (lihat
+// accessDenialReason di js/utils.js) dan di RLS Supabase.
+export const ALLOWED_EMAIL_DOMAINS = ["binus.ac.id"];

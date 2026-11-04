@@ -44,6 +44,8 @@
     <p class="login-sub">Masuk dengan akun Binus Anda</p>
 
     <div class="login-card">
+      <p class="login-hint">Gunakan akun kampus BINUS (<strong>@binus.ac.id</strong>)</p>
+
       <form id="login-form">
         <div class="field">
           <label for="email">Email Binus</label>
@@ -71,8 +73,8 @@
   </main>
 
   <script type="module">
-    import { getSession, signIn } from "./js/data.js";
-    import { setBusy } from "./js/utils.js";
+    import { getProfile, getSession, signIn, signOut } from "./js/data.js";
+    import { accessDenialReason, setBusy } from "./js/utils.js";
     import { initTheme, mountThemeToggle } from "./js/theme.js";
 
     initTheme();
@@ -81,6 +83,12 @@
     const form = document.getElementById("login-form");
     const alertBox = document.getElementById("alert");
 
+    const DENIAL_MESSAGES = {
+      no_access:
+        "Akun Anda belum memiliki akses ke sistem ini. Hubungi admin program agar didaftarkan sebagai Dosen AA atau Kaprodi.",
+      no_session: "Sesi login tidak ditemukan. Silakan masuk kembali.",
+    };
+
     function showAlert(message, type = "error") {
       alertBox.className = `alert ${type}`;
       alertBox.style.maxWidth = "380px";
@@ -88,9 +96,21 @@
       alertBox.textContent = message;
     }
 
+    async function routeToApp(session) {
+      const profile = await getProfile(session.user.id);
+      const denial = accessDenialReason(session.user, profile);
+      if (denial) {
+        await signOut();
+        showAlert(DENIAL_MESSAGES[denial]);
+        return;
+      }
+      window.location.replace("dashboard.html");
+    }
+
     (async () => {
       const session = await getSession();
-      if (session && session.user) window.location.replace("dashboard.html");
+      if (!session || !session.user) return;
+      await routeToApp(session);
     })();
 
     form.addEventListener("submit", async (e) => {
@@ -99,10 +119,18 @@
       const btn = document.getElementById("submit-btn");
       setBusy(btn, true, "Memproses...");
       try {
-        await signIn(
+        const { user } = await signIn(
           document.getElementById("email").value.trim(),
           document.getElementById("password").value
         );
+        const profile = await getProfile(user.id);
+        const denial = accessDenialReason(user, profile);
+        if (denial) {
+          await signOut();
+          showAlert(DENIAL_MESSAGES[denial]);
+          setBusy(btn, false);
+          return;
+        }
         window.location.replace("dashboard.html");
       } catch (err) {
         showAlert(err.message || "Gagal masuk. Periksa kembali kredensial Anda.");

@@ -29,11 +29,14 @@ create table if not exists advisors (
 );
 
 -- The table-level role check is applied via the column default/check below.
+-- 'pending' = akun baru yang belum diberi akses.
+-- Role itu tidak lolos policy RLS mana pun, jadi akun tidak otomatis
+-- mendapat hak dosen sampai admin mengubah role-nya.
 create table if not exists profiles (
   id           uuid primary key references auth.users (id) on delete cascade,
   full_name    text,
-  role         text not null default 'dosen_aa'
-                 check (role in ('dosen_aa','kaprodi')),
+  role         text not null default 'pending'
+                 check (role in ('pending','dosen_aa','kaprodi')),
   advisor_id   uuid references advisors (id) on delete set null,
   created_at   timestamptz default now()
 );
@@ -196,7 +199,7 @@ alter table requirements add constraint uq_requirements_program_category
 
 create or replace function public.current_role()
 returns text language sql stable security definer set search_path = public as $$
-  select coalesce((select role from profiles where id = auth.uid()), 'dosen_aa');
+  select coalesce((select role from profiles where id = auth.uid()), 'pending');
 $$;
 
 create or replace function public.current_advisor()
@@ -280,13 +283,16 @@ create policy audit_insert on audit_log for insert with check (auth.uid() is not
 -- 5. Triggers
 -- ---------------------------------------------------------------------------
 
--- auto-create profile on signup
+-- auto-create profile on signup, tanpa akses sampai role diubah admin
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
   insert into public.profiles (id, full_name, role)
-  values (new.id, coalesce(new.raw_user_meta_data->>'full_name', new.email),
-          coalesce(new.raw_user_meta_data->>'role', 'dosen_aa'))
+  values (new.id,
+          coalesce(nullif(new.raw_user_meta_data->>'full_name', ''),
+                   nullif(new.raw_user_meta_data->>'name', ''),
+                   new.email),
+          'pending')
   on conflict (id) do nothing;
   return new;
 end; $$;
