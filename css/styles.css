@@ -4,8 +4,6 @@
    #4C566A #6C7585 #3B82F6 #063B2E #3E2B05 #451014)
    ========================================================================== */
 
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
-
 /* ------------------------------------------------------------------ tokens --- */
 :root {
   --page-bg: #ffffff;
@@ -771,6 +769,89 @@ table.data tbody tr:hover td { background: var(--table-row-hover); }
 @media print {
   .site-header, .nav-pills, .btn-keluar, .btn-theme { display: none !important; }
   .card, .blue-shell { box-shadow: none; border-color: #ddd; }
+}
+
+/* Mobile-first finishing touches for the advisor dashboard and installed PWA. */
+.app-notice {
+  position: fixed;
+  z-index: 120;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: max(16px, env(safe-area-inset-left));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 12px 14px;
+  border: 1px solid var(--alert-info-border);
+  border-radius: 12px;
+  background: var(--alert-info-bg);
+  color: var(--alert-info-fg);
+  box-shadow: var(--shadow-lg);
+  font-size: 13px;
+}
+.app-notice[hidden] { display: none; }
+.app-notice-message { flex: 1; min-width: 0; }
+.app-notice-actions { display: flex; flex: none; align-items: center; gap: 8px; }
+.app-notice button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--alert-info-border);
+  border-radius: 9px;
+  background: var(--input-bg);
+  color: var(--text-strong);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.app-notice button.primary {
+  border-color: var(--primary-border);
+  background: var(--primary-bg);
+  color: var(--primary-fg);
+}
+.app-notice button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+@media (max-width: 760px) {
+  .site-header, .site-header--slim { height: auto; min-height: 68px; }
+  .header-inner { flex-wrap: wrap; gap: 8px 12px; padding: 8px 14px; }
+  .header-spacer { display: none; }
+  .nav-pills { order: 3; width: 100%; margin: 0; overflow-x: auto; padding: 2px 0 4px; }
+  .nav-pill { min-height: 40px; }
+  .header-user { margin-left: auto; gap: 8px; }
+  .page-wrap, .content { padding: 20px 16px calc(40px + env(safe-area-inset-bottom)); }
+  .page-title h1 { font-size: clamp(21px, 5vw, 27px); }
+  .grid.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .grid.cols-3 { gap: 12px; }
+  .stat-card { min-width: 0; padding: 17px 14px; }
+  .stat-card .k-icon { top: 12px; right: 12px; width: 30px; height: 30px; font-size: 13px; }
+  .kpi .k-value { font-size: 25px; }
+  .blue-shell, .card, .figma-card { padding: 16px; }
+  .table-shell { padding: 10px; }
+  .table-wrap { overscroll-behavior-x: contain; scrollbar-width: thin; }
+  table.data { min-width: 720px; }
+  .prog-item { flex-wrap: wrap; gap: 6px 10px; }
+  .prog-label { width: 100%; }
+  .prog-value { min-width: 72px; }
+  .toolbar { align-items: stretch; gap: 10px; }
+  .toolbar .field { flex: 1 1 150px; min-width: 0 !important; }
+  .login-screen { padding-top: 36px; }
+  .login-title { font-size: 20px; }
+}
+
+@media (max-width: 420px) {
+  .page-wrap, .content { padding-right: 12px; padding-left: 12px; }
+  .grid.cols-4 { gap: 9px; }
+  .stat-card { padding: 14px 11px; }
+  .stat-card .k-icon { display: none; }
+  .kpi .k-label { font-size: 11px; }
+  .blue-shell, .card { padding: 13px; }
+  .toolbar .field.search { flex-basis: 100%; }
+  .modal-backdrop { padding: 10px; }
+  .modal { max-height: calc(100dvh - 20px); padding: 18px; }
+  .app-notice { align-items: stretch; flex-direction: column; gap: 10px; }
+  .app-notice-actions { justify-content: flex-end; }
 }
 
 /* ---------------------------------------------------------------------------

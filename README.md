@@ -137,6 +137,27 @@ npx serve .
 
 Then open http://localhost:5500 and sign in with the user from step 3.
 
+## Mobile, install, and offline use
+
+The same responsive pages work in a mobile browser/WebView and as an
+installable PWA; there is no separate mobile codebase to keep in sync.
+
+- **Mobile WebView:** open the deployed HTTPS site in the phone browser or
+  inside an existing WebView container. Controls adapt to narrow screens and
+  the student tables remain horizontally scrollable rather than hiding columns.
+- **Install on mobile:** Android shows an in-app **Install aplikasi** button
+  when the browser supports PWA installation. iPhone/iPad shows a **Cara
+  install** button with the Safari **Share → Add to Home Screen** steps. The
+  website does not show an install button on desktop; the manifest and
+  Graduation Monitor icons in `icons/` remain available for browser-managed
+  installation.
+- **Offline/cache is temporarily disabled** while its requirements are being
+  decided. The service-worker and offline-screen code remains in the project
+  for later review, but it does not cache app files or student data. Existing
+  Graduation Monitor caches and service-worker registrations are cleared when
+  the app is opened.
+- Sign-in, monitoring, imports, and updates require an internet connection.
+
 ## Recommendation logic
 
 `js/engine.js` computes, for each category:

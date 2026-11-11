@@ -2,8 +2,14 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1596c9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>Dashboard Mahasiswa Bimbingan - Graduation Monitor</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
   <link rel="stylesheet" href="css/styles.css" />
   <script>
     /* Terapkan tema sebelum render supaya tidak ada kedipan (flash of unstyled theme) */
@@ -19,6 +25,7 @@
       }
     })();
   </script>
+  <script src="./js/pwa.js?v=offline-paused" defer></script>
 </head>
 <body>
   <div class="page-wrap">
