@@ -56,7 +56,7 @@ function renderHeader(profile, active) {
 
   header.innerHTML = `
     <div class="header-inner">
-      <div class="binus-logo-wrap">
+      <a class="binus-logo-wrap" href="dashboard.html" aria-label="Buka dashboard Graduation Monitor">
         <span class="binus-logo-box" role="img" aria-label="BINUS University">
           <img class="binus-logo binus-logo--light" src="Binusian_logolightmode.png" alt="" />
           <img class="binus-logo binus-logo--dark" src="Binusian_logodarkmode.png" alt="" />
@@ -64,7 +64,7 @@ function renderHeader(profile, active) {
         <div class="binus-brand-label">
           <span>School of Computer Science</span>
         </div>
-      </div>
+      </a>
       <nav class="nav-pills">${pills}</nav>
       <div class="header-spacer"></div>
       <div class="header-user">

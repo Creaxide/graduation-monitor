@@ -1,5 +1,6 @@
 // Offline/cache behavior is paused until its scope is agreed; PWA installation remains enabled.
 const OFFLINE_FEATURE_ENABLED = false;
+const INSTALL_BUTTON_ID = "install-app-btn";
 
 const notice = document.createElement("aside");
 notice.className = "app-notice";
@@ -9,12 +10,20 @@ notice.hidden = true;
 notice.innerHTML = `
   <div class="app-notice-message"></div>
   <div class="app-notice-actions"></div>`;
-document.body.append(notice);
+(document.body || document.documentElement).append(notice);
 
 const message = notice.querySelector(".app-notice-message");
 const actions = notice.querySelector(".app-notice-actions");
 let installPrompt = null;
+let installButton = null;
 let waitingWorker = null;
+
+function isStandalone() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true
+  );
+}
 
 function isMobileDevice() {
   const userAgent = navigator.userAgent || "";
@@ -35,6 +44,13 @@ function showNotice(text, buttons = []) {
   message.textContent = text;
   actions.replaceChildren(...buttons);
   notice.hidden = false;
+  syncInstallButton();
+}
+
+function hideNotice() {
+  notice.hidden = true;
+  actions.replaceChildren();
+  syncInstallButton();
 }
 
 function makeButton(label, onClick, primary = false) {
@@ -52,51 +68,111 @@ function showOfflineNotice() {
 
 if (OFFLINE_FEATURE_ENABLED) {
   window.addEventListener("offline", showOfflineNotice);
-  window.addEventListener("online", () => {
-    notice.hidden = true;
-    actions.replaceChildren();
-  });
+  window.addEventListener("online", hideNotice);
+}
+
+/* ------------------------------------------------------------------ install --- */
+
+// Tombol install selalu terlihat di perangkat mobile, bukan hanya saat browser
+// memicu beforeinstallprompt, supaya pengguna tetap punya jalan masuk saat
+// prompt native tidak tersedia (iOS, WebView, atau HTTP).
+function createInstallButton() {
+  if (installButton) return installButton;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.id = INSTALL_BUTTON_ID;
+  button.className = "install-fab";
+  button.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 3v12"></path>
+      <path d="m7 10 5 5 5-5"></path>
+      <path d="M5 21h14"></path>
+    </svg>
+    <span>Install aplikasi</span>`;
+  button.addEventListener("click", handleInstallClick);
+  (document.body || document.documentElement).append(button);
+  installButton = button;
+  return button;
+}
+
+function syncInstallButton() {
+  if (!installButton) return;
+  const visible = isMobileDevice() && !isStandalone() && notice.hidden;
+  installButton.hidden = !visible;
+}
+
+function removeInstallUi() {
+  installPrompt = null;
+  if (installButton) {
+    installButton.remove();
+    installButton = null;
+  }
+  hideNotice();
+}
+
+function installHelpText() {
+  if (!window.isSecureContext) {
+    return "Install aplikasi hanya tersedia saat situs dibuka lewat HTTPS.";
+  }
+  if (isAppleMobileDevice()) {
+    return "Di Safari, buka tombol Bagikan lalu pilih “Tambahkan ke Layar Utama”.";
+  }
+  return "Buka menu browser (⋮) lalu pilih “Install aplikasi” atau “Tambahkan ke layar utama”.";
+}
+
+function showInstallHelp() {
+  showNotice(installHelpText(), [makeButton("Mengerti", hideNotice, true)]);
+}
+
+async function handleInstallClick() {
+  if (!installPrompt) {
+    showInstallHelp();
+    return;
+  }
+  const promptEvent = installPrompt;
+  installPrompt = null;
+  try {
+    await promptEvent.prompt();
+    const choice = await promptEvent.userChoice;
+    if (choice?.outcome === "accepted") removeInstallUi();
+  } catch (error) {
+    console.error("Prompt install gagal:", error);
+    showInstallHelp();
+  }
 }
 
 window.addEventListener("beforeinstallprompt", (event) => {
   if (!isMobileDevice()) return;
   event.preventDefault();
   installPrompt = event;
-  if (!navigator.onLine && OFFLINE_FEATURE_ENABLED) return showOfflineNotice();
-  showNotice(
-    "Install Graduation Monitor di perangkat ini.",
-    [makeButton("Install aplikasi", async () => {
-      if (!installPrompt) return;
-      await installPrompt.prompt();
-      installPrompt = null;
-      notice.hidden = true;
-    }, true)]
-  );
+  if (isStandalone()) return;
+  createInstallButton();
+  syncInstallButton();
 });
 
-window.addEventListener("appinstalled", () => {
-  installPrompt = null;
-  notice.hidden = true;
-});
+window.addEventListener("appinstalled", removeInstallUi);
 
-function showUpdateNotice(registration) {
-  waitingWorker = registration.waiting;
-  if (!waitingWorker || !navigator.onLine) return;
-  showNotice(
-    "Pembaruan Graduation Monitor tersedia.",
-    [makeButton("Perbarui", () => waitingWorker?.postMessage("SKIP_WAITING"), true)]
-  );
+if (isMobileDevice() && !isStandalone()) {
+  createInstallButton();
+  syncInstallButton();
 }
 
-if ("serviceWorker" in navigator && OFFLINE_FEATURE_ENABLED) {
+/* ---------------------------------------------------------- service worker --- */
+
+// Service worker tetap didaftarkan supaya aplikasi memenuhi syarat installable
+// di Chrome/Edge Android. Saat OFFLINE_FEATURE_ENABLED = false worker tidak
+// menyimpan cache apa pun dan hanya meneruskan request ke jaringan.
+if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
     let registration;
     try {
-      registration = await navigator.serviceWorker.register("./service-worker.js");
+      registration = await navigator.serviceWorker.register("./service-worker.js", { scope: "./" });
     } catch (error) {
-      console.error("Pendaftaran offline app gagal:", error);
+      console.error("Pendaftaran service worker gagal:", error);
       return;
     }
+
+    if (!OFFLINE_FEATURE_ENABLED) return;
 
     if (registration.waiting) showUpdateNotice(registration);
     registration.addEventListener("updatefound", () => {
@@ -120,48 +196,17 @@ if ("serviceWorker" in navigator && OFFLINE_FEATURE_ENABLED) {
 
   let refreshing = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (refreshing) return;
+    if (!OFFLINE_FEATURE_ENABLED || refreshing) return;
     refreshing = true;
     window.location.reload();
   });
 }
 
-if ("serviceWorker" in navigator && !OFFLINE_FEATURE_ENABLED) {
-  window.addEventListener("load", async () => {
-    const workerUrl = new URL("./service-worker.js", window.location.href).href;
-    const clearAppCaches = async () => {
-      if (!("caches" in window)) return;
-      const keys = await caches.keys();
-      await Promise.all(
-        keys
-          .filter((key) => key.startsWith("graduation-monitor-"))
-          .map((key) => caches.delete(key))
-      );
-    };
-
-    try {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      const appRegistrations = registrations.filter((registration) =>
-        [registration.active, registration.installing, registration.waiting]
-          .filter(Boolean)
-          .some((worker) => worker.scriptURL === workerUrl)
-      );
-      await Promise.all(appRegistrations.map((registration) => registration.unregister()));
-      await clearAppCaches();
-      window.setTimeout(() => {
-        clearAppCaches().catch((error) => console.error("Pembersihan cache offline gagal:", error));
-      }, 1500);
-    } catch (error) {
-      console.error("Penonaktifan cache offline gagal:", error);
-    }
-  });
-}
-
-if (isMobileDevice() && isAppleMobileDevice() && !window.matchMedia("(display-mode: standalone)").matches) {
+function showUpdateNotice(registration) {
+  waitingWorker = registration.waiting;
+  if (!waitingWorker || !navigator.onLine) return;
   showNotice(
-    "Install Graduation Monitor di perangkat ini.",
-    [makeButton("Cara install", () => {
-      showNotice("Di Safari, buka Bagikan lalu pilih Tambahkan ke Layar Utama.");
-    }, true)]
+    "Pembaruan Graduation Monitor tersedia.",
+    [makeButton("Perbarui", () => waitingWorker?.postMessage("SKIP_WAITING"), true)]
   );
 }

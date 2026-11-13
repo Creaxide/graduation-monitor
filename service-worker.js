@@ -49,6 +49,8 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   if (!OFFLINE_FEATURE_ENABLED) {
+    // Caching stays off, but the worker itself must stay registered so the app
+    // keeps meeting the installability requirements of Chrome/Edge Android.
     event.waitUntil(
       caches.keys().then((keys) =>
         Promise.all(
@@ -56,7 +58,7 @@ self.addEventListener("activate", (event) => {
             .filter((key) => key.startsWith("graduation-monitor-"))
             .map((key) => caches.delete(key))
         )
-      ).then(() => self.registration.unregister())
+      )
     );
     return;
   }

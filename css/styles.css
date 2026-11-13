@@ -283,6 +283,17 @@ a:hover { text-decoration: underline; }
 }
 .binus-brand-label span:last-child { font-weight: 400; font-size: 11px; opacity: 0.8; }
 
+/* Logo lockup is a link back to the main dashboard. */
+a.binus-logo-wrap {
+  color: inherit;
+  text-decoration: none;
+  border-radius: 12px;
+  transition: opacity 0.15s ease;
+}
+a.binus-logo-wrap:hover { opacity: 0.9; }
+a.binus-logo-wrap:active { opacity: 0.8; }
+a.binus-logo-wrap:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 4px; }
+
 /* nav pills */
 .nav-pills {
   display: flex; align-items: center; gap: 12px;
@@ -812,6 +823,33 @@ table.data tbody tr:hover td { background: var(--table-row-hover); }
   color: var(--primary-fg);
 }
 .app-notice button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+/* Tombol install aplikasi (PWA) di perangkat mobile */
+.install-fab {
+  position: fixed;
+  z-index: 110;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1.5px solid var(--primary-border);
+  border-radius: 999px;
+  background: var(--primary-bg);
+  color: var(--primary-fg);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+}
+.install-fab[hidden] { display: none; }
+.install-fab:hover { filter: brightness(1.03); }
+.install-fab:active { transform: scale(0.98); }
+.install-fab:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+.install-fab svg { flex: none; }
 
 @media (max-width: 760px) {
   .site-header, .site-header--slim { height: auto; min-height: 68px; }

@@ -145,17 +145,19 @@ installable PWA; there is no separate mobile codebase to keep in sync.
 - **Mobile WebView:** open the deployed HTTPS site in the phone browser or
   inside an existing WebView container. Controls adapt to narrow screens and
   the student tables remain horizontally scrollable rather than hiding columns.
-- **Install on mobile:** Android shows an in-app **Install aplikasi** button
-  when the browser supports PWA installation. iPhone/iPad shows a **Cara
-  install** button with the Safari **Share → Add to Home Screen** steps. The
-  website does not show an install button on desktop; the manifest and
-  Graduation Monitor icons in `icons/` remain available for browser-managed
-  installation.
+- **Install on mobile:** every phone gets a floating **Install aplikasi**
+  button in the bottom-right corner. On Android it opens the native install
+  prompt when the browser offers one (`beforeinstallprompt`); otherwise, and on
+  iPhone/iPad, it shows the manual steps (Chrome: **⋮ → Install aplikasi**;
+  Safari: **Share → Add to Home Screen**). The button only renders on mobile,
+  hides itself once the app runs standalone, and needs an HTTPS origin.
+- **Why the service worker stays registered:** Chrome/Edge Android only treat
+  the app as installable when a service worker with a `fetch` handler is
+  registered, so `js/pwa.js` registers it even though caching is off.
 - **Offline/cache is temporarily disabled** while its requirements are being
   decided. The service-worker and offline-screen code remains in the project
-  for later review, but it does not cache app files or student data. Existing
-  Graduation Monitor caches and service-worker registrations are cleared when
-  the app is opened.
+  for later review, but it does not cache app files or student data. Old
+  Graduation Monitor caches are cleared on activation.
 - Sign-in, monitoring, imports, and updates require an internet connection.
 
 ## Recommendation logic
