@@ -583,6 +583,7 @@ table.data tbody tr:last-child td { border-bottom: none; }
 table.data tbody tr:hover td { background: var(--table-row-hover); }
 .btn-detail { background: var(--detail-bg); border: 1.5px solid var(--detail-border); color: var(--detail-fg); padding: 6px 13px; border-radius: 999px; font-size: 12px; font-weight: 800; }
 .nim { color: var(--table-nim); font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 400; }
+table.data tbody td.sem { text-align: center; }
 
 /* Priority list */
 .priority-list { display: flex; flex-direction: column; gap: 12px; }
@@ -683,13 +684,32 @@ table.data tbody tr:hover td { background: var(--table-row-hover); }
 .login-divider::after {
   content: ""; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.45);
 }
-.login-card--demo { margin-top: 22px; padding-bottom: 18px; }
-.demo-title { font-size: 10px; font-weight: 800; letter-spacing: 0.06em; color: #fff; margin-bottom: 10px; }
-.demo-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; font-size: 12px; }
-.demo-mail { color: #fff; }
-.demo-pill { background: var(--figma-orange); color: #fff; font-size: 10px; font-weight: 800; padding: 4px 11px; border-radius: 999px; white-space: nowrap; }
 [data-theme="dark"] .login-card { background: #222835; border: 1px solid rgba(255, 255, 255, 0.1); }
-[data-theme="dark"] .demo-pill { background: #3b82f6; }
+
+/* Tombol tampilkan/sembunyikan kata sandi di dalam kolom input */
+.password-wrap { position: relative; }
+.password-wrap input { padding-right: 46px !important; }
+.pw-toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.pw-toggle:hover { background: rgba(15, 31, 46, 0.08); }
+.pw-toggle:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 1px; }
+.pw-toggle svg[hidden] { display: none; }
+[data-theme="dark"] .pw-toggle { color: #cbd5e1; }
+[data-theme="dark"] .pw-toggle:hover { background: rgba(255, 255, 255, 0.08); }
 
 /* legacy login (unused) */
 .login-wrap { display: none; }
@@ -851,12 +871,13 @@ table.data tbody tr:hover td { background: var(--table-row-hover); }
 .install-fab:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
 .install-fab svg { flex: none; }
 
+/* Tombol unduh khusus mobile (di bawah kartu identitas mahasiswa). */
+.mobile-download { display: none; }
+
 @media (max-width: 760px) {
   .site-header, .site-header--slim { height: auto; min-height: 68px; }
   .header-inner { flex-wrap: wrap; gap: 8px 12px; padding: 8px 14px; }
   .header-spacer { display: none; }
-  .nav-pills { order: 3; width: 100%; margin: 0; overflow-x: auto; padding: 2px 0 4px; }
-  .nav-pill { min-height: 40px; }
   .header-user { margin-left: auto; gap: 8px; }
   .page-wrap, .content { padding: 20px 16px calc(40px + env(safe-area-inset-bottom)); }
   .page-title h1 { font-size: clamp(21px, 5vw, 27px); }
@@ -876,6 +897,157 @@ table.data tbody tr:hover td { background: var(--table-row-hover); }
   .toolbar .field { flex: 1 1 150px; min-width: 0 !important; }
   .login-screen { padding-top: 36px; }
   .login-title { font-size: 20px; }
+
+  /* ------------------------------------------------------------------
+     Navigasi utama pindah ke bawah layar (mudah dijangkau ibu jari).
+     ------------------------------------------------------------------ */
+  .nav-pills {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 90;
+    order: 0;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 2px;
+    width: 100%;
+    margin: 0;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    background: var(--card-bg);
+    border-top: 1px solid var(--card-border);
+    box-shadow: 0 -8px 24px rgba(15, 31, 46, 0.16);
+    overflow: visible;
+  }
+  .nav-pill {
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    min-height: 52px;
+    padding: 6px 4px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--on-card-soft);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+  .nav-pill .pill-ico { display: inline-flex; font-size: 0; }
+  .nav-pill .pill-ico svg { width: 20px; height: 20px; }
+  .nav-pill.active { background: rgba(255, 255, 255, 0.18); color: #ffffff; border-color: transparent; }
+  .nav-pill:not(.active) { background: transparent; color: var(--on-card-soft); border-color: transparent; }
+  .nav-pill.active .pill-ico { color: #ffffff; }
+  [data-theme="dark"] .nav-pill { border-color: transparent; }
+  [data-theme="dark"] .nav-pill.active { background: rgba(255, 255, 255, 0.16); color: #ffffff; border-color: transparent; }
+  [data-theme="dark"] .nav-pill:not(.active) { background: transparent; color: #9fc0f7; }
+
+  /* Ruang bawah supaya konten tidak tertutup navigasi + tombol install. */
+  .page-wrap, .content { padding-bottom: calc(86px + env(safe-area-inset-bottom)); }
+  .has-install-fab .page-wrap,
+  .has-install-fab .content { padding-bottom: calc(138px + env(safe-area-inset-bottom)); }
+
+  /* ------------------------------------------------------------------
+     Daftar mahasiswa sebagai kartu (tanpa geser tabel ke samping).
+     ------------------------------------------------------------------ */
+  table.data.table-cards { min-width: 0; width: 100%; border-collapse: separate; }
+  table.data.table-cards thead { display: none; }
+  table.data.table-cards,
+  table.data.table-cards tbody,
+  table.data.table-cards tr,
+  table.data.table-cards td { display: block; }
+  table.data.table-cards tbody tr {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin: 0 0 10px;
+    padding: 13px 14px 12px;
+    border: 1.5px solid var(--card-border);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+  }
+  table.data.table-cards tbody tr:last-child { margin-bottom: 0; }
+  table.data.table-cards tbody tr.is-selected { outline: 2px solid var(--primary-border); outline-offset: -2px; }
+  table.data.table-cards tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+    border: 0;
+    text-align: left;
+    order: 3;
+  }
+  table.data.table-cards tbody td::before {
+    content: attr(data-label);
+    flex: none;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--on-card-faint);
+  }
+  table.data.table-cards tbody td.cell-name {
+    display: block;
+    order: 1;
+    padding: 0 34px 3px 0;
+    font-size: 15px;
+    line-height: 1.3;
+  }
+  table.data.table-cards tbody td.cell-name::before { display: none; }
+  table.data.table-cards tbody td.nim {
+    display: block;
+    order: 2;
+    padding: 0 34px 8px 0;
+    font-size: 12px;
+    color: var(--on-card-soft);
+  }
+  table.data.table-cards tbody td.nim::before { display: none; }
+  table.data.table-cards tbody td.check-cell {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: auto;
+    padding: 0;
+  }
+  table.data.table-cards tbody td.check-cell::before { display: none; }
+  table.data.table-cards tbody td.check-cell input { width: 20px; height: 20px; }
+  table.data.table-cards tbody td.cell-action {
+    display: block;
+    margin-top: 9px;
+    padding-top: 10px;
+    border-top: 1px solid var(--table-cell-border);
+  }
+  table.data.table-cards tbody td.cell-action::before { display: none; }
+  table.data.table-cards tbody td.cell-action .btn {
+    display: flex;
+    width: 100%;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Filter: pencarian penuh, filter lain dua kolom. */
+  .toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .toolbar .field { flex: none; min-width: 0 !important; }
+  .toolbar .field.search { grid-column: 1 / -1; }
+  .toolbar input,
+  .toolbar select { min-height: 44px; }
+
+  /* Detail mahasiswa: tombol unduh langsung terlihat di bawah kartu identitas. */
+  .hero-meta { width: 100%; display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .hero-id { min-width: 0 !important; }
+  .mobile-download { display: flex !important; width: 100%; min-height: 46px; justify-content: center; margin-top: 14px; }
+
+  /* Tombol install & notifikasi mengambang di atas navigasi bawah. */
+  .install-fab,
+  .app-notice { bottom: calc(78px + env(safe-area-inset-bottom)); }
 }
 
 @media (max-width: 420px) {

@@ -2,7 +2,7 @@ import { initLayout } from "./ui.js";
 import {
   loadDashboard, listFailedCourses, listCertifications,
   studentIdsByNim, updateStudent, insertStudent,
-  listPrograms, listAdvisors, listRequirements, updateRequirements,
+  listPrograms, listAdvisors,
   insertFailedCourses, insertCertifications, logAudit,
 } from "./data.js";
 import { evaluateStudent, STATUS_LABEL, normalizeStudentStatus, normalizeBeelinguaStatus } from "./engine.js";
@@ -24,7 +24,7 @@ const TEMPLATE = {
   hint: "Satu file untuk semua data. Wajib: nim (mahasiswa baru juga wajib name). Kolom MK tidak lulus (kode_mk, nama_mk wajib bila diisi) dan sertifikasi (cert_name wajib bila diisi) boleh dikosongkan. Untuk banyak MK/sertifikasi per mahasiswa, ulangi NIM di baris baru. cert_required/cert_obtained/is_active menerima true/false atau 1/0. deactivate_reason diisi kalau is_active=false (alasan mahasiswa dinonaktifkan dari pemantauan).",
 };
 
-let state = { students: [], requirements: [], programs: [], advisors: [], selectedFile: null, profile: null, canEditRequirements: false };
+let state = { students: [], requirements: [], programs: [], advisors: [], selectedFile: null, profile: null };
 
 function resolveProgram(code) {
   if (!code) return null;
@@ -365,210 +365,6 @@ function exportPdf(rows) {
   return printHtmlDocument(html, { title: "Student Monitoring Report" });
 }
 
-// --------------------------------------------------------------- settings ---
-
-// Kategori yang dihitung dalam unit bulat: total kurikulum dan target
-// per semester selalu berupa bilangan bulat.
-const INTEGER_TOTAL_CATEGORIES = new Set(["sks", "comserv", "sat", "beelingua", "sertifikasi"]);
-
-// Kategori yang target per semester-nya dinyatakan dalam unit bulat.
-// Beelingua & Sertifikasi memakai total 1 sehingga target-nya berupa fraksi
-// (0.3 / 0.5 / 0.7) dan tidak boleh dibulatkan.
-const INTEGER_UNITS_CATEGORIES = new Set(["sks", "comserv", "sat"]);
-
-// Urutan tampilan kategori bersifat tetap supaya baris tidak berpindah tempat
-// saat data dimuat ulang (urutan hasil query tidak dijamin stabil).
-const CATEGORY_ORDER = ["sks", "comserv", "sat", "beelingua", "sertifikasi"];
-
-// Kategori dengan target numerik (bukan status) yang bisa disebar rata per semester.
-const SPREADABLE_CATEGORIES = new Set(["sks", "comserv", "sat"]);
-
-// Semester yang tampil di tabel konfigurasi.
-const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
-
-// Beelingua bukan angka 0/1, melainkan status dengan tiga nilai seperti di database
-// (belum_ambil / proses / lulus). Target per semester disimpan sebagai fraksi
-// 0 / 0.5 / 1 agar tetap kompatibel dengan engine (lihat BEELINGUA_PROGRESS).
-const BEELINGUA_TARGETS = [
-  { value: 0, label: "Belum Menjalankan" },
-  { value: 0.5, label: "Sedang Menjalankan" },
-  { value: 1, label: "Lulus" },
-];
-
-function beelinguaTargetValue(raw) {
-  const n = Number(raw || 0);
-  if (n >= 1) return 1;
-  if (n >= 0.5) return 0.5;
-  return 0;
-}
-
-function beelinguaTargetLabel(raw) {
-  const v = beelinguaTargetValue(raw);
-  return BEELINGUA_TARGETS.find((o) => o.value === v)?.label || BEELINGUA_TARGETS[0].label;
-}
-
-function canEditTargets() {
-  return state.profile?.role !== "kaprodi";
-}
-
-function renderSettings() {
-  const host = el("settings-host");
-  if (!host) return;
-  const editable = canEditTargets();
-  const grouped = {};
-  for (const r of state.requirements) {
-    grouped[r.category] = grouped[r.category] || [];
-    grouped[r.category].push(r);
-  }
-  const order = CATEGORY_ORDER.filter((c) => grouped[c])
-    .concat(Object.keys(grouped).filter((c) => !CATEGORY_ORDER.includes(c)));
-  const semesters = SEMESTERS;
-  const selectStyle = "min-width:128px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--input-text);border-radius:6px;padding:5px 7px;font-size:11px;";
-  const inputStyle = "background:var(--input-bg);border:1px solid var(--input-border);color:var(--input-text);border-radius:6px;padding:5px 7px;";
-  const programCodes = state.programs.map((p) => p.code).join(", ") || "semua program";
-  host.innerHTML = `
-    <div class="table-wrap"><table class="data">
-      <thead><tr><th>Category</th><th>Curriculum total</th>${semesters.map((s) => `<th>Sem ${s}</th>`).join("")}</tr></thead>
-      <tbody>
-        ${order.map((cat) => {
-          const rows = grouped[cat];
-          const r = rows[0];
-          const isBeelingua = r.category === "beelingua";
-          const totalCell = isBeelingua
-            ? ""
-            : editable
-              ? `<input type="number" step="${INTEGER_TOTAL_CATEGORIES.has(r.category) ? "1" : "any"}" min="0" data-req="${r.id}" data-field="total" value="${formatNumber(r.total_required)}" style="width:84px;text-align:right;${inputStyle}" />`
-              : formatNumber(r.total_required);
-          return `<tr data-req="${r.id}" data-cat="${r.category}" data-total="${formatNumber(r.total_required)}">
-            <td><strong>${escapeHtml(r.label)}</strong></td>
-            <td>${totalCell}</td>
-            ${semesters.map((s) => {
-              if (isBeelingua) {
-                const current = beelinguaTargetValue(r.targets?.[s]);
-                if (!editable) return `<td class="mono">${beelinguaTargetLabel(current)}</td>`;
-                const opts = BEELINGUA_TARGETS.map((o) => `<option value="${o.value}"${o.value === current ? " selected" : ""}>${o.label}</option>`).join("");
-                return `<td><select data-req="${r.id}" data-sem="${s}" data-beelingua="1" style="${selectStyle}" title="target status Beelingua per semester">${opts}</select></td>`;
-              }
-              const frac = Number(r.targets?.[s] || 0);
-              const isInt = INTEGER_UNITS_CATEGORIES.has(r.category);
-              const rawTarget = frac * Number(r.total_required || 0);
-              const target = isInt ? Math.round(rawTarget) : Math.round(rawTarget * 100) / 100;
-              return editable
-                ? `<td><input type="number" step="${isInt ? "1" : "0.01"}" min="0" max="${formatNumber(r.total_required)}" data-req="${r.id}" data-sem="${s}" value="${target}" style="width:64px;${inputStyle}" title="target kumulatif per semester (${r.unit || "jumlah"})" /></td>`
-                : `<td class="mono">${target > 0 ? formatNumber(target) : ""}</td>`;
-            }).join("")}
-          </tr>`;
-        }).join("")}
-      </tbody>
-    </table></div>
-    <div class="small muted" style="margin-top:10px; font-size:11px;">
-      Nilai target di bawah berlaku untuk seluruh program (${escapeHtml(programCodes)}) dan ditulis ke
-      semua baris requirement kategori tersebut. Gunakan <strong>Sebar Rata</strong> untuk
-      membagi kurikulum secara merata ke 8 semester, lalu <strong>Simpan konfigurasi</strong>.
-    </div>
-    <div class="mt-16" style="display:flex; gap:8px; justify-content:flex-end;">
-      ${editable ? `<button class="btn sm" id="spread-targets-btn" type="button">Sebar Rata</button>` : ""}
-      ${editable ? `<button class="btn primary sm" id="save-targets-btn" type="button">Simpan konfigurasi</button>` : ""}
-    </div>`;
-
-  const saveBtn = el("save-targets-btn");
-  if (saveBtn) saveBtn.addEventListener("click", saveSettings);
-  const spreadBtn = el("spread-targets-btn");
-  if (spreadBtn) spreadBtn.addEventListener("click", spreadTargetsEvenly);
-}
-
-// Membagi target tiap semester secara merata (kumulatif) dengan pembulatan
-// bilangan bulat, sehingga total kurikulum tetap tercapai di semester terakhir.
-function spreadTargetsEvenly() {
-  const host = el("settings-host");
-  let touched = 0;
-  host.querySelectorAll("tbody tr[data-cat]").forEach((tr) => {
-    const cat = tr.dataset.cat;
-    if (!SPREADABLE_CATEGORIES.has(cat)) return;
-    const totalInput = tr.querySelector('input[data-field="total"]');
-    const total = Math.round(Number(totalInput?.value) || Number(tr.dataset.total) || 0);
-    if (!total) return;
-    const n = SEMESTERS.length;
-    // Kurikulum dibagi rata: tiap semester mendapat bagian yang sama
-    // (pembulatan ke atas), nilai kumulatif dan seluruhnya bilangan bulat.
-    SEMESTERS.forEach((s) => {
-      const acc = s === n ? total : Math.round((total * s) / n);
-      const input = tr.querySelector(`input[data-sem="${s}"]`);
-      if (input) input.value = String(acc);
-    });
-    touched++;
-  });
-  if (!touched) {
-    toast("Tidak ada kategori numerik untuk disebar.", "warn");
-    return;
-  }
-  toast("Target disebar rata ke 8 semester. Klik Simpan konfigurasi.", "info");
-}
-
-async function saveSettings() {
-  const btn = el("save-targets-btn");
-  setBusy(btn, true, "Menyimpan...");
-  try {
-    // Nilai dikumpulkan per kategori, lalu ditulis ke SEMUA baris requirement
-    // kategori tersebut (tiap program). Kalau hanya satu baris yang ditulis,
-    // urutan baris dari database bisa membuat baris yang tampil berganti dan
-    // perubahan terlihat "hilang" setelah reload.
-    const byCategory = new Map();
-    for (const r of state.requirements) {
-      if (!byCategory.has(r.category)) {
-        byCategory.set(r.category, {
-          total: Number(r.total_required) || 0,
-          targets: { ...(r.targets || {}) },
-        });
-      }
-    }
-
-    document.querySelectorAll("#settings-host input[data-req], #settings-host select[data-req]").forEach((input) => {
-      const row = state.requirements.find((r) => r.id === input.dataset.req);
-      if (!row) return;
-      const entry = byCategory.get(row.category);
-      if (!entry) return;
-      const v = parseFloat(String(input.value).replace(",", "."));
-      if (Number.isNaN(v)) return;
-      if (input.dataset.beelingua) {
-        entry.targets[input.dataset.sem] = v;
-        return;
-      }
-      if (input.dataset.field === "total") {
-        if (v > 0) {
-          entry.total = INTEGER_TOTAL_CATEGORIES.has(row.category) ? Math.round(v) : v;
-        }
-      } else if (input.dataset.sem) {
-        const total = Number(entry.total) || 0;
-        if (v >= 0 && total > 0) {
-          entry.targets[input.dataset.sem] = Math.min(1, v / total);
-        }
-      }
-    });
-
-    const rows = state.requirements.map((r) => {
-      const entry = byCategory.get(r.category);
-      if (!entry) return { id: r.id, category: r.category, total_required: r.total_required, targets: r.targets };
-      return {
-        id: r.id,
-        category: r.category,
-        total_required: entry.total,
-        targets: { ...entry.targets },
-      };
-    });
-
-    await updateRequirements(rows);
-    const reqs = await listRequirements();
-    state.requirements = reqs;
-    renderSettings();
-    toast("Konfigurasi semester tersimpan.", "success");
-  } catch (err) {
-    toast(err.message || "Gagal menyimpan konfigurasi.", "error");
-  } finally {
-    setBusy(btn, false);
-  }
-}
-
 function populateExportFilters() {
   const angkatanEl = el("x-angkatan");
   const semesterEl = el("x-semester");
@@ -590,26 +386,7 @@ function updateTemplateUI() {
   el("template-hint").textContent = `${TEMPLATE.hint} Kolom: ${TEMPLATE.headers.join(", ")}`;
 }
 
-// Tampilkan/sembunyikan panel Target Normatif. Tombol ini murni UI, jadi tetap
-// tersedia untuk kaprodi; hak baca-saja kaprodi diatur terpisah di wire() dan renderSettings().
-function wireSettingsToggle() {
-  const btn = el("toggle-settings");
-  const host = el("settings-host");
-  if (!btn || !host) return;
-  const apply = (hide) => {
-    host.classList.toggle("hidden", hide);
-    btn.setAttribute("aria-expanded", String(!hide));
-    btn.title = hide ? "Tampilkan konfigurasi semester" : "Sembunyikan konfigurasi semester";
-    const label = el("toggle-settings-label");
-    if (label) label.textContent = hide ? "Tampilkan" : "Sembunyikan";
-    const ico = btn.querySelector("svg");
-    if (ico) ico.style.transform = hide ? "rotate(180deg)" : "";
-  };
-  btn.addEventListener("click", () => apply(btn.getAttribute("aria-expanded") === "true"));
-}
-
 function wire() {
-  wireSettingsToggle();
 
   el("download-template").addEventListener("click", () => {
     downloadFile("template-data-lengkap.csv", toCsv(TEMPLATE.sample, TEMPLATE.headers));
@@ -629,13 +406,12 @@ function wire() {
   // Kaprodi is read-only: disable every control that writes.
   if (state.profile?.role === "kaprodi") {
     el("import-btn").disabled = true;
-    el("save-targets-btn")?.remove();
     const dzEl = el("dropzone");
     if (dzEl) dzEl.style.opacity = "0.6";
     const note = document.createElement("div");
     note.className = "alert warn";
     note.style.marginTop = "12px";
-    note.textContent = "Mode baca saja untuk Kaprodi: import data dan konfigurasi semester dinonaktifkan.";
+    note.textContent = "Mode baca saja untuk Kaprodi: import data dinonaktifkan.";
     dzEl?.parentElement?.appendChild(note);
   }
 }
@@ -644,7 +420,7 @@ function setFile(file) {
   if (!file) return;
   state.selectedFile = file;
   el("file-name").textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-  el("import-btn").disabled = false;
+  el("import-btn").disabled = state.profile?.role === "kaprodi";
 }
 
 function bindExportToggles() {
@@ -710,11 +486,9 @@ function pushRiwayat() {
     state.programs = programs;
     state.advisors = advisors;
     populateExportFilters();
-    renderSettings();
   } catch (err) {
     const box = el("alert");
     box.className = "alert error";
     box.textContent = `Gagal memuat data: ${err.message}`;
-    el("settings-host").innerHTML = "";
   }
 })();

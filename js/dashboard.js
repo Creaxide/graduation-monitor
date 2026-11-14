@@ -160,15 +160,15 @@ function renderTable(rows, counts) {
       return `
         <tr data-id="${s.id}" class="${active ? "" : "is-inactive"}${checked ? " is-selected" : ""}">
           ${checkCell}
-          <td class="nim">${escapeHtml(s.nim)}</td>
-          <td style="font-weight:700">${escapeHtml(s.name)}${offBadge}${reasonCell}</td>
-          <td style="text-align:center">${s.current_semester}</td>
-          <td>${renderFigmaBadge(catStatus(r, "sks"))}</td>
-          <td>${renderFigmaBadge(catStatus(r, "comserv"))}</td>
-          <td>${renderFigmaBadge(catStatus(r, "sat"))}</td>
-          <td>${renderFigmaBadge(catStatus(r, "beelingua"))}</td>
-          <td>${renderFigmaBadge(catStatus(r, "sertifikasi"))}</td>
-          <td class="text-right">
+          <td class="nim" data-label="NIM">${escapeHtml(s.nim)}</td>
+          <td class="cell-name" style="font-weight:700">${escapeHtml(s.name)}${offBadge}${reasonCell}</td>
+          <td class="sem" data-label="Semester">${s.current_semester}</td>
+          <td data-label="SKS">${renderFigmaBadge(catStatus(r, "sks"))}</td>
+          <td data-label="Comserv">${renderFigmaBadge(catStatus(r, "comserv"))}</td>
+          <td data-label="SAT">${renderFigmaBadge(catStatus(r, "sat"))}</td>
+          <td data-label="Beelingua">${renderFigmaBadge(catStatus(r, "beelingua"))}</td>
+          <td data-label="Sertifikasi">${renderFigmaBadge(catStatus(r, "sertifikasi"))}</td>
+          <td class="text-right cell-action">
             <a class="btn btn-detail" href="student.html?id=${s.id}">Detail</a>
           </td>
         </tr>`;
@@ -177,7 +177,7 @@ function renderTable(rows, counts) {
 
   host.innerHTML = `
     <div class="table-wrap">
-      <table class="data">
+      <table class="data table-cards">
         <thead>
           <tr>
             ${state.canEdit ? '<th class="check-cell"><input type="checkbox" id="check-all" aria-label="Pilih semua mahasiswa yang tampil"></th>' : ""}

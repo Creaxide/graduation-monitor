@@ -22,8 +22,9 @@ recommendation engine.
 - **Import / Export** — CSV/XLSX import with row-level validation report;
   CSV / Excel / PDF export with filters (angkatan, semester, urgency).
 - **RBAC + RLS** — Dosen AA have full read + write (their advisees' students plus
-  all master data and normative targets); Kaprodi is read-only across the
-  program. There is no separate admin role.
+  all master data); Kaprodi is read-only across the program. There is no
+  separate admin role. Normative targets are backend-managed (SQL), not exposed
+  in the UI.
 - **Light / Dark theme** — follows the OS preference by default (like Android
   light/dark), with a sun/moon button in the header to override it manually.
 
@@ -49,7 +50,7 @@ index.html            Login page
 dashboard.html        Monitoring dashboard
 students.html         Student master data
 student.html          Student detail + recommendation
-import-export.html    Bulk import / export + target config
+import-export.html    Bulk import / export
 css/styles.css        Design system (tokens + light/dark theme)
 Binusian_logolightmode.png   Logo (light theme)
 Binusian_logodarkmode.png    Logo (dark theme)
@@ -94,17 +95,17 @@ browser; RLS policies enforce access control.
 
 ### 3. Create users and link roles
 
-In **Authentication → Users → Add user**, create the two login accounts shown
-in the Figma login screen:
+In **Authentication → Users → Add user**, create the two login accounts used by
+the demo data:
 
 | Email | `profiles.role` |
 |---|---|
 | `dosen@binus.ac.id` | `dosen_aa` |
 | `kaprodi@binus.ac.id` | `kaprodi` |
 
-In the login page these accounts are listed as demo accounts; they use real
-Supabase Auth passwords. A `profiles` row is created automatically per
-user. Then run the matching SQL in the SQL Editor:
+These accounts use real Supabase Auth passwords and are **not** listed on the
+login page. A `profiles` row is created automatically per user. Then run the
+matching SQL in the SQL Editor:
 
 ```sql
 -- Academic Advisor (sees only their advisees)
@@ -117,10 +118,22 @@ where id = '<dosen-auth-user-uuid>';
 update profiles set role = 'kaprodi' where id = '<kaprodi-auth-user-uuid>';
 ```
 
-Dosen can edit the semester targets (**konfigurasi semester**) directly on the
-**Import / Export** page: change the curriculum totals and the per-semester
-fractions, then press **Simpan konfigurasi**. The Kaprodi view of the same
-table is read-only.
+### 4. Normative targets (backend only)
+
+The curriculum totals and the per-semester normative targets live in the
+`requirements` table (`total_required` and `targets` JSON). They are **not**
+editable from the frontend — change them in the Supabase SQL Editor, e.g.:
+
+```sql
+-- Per-semester cumulative fraction of the curriculum total (semester 1..8)
+update requirements
+set targets = '{"1":0.12,"2":0.25,"3":0.38,"4":0.5,"5":0.62,"6":0.75,"7":0.88,"8":1.0}'::jsonb
+where category = 'sks';
+```
+
+The app reads these values on every load, so the change applies to all programs
+and students without redeploying the frontend. `sql/seed.sql` contains the
+default configuration.
 
 
 
@@ -143,10 +156,13 @@ The same responsive pages work in a mobile browser/WebView and as an
 installable PWA; there is no separate mobile codebase to keep in sync.
 
 - **Mobile WebView:** open the deployed HTTPS site in the phone browser or
-  inside an existing WebView container. Controls adapt to narrow screens and
-  the student tables remain horizontally scrollable rather than hiding columns.
-- **Install on mobile:** every phone gets a floating **Install aplikasi**
-  button in the bottom-right corner. On Android it opens the native install
+  inside an existing WebView container. Controls adapt to narrow screens: the
+  student list becomes a card layout (name, NIM and category badges stacked),
+  filters sit in a two-column grid, and the main navigation moves to a bottom
+  bar within thumb reach. Wider tables (failed courses, import results) stay
+  horizontally scrollable.
+- **Install on mobile:** every phone gets a floating **Install** button above
+  the bottom navigation. On Android it opens the native install
   prompt when the browser offers one (`beforeinstallprompt`); otherwise, and on
   iPhone/iPad, it shows the manual steps (Chrome: **⋮ → Install aplikasi**;
   Safari: **Share → Add to Home Screen**). The button only renders on mobile,
@@ -174,8 +190,8 @@ installable PWA; there is no separate mobile codebase to keep in sync.
 Failed courses are listed separately with a recommended retake semester
 (current + 1).
 
-Targets are configurable per program in the `requirements` table and are shown
-read-only on the **Import / Export** page.
+Targets are stored per program in the `requirements` table and are managed from
+the backend (Supabase SQL Editor); the frontend only reads them.
 
 ### Status Beelingua
 

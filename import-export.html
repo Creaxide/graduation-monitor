@@ -30,16 +30,10 @@
 <body>
   <div class="page-wrap">
 
-    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
-      <header class="page-title" style="flex:1; min-width:260px;">
-        <h1>Import / Export Data</h1>
-        <div class="sub">Unggah data capaian mahasiswa dan unduh laporan kelulusan.</div>
-      </header>
-      <div class="badge neutral" style="background:var(--badge-info-bg); border:1.5px solid var(--alert-info-border); color:var(--badge-info-fg); padding:8px 12px; font-size:11px; display:inline-flex; align-items:center; gap:8px;">
-        <span style="width:8px;height:8px;border-radius:50%;background:var(--safe);display:inline-block;"></span>
-        <span>Sistem siap menerima data</span>
-      </div>
-    </div>
+    <header class="page-title">
+      <h1>Import / Export</h1>
+      <div class="sub">Unggah dan unduh data kelulusan</div>
+    </header>
 
     <div id="alert" class="hidden"></div>
 
@@ -142,20 +136,6 @@
       <div class="card-head"><h2>Hasil Import</h2></div>
       <div id="result-summary" class="grid cols-3 mb-16"></div>
       <div id="result-detail"></div>
-    </section>
-
-    <section class="blue-shell mt-24" id="settings-card">
-      <div class="card-head">
-        <div style="flex:1;">
-          <h2 style="margin:0; font-size:14px; font-weight:800;">Target Normatif (Konfigurasi Semester)</h2>
-        </div>
-        <span class="badge info" style="white-space:nowrap;">Dosen dapat mengubah</span>
-        <button type="button" class="btn sm" id="toggle-settings" aria-expanded="true" aria-controls="settings-host" title="Sembunyikan konfigurasi semester">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transition:transform .18s ease;"><polyline points="18 15 12 9 6 15"></polyline></svg>
-          <span id="toggle-settings-label">Sembunyikan</span>
-        </button>
-      </div>
-      <div id="settings-host"><div class="spinner" style="border-color:rgba(255,255,255,0.3); border-top-color:#fff;"></div></div>
     </section>
   </div>
 

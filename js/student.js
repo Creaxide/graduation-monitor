@@ -158,7 +158,7 @@ function render(result) {
   el("host").innerHTML = `
     ${inactiveBanner}
     <section class="blue-shell" style="display:flex; gap:16px; align-items:flex-start; padding:18px 20px; flex-wrap:wrap;">
-      <div style="display:flex; gap:16px; flex:1; min-width:280px; align-items:center;">
+      <div style="display:flex; gap:16px; flex:1; min-width:280px; align-items:center;" class="hero-id">
         <div class="profile-avatar">${escapeHtml(initials)}</div>
         <div style="flex:1; min-width:0;">
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
@@ -169,11 +169,11 @@ function render(result) {
           <div style="margin-top:4px; color:rgba(255,255,255,0.9); font-size:12px;">${escapeHtml(programName)} \u00b7 ${escapeHtml(fakultasLine)}</div>
           <div class="hero-note" style="display:flex; align-items:center; gap:6px; margin-top:6px; color:#fde68a; font-size:11px; font-weight:600;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-            <span>Pantau rekomendasi di samping untuk percepatan kelulusan.</span>
+            <span>Lihat rekomendasi prioritas untuk percepatan kelulusan.</span>
           </div>
         </div>
       </div>
-      <div style="display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; text-align:left;">
+      <div style="display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; text-align:left;" class="hero-meta">
         <div style="min-width:90px;">
           <div style="font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(255,255,255,0.75);">NIM</div>
           <div style="font-weight:700; color:#fff; font-size:13px;">${escapeHtml(s.nim || "-")}</div>
@@ -193,6 +193,11 @@ function render(result) {
       </div>
     </section>
 
+    <button class="btn primary mobile-download" type="button" data-download-report>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+      <span>Unduh PDF</span>
+    </button>
+
     <div style="display:flex; gap:18px; margin-top:18px; align-items:stretch; flex-wrap:wrap;">
       <div style="flex:1 1 420px; min-width:320px; display:flex; flex-direction:column; gap:18px;">
         <section class="blue-shell" style="padding:0;">
@@ -201,7 +206,6 @@ function render(result) {
               <h2 style="margin:0; font-size:15px; font-weight:800;">Progress Kelulusan</h2>
               <div style="font-size:11px; color:rgba(255,255,255,0.85);">Ringkasan indikator akademik utama mahasiswa</div>
             </div>
-            <div style="font-size:11px; color:rgba(255,255,255,0.8); font-weight:600;">Diperbarui hari ini</div>
           </div>
           <div style="padding: 0 18px 14px; display:flex; flex-direction:column; gap:12px;">
             ${orderedCats
@@ -290,7 +294,7 @@ function render(result) {
           </div>
         </section>
 
-        <button class="btn primary" id="download-pdf-btn" style="width:100%; justify-content:center; background:var(--primary-bg); border-color:var(--primary-border); color:var(--primary-fg); font-weight:800; border-radius:10px; padding:12px;">
+        <button class="btn primary" id="download-pdf-btn" data-download-report style="width:100%; justify-content:center; background:var(--primary-bg); border-color:var(--primary-border); color:var(--primary-fg); font-weight:800; border-radius:10px; padding:12px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
           <span>Unduh PDF</span>
         </button>
@@ -327,7 +331,9 @@ function render(result) {
     if (ctx && ctx.profile) result.profile = ctx.profile;
     render(result);
     current = result;
-    el("download-pdf-btn")?.addEventListener("click", () => openStudentReport(result));
+    document.querySelectorAll("[data-download-report]").forEach((btn) => {
+      btn.addEventListener("click", () => openStudentReport(result));
+    });
   } catch (err) {
     el("host").innerHTML = `<div class="alert error">Gagal memuat data mahasiswa: ${escapeHtml(err.message)}</div>`;
   }

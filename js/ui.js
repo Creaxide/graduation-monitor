@@ -2,9 +2,16 @@ import { getCurrentUser, getProfile, signOut } from "./data.js";
 import { accessDenialReason, escapeHtml } from "./utils.js";
 import { initTheme, mountThemeToggle } from "./theme.js";
 
+const ICON = {
+  dashboard:
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>',
+  transfer:
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v13"></path><polyline points="3 13 7 17 11 13"></polyline><path d="M17 20V7"></path><polyline points="13 11 17 7 21 11"></polyline></svg>',
+};
+
 const NAV = [
-  { href: "dashboard.html", label: "Dashboard", id: "dashboard", icon: "" },
-  { href: "import-export.html", label: "Import / Export", id: "import-export", icon: "⇅" },
+  { href: "dashboard.html", label: "Dashboard", id: "dashboard", match: ["dashboard.html"], icon: ICON.dashboard },
+  { href: "import-export.html", label: "Import / Export", id: "import-export", match: ["import-export.html"], icon: ICON.transfer },
 ];
 
 export async function initLayout({ active, title, subtitle }) {
@@ -43,9 +50,9 @@ function renderHeader(profile, active) {
   }
 
   const pills = NAV.map((n) => {
-    const isActive = n.href === active || (active && active.startsWith(n.id));
+    const isActive = n.match ? n.match.includes(active) : n.href === active;
     return `
-      <a href="${n.href}" class="nav-pill ${isActive ? "active" : ""}">
+      <a href="${n.href}" class="nav-pill ${isActive ? "active" : ""}"${isActive ? ' aria-current="page"' : ""}>
         ${n.icon ? `<span class="pill-ico">${n.icon}</span>` : ""}
         <span>${escapeHtml(n.label)}</span>
       </a>`;

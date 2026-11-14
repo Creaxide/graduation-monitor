@@ -88,9 +88,10 @@ function createInstallButton() {
       <path d="m7 10 5 5 5-5"></path>
       <path d="M5 21h14"></path>
     </svg>
-    <span>Install aplikasi</span>`;
+    <span>Install</span>`;
   button.addEventListener("click", handleInstallClick);
   (document.body || document.documentElement).append(button);
+  document.body?.classList.add("has-install-fab");
   installButton = button;
   return button;
 }
@@ -106,6 +107,7 @@ function removeInstallUi() {
   if (installButton) {
     installButton.remove();
     installButton = null;
+    document.body?.classList.remove("has-install-fab");
   }
   hideNotice();
 }

@@ -41,7 +41,7 @@ function render() {
 
   host.innerHTML = `
     <div class="table-wrap">
-      <table class="data">
+      <table class="data table-cards">
         <thead>
           <tr>
             <th>NIM</th><th>Nama</th><th>Program</th><th>SEM</th>
@@ -56,8 +56,8 @@ function render() {
             <tr onclick="window.location.href='student.html?id=${s.id}'" class="${
                 isActive(s) ? "" : "is-inactive"
               }" style="cursor:pointer;">
-              <td class="nim">${escapeHtml(s.nim)}</td>
-              <td style="font-weight:700">${escapeHtml(s.name)}${
+              <td class="nim" data-label="NIM">${escapeHtml(s.nim)}</td>
+              <td class="cell-name" style="font-weight:700">${escapeHtml(s.name)}${
                 isActive(s) ? "" : ' <span class="badge off">NONAKTIF</span>'
               }${
                 isActive(s)
@@ -66,14 +66,14 @@ function render() {
                       s.deactivate_reason ? escapeHtml(s.deactivate_reason) : "tidak dicatat"
                     }</div>`
               }</td>
-              <td style="color:rgba(255,255,255,0.92)">${escapeHtml(s.programs?.code || "-")}</td>
-              <td style="text-align:center">${s.current_semester}</td>
-              <td class="mono">${s.total_sks_passed}</td>
-              <td class="mono">${s.comserv_hours}</td>
-              <td class="mono">${s.sat_hours}</td>
-              <td>${beelinguaBadge(s.beelingua_status)}</td>
-              <td>${overallBadge(s)}</td>
-              <td class="text-right">
+              <td data-label="Program" style="color:rgba(255,255,255,0.92)">${escapeHtml(s.programs?.code || "-")}</td>
+              <td class="sem" data-label="Semester">${s.current_semester}</td>
+              <td class="mono" data-label="SKS">${s.total_sks_passed}</td>
+              <td class="mono" data-label="Comserv">${s.comserv_hours}</td>
+              <td class="mono" data-label="SAT">${s.sat_hours}</td>
+              <td data-label="Beelingua">${beelinguaBadge(s.beelingua_status)}</td>
+              <td data-label="Status akademik">${overallBadge(s)}</td>
+              <td class="text-right cell-action">
                 <a class="btn btn-detail" href="student.html?id=${s.id}" onclick="event.stopPropagation()">Detail</a>
               </td>
             </tr>`
