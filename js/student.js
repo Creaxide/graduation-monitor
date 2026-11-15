@@ -73,7 +73,17 @@ function render(result) {
   const riskClass = result.overall === "danger" ? "mendesak" : result.overall === "warn" ? "perhatian" : "aman";
 
   const initials = (s.name || "AP").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
-  const statusDot = `<span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;"></span>`;
+  // Status akademik (aktif/cuti/lulus/do) berbeda dengan status pemantauan
+  // (is_active). Jangan tampilkan keduanya seolah-olah saling bertentangan.
+  const academicStatus = String(s.status || "aktif").toLowerCase();
+  const academicLabel = academicStatus.toUpperCase();
+  const academicColor = {
+    aktif: "#16a34a",
+    cuti: "#f59e0b",
+    lulus: "#2563eb",
+    do: "#dc2626",
+  }[academicStatus] || "#16a34a";
+  const statusDot = `<span style="width:8px;height:8px;border-radius:50%;background:${academicColor};display:inline-block;"></span>`;
 
   const progressOrder = ["sks", "comserv", "sat", "beelingua", "sertifikasi"];
   const orderedCats = progressOrder
@@ -132,6 +142,10 @@ function render(result) {
       </div>
       <div class="inactive-note-body">
         <div class="inactive-note-row">
+          <span class="inactive-note-label">Status akademik</span>
+          <span class="inactive-note-value">${escapeHtml(academicLabel)}</span>
+        </div>
+        <div class="inactive-note-row">
           <span class="inactive-note-label">Alasan</span>
           <span class="inactive-note-value">${
             reasonText ? escapeHtml(reasonText) : "<em>Tidak dicatat.</em>"
@@ -163,8 +177,13 @@ function render(result) {
         <div style="flex:1; min-width:0;">
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <h1 style="margin:0; font-size:20px; font-weight:800; color:#fff;">${escapeHtml(s.name)}</h1>
-            <span class="pill-aktif" style="display:inline-flex;align-items:center;gap:6px;">${statusDot} ${escapeHtml(String(s.status || "aktif").toUpperCase())}</span>
-            ${isInactive ? '<span class="badge off" style="vertical-align:middle;">NONAKTIF</span>' : ""}
+            ${
+              isInactive
+                ? `<span class="pill-nonaktif" title="Tidak dipantau">NONAKTIF</span>`
+                : `<span class="pill-aktif" style="display:inline-flex;align-items:center;gap:6px;${
+                    academicStatus === "aktif" ? "" : `background:${academicColor};color:#fff;`
+                  }">${statusDot} ${escapeHtml(academicLabel)}</span>`
+            }
           </div>
           <div style="margin-top:4px; color:rgba(255,255,255,0.9); font-size:12px;">${escapeHtml(programName)} \u00b7 ${escapeHtml(fakultasLine)}</div>
           <div class="hero-note" style="display:flex; align-items:center; gap:6px; margin-top:6px; color:#fde68a; font-size:11px; font-weight:600;">

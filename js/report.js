@@ -163,6 +163,7 @@ const REPORT_CSS = `
       .hero-name { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
       .hero-name h1 { margin: 0; font-size: 18px; font-weight: 800; color: #fff; }
       .pill-aktif { background: #16a34a; color: #fff; padding: 4px 11px; border-radius: 999px; font-size: 10px; font-weight: 800; }
+      .pill-nonaktif { background: #dc2626; color: #fff; padding: 4px 11px; border-radius: 999px; font-size: 10px; font-weight: 800; }
       .hero-sub { margin-top: 3px; color: rgba(255, 255, 255, 0.9); font-size: 11px; }
       .hero-note { margin-top: 5px; color: #fde68a; font-size: 10px; font-weight: 600; display: flex; gap: 5px; align-items: center; }
       .hero-stats { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; text-align: left; }
@@ -358,6 +359,14 @@ export function buildStudentReportHtml(result) {
   const fakultasLine = "Fakultas Teknologi Informasi";
   const ipkText = s.ipk != null && s.ipk !== "" ? Number(s.ipk).toFixed(2).replace(".", ",") : "-";
   const statusText = escapeHtml(String(s.status || "aktif").toUpperCase());
+  // Status akademik dan status pemantauan (is_active) adalah dua hal berbeda.
+  const isInactive = s.is_active === false;
+  const heroPill = isInactive
+    ? `<span class="pill-nonaktif">NONAKTIF</span>`
+    : `<span class="pill-aktif">${statusText}</span>`;
+  const heroSub = `${escapeHtml(programName)} \u00b7 ${escapeHtml(fakultasLine)}${
+    isInactive ? ` \u00b7 Status akademik: ${statusText}` : ""
+  }`;
 
   return `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Laporan Kelulusan \u2014 ${escapeHtml(s.name)}</title>
     <style>${REPORT_CSS}</style></head><body>
@@ -381,9 +390,9 @@ export function buildStudentReportHtml(result) {
           <div class="hero-main">
             <div class="hero-name">
               <h1>${escapeHtml(s.name)}</h1>
-              <span class="pill-aktif">${statusText}</span>
+              ${heroPill}
             </div>
-            <div class="hero-sub">${escapeHtml(programName)} \u00b7 ${escapeHtml(fakultasLine)}</div>
+            <div class="hero-sub">${heroSub}</div>
             <div class="hero-note">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
               <span>Pantau rekomendasi untuk percepatan kelulusan.</span>

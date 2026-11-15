@@ -135,6 +135,12 @@ The app reads these values on every load, so the change applies to all programs
 and students without redeploying the frontend. `sql/seed.sql` contains the
 default configuration.
 
+The demo students are spread across every semester (1–9) and deliberately cover
+all three overall risk levels: **2/5 MENDESAK**, **2/5 PERHATIAN**, and
+**1/5 AMAN** of the active students. Their `angkatan` follows the NIM prefix
+(semester 1–2 = 2025, 3–4 = 2024, 5–6 = 2023, 7–8 = 2022, 9 = 2021), so the
+enrollment year, NIM, and semester always agree.
+
 
 
 ### 5. NIM format (first two digits = estimated graduation year)

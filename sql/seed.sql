@@ -74,38 +74,37 @@ select v.nim, v.name,
        (select id from advisors where kode_dosen = v.kode_dosen),
        v.angkatan, v.sem, v.status, v.sks, v.comserv, v.sat, v.beelingua, v.score
 from (values
-  -- Semester 1: INFO badge (Beelingua belum jatuh tempo semester 4)
-  ('2902314920','Andi Pratama',      'CS','D001', 2023, 1, 'aktif',  18,  4,  2, 'belum_ambil',  460),
-  ('2902314921','Bella Kartika',     'CS','D001', 2023, 1, 'aktif',  15,  3,  1, 'belum_ambil',  460),
+  -- Sebaran risiko: 2/5 MENDESAK, 2/5 PERHATIAN, 1/5 AMAN (22 mahasiswa aktif).
+  -- Angkatan mengikuti NIM: semester 1-2 = 2025, 3-4 = 2024, 5-6 = 2023,
+  -- 7-8 = 2022, 9 = 2021.
+  -- Semester 1-2: angkatan 2025 (NIM 29xxxx)
+  ('2902314920','Andi Pratama',      'CS','D001', 2025, 1, 'aktif',  18,  4, 13, 'proses',       460),
+  ('2902314921','Bella Kartika',     'CS','D001', 2025, 1, 'aktif',  17,  4, 14, 'proses',       460),
   ('2902376453','Nadia Puspita',     'CS','D003', 2025, 2, 'aktif',  24,  2,  2, 'belum_ambil',  460),
-  ('2902416100','Rizky Ramadhan',    'IS','D001', 2024, 2, 'aktif',  28,  4,  3, 'belum_ambil',  460),
-  -- Semester 3: AMAN (Beelingua target masih 0)
-  ('2802416102','Taufik Hidayat',    'IS','D003', 2022, 3, 'aktif',  60,  8, 10, 'lulus',        600),
-  -- Semester 4: target Beelingua jatuh tempo, bepelum_ambil -> DANGER
-  ('2802314923','Dewi Anggraini',    'CS','D001', 2024, 4, 'aktif',  60, 14, 12, 'belum_ambil',  460),
-  -- Semester 4: SAFE (lulus Beelingua)
-  ('2802352623','Hana Salsabila',    'CS','D002', 2024, 4, 'aktif',  66, 11, 33, 'lulus',        500),
-  ('2802416101','Sinta Lestari',     'IS','D002', 2023, 4, 'aktif',  60, 10, 15, 'lulus',        570),
-  -- Semester 5: DANGER territory (Beelingua target 100%, belum lulus)
-  ('2702314924','Eko Nugroho',       'CS','D002', 2023, 5, 'aktif',  95, 16, 22, 'proses',       455),
-  ('2702352624','Irfan Maulana',     'CS','D002', 2022, 5, 'aktif',  95, 18, 25, 'lulus',        545),
-  ('2702107493','Joseph D.',         'CS','D003', 2023, 5, 'aktif',  85, 15, 18, 'proses',       470),
-  ('2702107494','Kevin Sanjaya',     'CS','D003', 2024, 5, 'aktif',  55,  8,  9, 'belum_ambil',  460),
-  -- Semester 6: DANGER territory
-  ('2702416105','Fira Nur',          'CS','D001', 2023, 6, 'aktif', 126, 26, 20, 'proses',       480),
-  ('2702416106','Doni Santoso',      'CS','D001', 2023, 6, 'aktif',  92, 12,  8, 'belum_ambil',  460),
-  ('2702352622','Gilbert Tobing',    'CS','D002', 2023, 6, 'aktif', 120, 30, 70, 'lulus',        590),
+  ('2902416100','Rizky Ramadhan',    'IS','D001', 2025, 2, 'aktif',  35,  7, 27, 'proses',       460),
+  -- Semester 3-4: angkatan 2024 (NIM 28xxxx)
+  ('2802416102','Taufik Hidayat',    'IS','D003', 2024, 3, 'aktif',  60,  8, 10, 'lulus',        600),
+  ('2802314923','Dewi Anggraini',    'CS','D001', 2024, 4, 'aktif',  70, 14, 54, 'lulus',        460),
+  ('2802352623','Hana Salsabila',    'CS','D002', 2024, 4, 'aktif',  66, 14, 55, 'lulus',        500),
+  ('2802416101','Sinta Lestari',     'IS','D002', 2024, 4, 'aktif',  60, 10, 15, 'lulus',        570),
+  -- Semester 5-6: angkatan 2023 (NIM 27xxxx)
+  ('2702107493','Joseph D.',         'CS','D003', 2023, 5, 'aktif',  85, 18, 70, 'lulus',        470),
+  ('2702107494','Kevin Sanjaya',     'CS','D003', 2023, 5, 'aktif',  55,  8,  9, 'belum_ambil',  460),
+  ('2702314924','Eko Nugroho',       'CS','D002', 2023, 5, 'aktif',  95, 18, 68, 'lulus',        455),
+  ('2702352624','Irfan Maulana',     'CS','D002', 2023, 5, 'aktif',  95, 20, 78, 'lulus',        545),
+  ('2702352622','Gilbert Tobing',    'CS','D002', 2023, 6, 'aktif', 120, 30, 90, 'lulus',        590),
   ('2702376452','M. Andri Wibowo',   'CS','D003', 2023, 6, 'aktif', 130, 28, 68, 'lulus',        555),
-  -- Semester 7: DANGER territory (harus lulus semester ini)
-  ('2602416107','Sari Wulandari',    'CS','D001', 2023, 7, 'aktif', 145, 28, 35, 'proses',       480),
-  ('2602416108','Agus Subroto',      'CS','D001', 2023, 7, 'aktif', 130, 20, 20, 'belum_ambil',  460),
-  ('2602416112','Rizky Ramadhan II', 'IS','D001', 2024, 7, 'aktif', 115, 20, 22, 'proses',       460),
-  ('2602416113','Irfan Maulana II',  'CS','D002', 2022, 7, 'aktif', 140, 32, 34, 'lulus',        545),
-  -- Semester 8: FINAL semester, lulus WAJIB
-  ('2602416109','Chandra Wijaya',    'CS','D001', 2022, 8, 'aktif', 138, 38, 30, 'lulus',        560),
-  ('2602416110','Gilbert Tobing',    'CS','D002', 2023, 8, 'aktif', 120, 30, 70, 'lulus',        590),
-  -- Semester 9-10: retake window
-  ('2502416111','Demo Retake',       'CS','D001', 2022, 9, 'aktif',  80, 15, 12, 'lulus',        560)
+  ('2702416105','Fira Nur',          'CS','D001', 2023, 6, 'aktif', 126, 26, 80, 'lulus',        480),
+  ('2702416106','Doni Santoso',      'CS','D001', 2023, 6, 'aktif',  92, 12,  8, 'belum_ambil',  460),
+  -- Semester 7-8: angkatan 2022 (NIM 26xxxx) - tidak ada lagi waktu mengejar
+  ('2602416107','Sari Wulandari',    'CS','D001', 2022, 7, 'aktif', 145, 28,106, 'lulus',        480),
+  ('2602416108','Agus Subroto',      'CS','D001', 2022, 7, 'aktif', 130, 20, 20, 'belum_ambil',  460),
+  ('2602416112','Rizky Ramadhan II', 'IS','D001', 2022, 7, 'aktif', 115, 20, 22, 'proses',       460),
+  ('2602416113','Irfan Maulana II',  'CS','D002', 2022, 7, 'aktif', 140, 32, 95, 'lulus',        545),
+  ('2602416109','Chandra Wijaya',    'CS','D001', 2022, 8, 'aktif', 146, 38,120, 'lulus',        560),
+  ('2602416110','Gilbert Tobing II', 'CS','D002', 2022, 8, 'aktif', 136, 30,110, 'lulus',        590),
+  -- Semester 9: angkatan 2021 (NIM 25xxxx), jendela retake
+  ('2502416111','Demo Retake',       'CS','D001', 2021, 9, 'aktif',  80, 15, 12, 'lulus',        560)
 ) as v(nim, name, program_code, kode_dosen, angkatan, sem, status, sks, comserv, sat, beelingua, score)
 on conflict (nim) do update set
   name             = excluded.name,
@@ -167,6 +166,8 @@ join (values
   ('2702376452','Sertifikasi Jaringan Dasar',         true,  '2025-10-05'),
   ('2802416101','Sertifikasi Kompetensi Pemrograman', true,  '2025-06-18'),
   ('2802416102','Sertifikasi Kompetensi Pemrograman', true,  '2025-04-22'),
+  ('2602416107','Sertifikasi Kompetensi Pemrograman', true,  '2025-09-10'),
+  ('2602416113','Sertifikasi Kompetensi Pemrograman', true,  '2025-09-10'),
   ('2602416109','Sertifikasi Kompetensi Pemrograman', true,  '2025-03-15'),
   ('2602416110','Sertifikasi Kompetensi Pemrograman', true,  '2025-02-20'),
   ('2502416111','Sertifikasi Kompetensi Pemrograman', true,  '2023-01-15')

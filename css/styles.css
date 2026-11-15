@@ -758,6 +758,7 @@ table.data tbody td.sem { text-align: center; }
 /* Profile card extras */
 .profile-avatar { width: 64px; height: 64px; border-radius: 999px; background: var(--avatar-bg); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 18px; flex-shrink: 0; }
 .pill-aktif { background: var(--badge-safe-bg); color: var(--badge-safe-fg); padding: 4px 11px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+.pill-nonaktif { background: #dc2626; color: #fff; padding: 4px 11px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: 0.02em; }
 .hero-note { color: var(--danger); font-size: 12px; margin-top: 6px; display: flex; gap: 6px; align-items: flex-start; }
 
 /* Specific page helpers — body text sits on the panel colour */
@@ -885,6 +886,8 @@ table.data tbody td.sem { text-align: center; }
   .site-header, .site-header--slim { height: auto; min-height: 68px; }
   .header-inner { flex-wrap: wrap; gap: 8px 12px; padding: 8px 14px; }
   .header-spacer { display: none; }
+  /* Halaman login: tombol tema adalah anak langsung header, jadi dorong ke kanan. */
+  .header-inner > .btn-theme { margin-left: auto; }
   .header-user { margin-left: auto; gap: 8px; }
   .page-wrap, .content { padding: 20px 16px calc(40px + env(safe-area-inset-bottom)); }
   .page-title h1 { font-size: clamp(21px, 5vw, 27px); }
