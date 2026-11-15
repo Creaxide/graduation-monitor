@@ -30,6 +30,35 @@ let state = {
   canEdit: false,
 };
 
+// Pemilihan di layar sentuh: tahan kartu ~500 ms untuk mulai memilih, lalu
+// ketuk kartu lain untuk menambah/menghapus pilihan tanpa membuka detail.
+const MOBILE_QUERY = "(max-width: 760px)";
+const LONG_PRESS_MS = 500;
+const LONG_PRESS_MOVE = 10;
+
+let suppressNextClick = false;
+let cancelActivePress = null;
+
+window.addEventListener("scroll", () => cancelActivePress?.(), { passive: true });
+
+function isMobileView() {
+  return typeof window.matchMedia === "function" && window.matchMedia(MOBILE_QUERY).matches;
+}
+
+function applySelection(id, checked) {
+  if (checked) state.selected.add(id);
+  else state.selected.delete(id);
+
+  const tr = document.querySelector(`tbody tr[data-id="${id}"]`);
+  const box = tr?.querySelector("input.row-check");
+  if (box) box.checked = checked;
+  tr?.classList.toggle("is-selected", checked);
+
+  document.body.classList.toggle("has-bulk-selection", state.selected.size > 0);
+  syncBulkBar();
+  syncCheckAll();
+}
+
 const STATUS_ID = {
   safe: { label: "AMAN", cls: "safe" },
   warn: { label: "PERHATIAN", cls: "warn" },
@@ -130,6 +159,10 @@ function renderTable(rows, counts) {
   const label = el("count-label");
   if (label) label.textContent = countLabel(counts);
 
+  document.body.classList.toggle(
+    "has-bulk-selection",
+    state.canEdit && state.selected.size > 0
+  );
   syncBulkBar();
 
   if (!rows.length) {
@@ -176,6 +209,7 @@ function renderTable(rows, counts) {
     .join("");
 
   host.innerHTML = `
+    ${state.canEdit ? '<p class="select-hint">Tahan kartu mahasiswa untuk memilih.</p>' : ""}
     <div class="table-wrap">
       <table class="data table-cards">
         <thead>
@@ -225,13 +259,7 @@ function wireTable(host) {
   });
 
   host.querySelectorAll("input.row-check").forEach((box) => {
-    box.addEventListener("change", () => {
-      if (box.checked) state.selected.add(box.dataset.id);
-      else state.selected.delete(box.dataset.id);
-      box.closest("tr")?.classList.toggle("is-selected", box.checked);
-      syncBulkBar();
-      syncCheckAll();
-    });
+    box.addEventListener("change", () => applySelection(box.dataset.id, box.checked));
   });
 
   const checkAll = host.querySelector("#check-all");
@@ -243,6 +271,7 @@ function wireTable(host) {
         else state.selected.delete(box.dataset.id);
         box.closest("tr")?.classList.toggle("is-selected", box.checked);
       });
+      document.body.classList.toggle("has-bulk-selection", state.selected.size > 0);
       syncBulkBar();
       syncCheckAll();
     });
@@ -251,8 +280,85 @@ function wireTable(host) {
   host.querySelectorAll("tbody tr").forEach((tr) => {
     tr.addEventListener("click", (e) => {
       if (e.target.closest("a, button, input, label, select")) return;
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        return;
+      }
+      // Setelah ada pilihan, ketuk kartu lain berarti menambah/menghapus
+      // pilihan, bukan membuka detail.
+      if (isMobileView() && state.selected.size > 0) {
+        applySelection(tr.dataset.id, !state.selected.has(tr.dataset.id));
+        return;
+      }
       window.location.href = `student.html?id=${tr.dataset.id}`;
     });
+    wireLongPress(tr);
+  });
+}
+
+// Tahan kartu untuk memulai pemilihan di layar sentuh. Gerakan jari lebih dari
+// LONG_PRESS_MOVE, scroll, atau pointer keluar kartu membatalkan tahanan.
+function wireLongPress(tr) {
+  let timer = 0;
+  let startX = 0;
+  let startY = 0;
+
+  const cancel = () => {
+    if (timer) window.clearTimeout(timer);
+    timer = 0;
+    if (cancelActivePress === cancel) cancelActivePress = null;
+  };
+
+  // Klik tetap terpicu setelah jari diangkat; tahan sebentar flag-nya supaya
+  // klik itu tidak ikut membuka halaman detail.
+  const release = () => {
+    cancel();
+    if (suppressNextClick) {
+      window.setTimeout(() => {
+        suppressNextClick = false;
+      }, 400);
+    }
+  };
+
+  tr.addEventListener("pointerdown", (e) => {
+    if (!state.canEdit || !isMobileView()) return;
+    if (e.pointerType === "mouse") return;
+    if (e.target.closest("a, button, input, label, select")) return;
+
+    cancel();
+    startX = e.clientX;
+    startY = e.clientY;
+    cancelActivePress = cancel;
+
+    timer = window.setTimeout(() => {
+      timer = 0;
+      cancelActivePress = null;
+      const id = tr.dataset.id;
+      applySelection(id, !state.selected.has(id));
+      suppressNextClick = true;
+      try {
+        navigator.vibrate?.(12);
+      } catch (_) {
+        /* getaran tidak didukung */
+      }
+    }, LONG_PRESS_MS);
+  });
+
+  tr.addEventListener("pointermove", (e) => {
+    if (!timer) return;
+    if (
+      Math.abs(e.clientX - startX) > LONG_PRESS_MOVE ||
+      Math.abs(e.clientY - startY) > LONG_PRESS_MOVE
+    ) {
+      cancel();
+    }
+  });
+
+  tr.addEventListener("pointerup", release);
+  tr.addEventListener("pointercancel", release);
+  tr.addEventListener("pointerleave", release);
+  tr.addEventListener("contextmenu", (e) => {
+    if (isMobileView()) e.preventDefault();
   });
 }
 

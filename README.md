@@ -137,7 +137,28 @@ default configuration.
 
 
 
-### 5. Run the frontend
+### 5. NIM format (first two digits = estimated graduation year)
+
+The first two digits of a NIM are the student's estimated graduation year:
+enrollment year + 4 years. The remaining digits are unchanged. The enrollment
+year is derived from the student's current semester in the reference academic
+year (Semester Ganjil 2025/2026 = semester 1):
+
+| Semester | Enrolled | Estimated graduation | NIM prefix |
+| -------- | -------- | -------------------- | ---------- |
+| 1-2      | 2025     | 2029                 | 29         |
+| 3-4      | 2024     | 2028                 | 28         |
+| 5-6      | 2023     | 2027                 | 27         |
+| 7-8      | 2022     | 2026                 | 26         |
+| 9        | 2021     | 2025                 | 25         |
+
+`sql/fix_nim_graduation_year.sql` applies the rule to every student, backing up
+the old NIMs to `students_nim_backup`; it is safe to re-run. The helper
+functions `nim_prefix_for_semester()` and `nim_with_graduation_prefix()` live in
+`sql/schema.sql`. When the academic year moves on, pass the new reference year
+as the second argument (`default 2025`) and re-run the fix.
+
+### 6. Run the frontend
 
 Because the pages load ES modules, serve them over HTTP (not `file://`):
 

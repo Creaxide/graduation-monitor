@@ -372,3 +372,32 @@ update requirements set category = 'beelingua' where category = 'belingua';
 update requirements set label = 'Beelingua' where category = 'beelingua' and label = 'Belingua';
 alter table requirements add constraint requirements_category_check
   check (category in ('sks','comserv','sat','beelingua','sertifikasi'));
+
+-- ---------------------------------------------------------------------------
+-- 8. Aturan NIM (dua digit pertama = estimasi tahun kelulusan)
+--    Estimasi tahun kelulusan = tahun masuk + 4 tahun (8 semester).
+--    Tahun masuk diturunkan dari semester mahasiswa pada tahun ajaran acuan:
+--    semester 1-2 = tahun ajaran acuan, 3-4 = setahun sebelumnya, dst.
+--    Contoh (acuan Ganjil 2025/2026): semester 7-8 masuk 2022 -> NIM "26...".
+--    Ubah p_reference_year saat tahun ajaran berganti.
+-- ---------------------------------------------------------------------------
+create or replace function public.nim_prefix_for_semester(
+  p_semester integer,
+  p_reference_year integer default 2025
+) returns text
+language sql immutable as $$
+  select lpad(
+    (((p_reference_year - ((greatest(coalesce(p_semester, 1), 1) - 1) / 2) + 4) % 100))::text,
+    2, '0'
+  );
+$$;
+
+create or replace function public.nim_with_graduation_prefix(
+  p_nim text,
+  p_semester integer,
+  p_reference_year integer default 2025
+) returns text
+language sql immutable as $$
+  select public.nim_prefix_for_semester(p_semester, p_reference_year)
+    || substr(coalesce(p_nim, ''), 3);
+$$;

@@ -580,7 +580,11 @@ table.data tbody td {
 table.data tbody td:first-child { font-weight: 600; }
 table.data tbody tr:nth-child(even) { background: var(--table-row-alt); }
 table.data tbody tr:last-child td { border-bottom: none; }
-table.data tbody tr:hover td { background: var(--table-row-hover); }
+/* Sorotan hover hanya untuk perangkat dengan kursor sungguhan. Di layar sentuh
+   efek hover "menempel" setelah ketukan/tahan dan membuat kartu tampak menyala. */
+@media (hover: hover) and (pointer: fine) {
+  table.data tbody tr:hover td { background: var(--table-row-hover); }
+}
 .btn-detail { background: var(--detail-bg); border: 1.5px solid var(--detail-border); color: var(--detail-fg); padding: 6px 13px; border-radius: 999px; font-size: 12px; font-weight: 800; }
 .nim { color: var(--table-nim); font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 400; }
 table.data tbody td.sem { text-align: center; }
@@ -874,6 +878,9 @@ table.data tbody td.sem { text-align: center; }
 /* Tombol unduh khusus mobile (di bawah kartu identitas mahasiswa). */
 .mobile-download { display: none; }
 
+/* Petunjuk pemilihan kartu (hanya tampil di layar sentuh sempit). */
+.select-hint { display: none; }
+
 @media (max-width: 760px) {
   .site-header, .site-header--slim { height: auto; min-height: 68px; }
   .header-inner { flex-wrap: wrap; gap: 8px 12px; padding: 8px 14px; }
@@ -967,8 +974,17 @@ table.data tbody td.sem { text-align: center; }
     border: 1.5px solid var(--card-border);
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.05);
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: pan-y;
   }
   table.data.table-cards tbody tr:last-child { margin-bottom: 0; }
+  /* Jangan pernah menyorot kartu saat disentuh/ditahan; pilihan ditandai
+     lewat outline + centang, bukan latar yang menyala. */
+  table.data.table-cards tbody tr:hover td,
+  table.data.table-cards tbody tr.is-selected td { background: transparent; }
   table.data.table-cards tbody tr.is-selected { outline: 2px solid var(--primary-border); outline-offset: -2px; }
   table.data.table-cards tbody td {
     display: flex;
@@ -1007,13 +1023,39 @@ table.data tbody td.sem { text-align: center; }
   table.data.table-cards tbody td.nim::before { display: none; }
   table.data.table-cards tbody td.check-cell {
     position: absolute;
-    top: 12px;
-    right: 12px;
-    width: auto;
+    top: 10px;
+    right: 10px;
+    width: 24px;
+    height: 24px;
     padding: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
   }
   table.data.table-cards tbody td.check-cell::before { display: none; }
-  table.data.table-cards tbody td.check-cell input { width: 20px; height: 20px; }
+  table.data.table-cards tbody td.check-cell input { width: 24px; height: 24px; }
+  table.data.table-cards tbody tr:focus-within {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+  /* Penanda pilihan: hanya muncul saat kartu dipilih lewat tahanan. */
+  table.data.table-cards tbody tr.is-selected::after {
+    content: "✓";
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #ffffff;
+    color: #0b7fb8;
+    font-size: 14px;
+    font-weight: 900;
+    line-height: 1;
+    box-shadow: 0 1px 4px rgba(15, 31, 46, 0.35);
+  }
   table.data.table-cards tbody td.cell-action {
     display: block;
     margin-top: 9px;
@@ -1048,6 +1090,30 @@ table.data tbody td.sem { text-align: center; }
   /* Tombol install & notifikasi mengambang di atas navigasi bawah. */
   .install-fab,
   .app-notice { bottom: calc(78px + env(safe-area-inset-bottom)); }
+
+  /* Petunjuk memilih kartu + bar aksi massal yang selalu terlihat. */
+  .select-hint {
+    display: block;
+    margin: 0 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+  }
+  #bulk-bar {
+    position: fixed;
+    right: 8px;
+    bottom: calc(80px + env(safe-area-inset-bottom));
+    left: 8px;
+    z-index: 95;
+    margin: 0;
+    box-shadow: 0 10px 30px rgba(15, 31, 46, 0.3);
+  }
+  body.has-bulk-selection .page-wrap,
+  body.has-bulk-selection .content {
+    padding-bottom: calc(178px + env(safe-area-inset-bottom));
+  }
+  /* Tombol install tidak menutupi bar aksi saat memilih mahasiswa. */
+  body.has-bulk-selection .install-fab { display: none; }
 }
 
 @media (max-width: 420px) {
