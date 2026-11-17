@@ -211,7 +211,9 @@ installable PWA; there is no separate mobile codebase to keep in sync.
    fraction × curriculum total, from the `requirements.targets` JSON).
 2. The **gap** between target and actual achievement.
 3. An **urgency score** = gap fraction ÷ remaining semesters to graduation
-   (default graduation semester = 8).
+   (default graduation semester = 8). Sertifikasi is the exception: its
+   urgency is 0 while more than 2 semesters remain (it is not a per-semester
+   target) and is computed normally once 2 semesters or fewer remain.
 4. Categories with a gap are ranked: highest urgency = **Priority 1**, etc.
 
 Beelingua and Sertifikasi are binary requirements, so they use the fixed badge

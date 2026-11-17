@@ -247,7 +247,13 @@ export function evaluateCategory(category, student, requirements, certifications
     status = targetBase > 0 ? sertifikasiStatus(actual, remainingSemesters) : "safe";
   }
 
-  const urgency = gap > 0 ? (gapFraction * 100) / remainingSemesters : 0;
+  // Sertifikasi punya bobot urgency nol selama masih banyak waktu: gap-nya
+  // bukan target semester ini, jadi tidak boleh menenggelamkan indikator
+  // yang benar-benar terikat target per semester. Mendekati tenggat ia
+  // dihitung penuh dan langsung jadi prioritas utama.
+  const urgency = gap > 0 && !(isSertifikasi && remainingSemesters > 2)
+    ? (gapFraction * 100) / remainingSemesters
+    : 0;
 
   return {
     category,
