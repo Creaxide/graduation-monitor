@@ -47,7 +47,7 @@ export function priorityText(p) {
     return { title: "Beelingua", desc: `Status saat ini: ${beelinguaLabel(p.raw.status)}. Segera mulai menyelesaikan Beelingua.` };
   }
   if (p.category === "sertifikasi") {
-    return { title: "Sertifikasi", desc: `Kurang ${Math.ceil(p.gap)} sertifikat dari target.` };
+    return { title: "Sertifikasi", desc: "Wajib minimal 1 sertifikat sebelum lulus. Segera daftar dan selesaikan satu sertifikasi." };
   }
   return { title: p.label, desc: priorityReason(p) };
 }
@@ -60,7 +60,7 @@ export function categoryShortfallText(cat) {
     return `Beelingua belum lulus (${beelinguaLabel(cat.raw?.status)})`;
   }
   if (cat.category === "sertifikasi") {
-    return `kurang ${Math.ceil(cat.gap)} sertifikat dari target semester ini`;
+    return "belum ada sertifikat (wajib minimal 1 sebelum lulus)";
   }
   const unit = cat.category === "sks" ? "SKS" : cat.category === "comserv" ? "jam" : "poin";
   return `kurang ${formatNumber(cat.gap)} ${unit} dari target semester ini`;

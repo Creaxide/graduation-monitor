@@ -49,7 +49,7 @@ cross join (values
   ('beelingua','Beelingua','',1,
    '{"1":0.0,"2":0.0,"3":0.0,"4":1.0,"5":1.0,"6":1.0,"7":1.0,"8":1.0}'),
   ('sertifikasi','Sertifikasi','',1,
-   '{"1":0.0,"2":0.0,"3":0.0,"4":0.0,"5":0.3,"6":0.5,"7":0.7,"8":1.0}')
+   '{"1":0.0,"2":0.0,"3":0.0,"4":0.0,"5":0.0,"6":0.0,"7":0.0,"8":1.0}')
 ) as c(category, label, unit, total_required, targets)
 where p.code in ('CS', 'IS')
 on conflict (program_id, category) do update set
@@ -74,32 +74,33 @@ select v.nim, v.name,
        (select id from advisors where kode_dosen = v.kode_dosen),
        v.angkatan, v.sem, v.status, v.sks, v.comserv, v.sat, v.beelingua, v.score
 from (values
-  -- Sebaran risiko: 2/5 MENDESAK, 2/5 PERHATIAN, 1/5 AMAN (22 mahasiswa aktif).
+  -- Sebaran risiko seed ini: 10 MENDESAK, 10 PERHATIAN, 3 AMAN (23 mahasiswa aktif).
+  -- Hitung ulang sebaran ini bila nilai di bawah diubah.
   -- Angkatan mengikuti NIM: semester 1-2 = 2025, 3-4 = 2024, 5-6 = 2023,
   -- 7-8 = 2022, 9 = 2021.
   -- Semester 1-2: angkatan 2025 (NIM 29xxxx)
   ('2902314920','Andi Pratama',      'CS','D001', 2025, 1, 'aktif',  18,  4, 13, 'proses',       460),
   ('2902314921','Bella Kartika',     'CS','D001', 2025, 1, 'aktif',  17,  4, 14, 'proses',       460),
-  ('2902376453','Nadia Puspita',     'CS','D003', 2025, 2, 'aktif',  24,  2,  2, 'belum_ambil',  460),
-  ('2902416100','Rizky Ramadhan',    'IS','D001', 2025, 2, 'aktif',  35,  7, 27, 'proses',       460),
+  ('2902376453','Nadia Puspita',     'CS','D003', 2025, 2, 'aktif',  38,  2, 26, 'belum_ambil',  460),
+  ('2902416100','Rizky Ramadhan',    'IS','D001', 2025, 2, 'aktif',  38,  7, 23, 'proses',       460),
   -- Semester 3-4: angkatan 2024 (NIM 28xxxx)
-  ('2802416102','Taufik Hidayat',    'IS','D003', 2024, 3, 'aktif',  60,  8, 10, 'lulus',        600),
-  ('2802314923','Dewi Anggraini',    'CS','D001', 2024, 4, 'aktif',  70, 14, 54, 'lulus',        460),
-  ('2802352623','Hana Salsabila',    'CS','D002', 2024, 4, 'aktif',  66, 14, 55, 'lulus',        500),
-  ('2802416101','Sinta Lestari',     'IS','D002', 2024, 4, 'aktif',  60, 10, 15, 'lulus',        570),
+  ('2802416102','Taufik Hidayat',    'IS','D003', 2024, 3, 'aktif',  60,  8, 39, 'lulus',        600),
+  ('2802314923','Dewi Anggraini',    'CS','D001', 2024, 4, 'aktif',  70, 14, 46, 'lulus',        460),
+  ('2802352623','Hana Salsabila',    'CS','D002', 2024, 4, 'aktif',  60, 15, 55, 'lulus',        500),
+  ('2802416101','Sinta Lestari',     'IS','D002', 2024, 4, 'aktif',  60, 10, 51, 'lulus',        570),
   -- Semester 5-6: angkatan 2023 (NIM 27xxxx)
   ('2702107493','Joseph D.',         'CS','D003', 2023, 5, 'aktif',  85, 18, 70, 'lulus',        470),
-  ('2702107494','Kevin Sanjaya',     'CS','D003', 2023, 5, 'aktif',  55,  8,  9, 'belum_ambil',  460),
+  ('2702107494','Kevin Sanjaya',     'CS','D003', 2023, 5, 'aktif',  55,  8, 64, 'belum_ambil',  460),
   ('2702314924','Eko Nugroho',       'CS','D002', 2023, 5, 'aktif',  95, 18, 68, 'lulus',        455),
   ('2702352624','Irfan Maulana',     'CS','D002', 2023, 5, 'aktif',  95, 20, 78, 'lulus',        545),
   ('2702352622','Gilbert Tobing',    'CS','D002', 2023, 6, 'aktif', 120, 30, 90, 'lulus',        590),
   ('2702376452','M. Andri Wibowo',   'CS','D003', 2023, 6, 'aktif', 130, 28, 68, 'lulus',        555),
-  ('2702416105','Fira Nur',          'CS','D001', 2023, 6, 'aktif', 126, 26, 80, 'lulus',        480),
+  ('2702416105','Fira Nur',          'CS','D001', 2023, 6, 'aktif', 126, 18, 80, 'lulus',        480),
   ('2702416106','Doni Santoso',      'CS','D001', 2023, 6, 'aktif',  92, 12,  8, 'belum_ambil',  460),
   -- Semester 7-8: angkatan 2022 (NIM 26xxxx) - tidak ada lagi waktu mengejar
   ('2602416107','Sari Wulandari',    'CS','D001', 2022, 7, 'aktif', 145, 28,106, 'lulus',        480),
-  ('2602416108','Agus Subroto',      'CS','D001', 2022, 7, 'aktif', 130, 20, 20, 'belum_ambil',  460),
-  ('2602416112','Rizky Ramadhan II', 'IS','D001', 2022, 7, 'aktif', 115, 20, 22, 'proses',       460),
+  ('2602416108','Agus Subroto',      'CS','D001', 2022, 7, 'aktif', 130, 27, 20, 'belum_ambil',  460),
+  ('2602416112','Rizky Ramadhan II', 'IS','D001', 2022, 7, 'aktif', 129, 27, 22, 'proses',       460),
   ('2602416113','Irfan Maulana II',  'CS','D002', 2022, 7, 'aktif', 140, 32, 95, 'lulus',        545),
   ('2602416109','Chandra Wijaya',    'CS','D001', 2022, 8, 'aktif', 146, 38,120, 'lulus',        560),
   ('2602416110','Gilbert Tobing II', 'CS','D002', 2022, 8, 'aktif', 136, 30,110, 'lulus',        590),

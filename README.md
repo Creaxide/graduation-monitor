@@ -136,8 +136,8 @@ and students without redeploying the frontend. `sql/seed.sql` contains the
 default configuration.
 
 The demo students are spread across every semester (1–9) and deliberately cover
-all three overall risk levels: **2/5 MENDESAK**, **2/5 PERHATIAN**, and
-**1/5 AMAN** of the active students. Their `angkatan` follows the NIM prefix
+all three overall risk levels (see `sql/seed.sql` for the current mix). Their
+`angkatan` follows the NIM prefix
 (semester 1–2 = 2025, 3–4 = 2024, 5–6 = 2023, 7–8 = 2022, 9 = 2021), so the
 enrollment year, NIM, and semester always agree.
 
@@ -214,6 +214,9 @@ installable PWA; there is no separate mobile codebase to keep in sync.
    (default graduation semester = 8).
 4. Categories with a gap are ranked: highest urgency = **Priority 1**, etc.
 
+Beelingua and Sertifikasi are binary requirements, so they use the fixed badge
+rules below instead of the per-semester fraction.
+
 Failed courses are listed separately with a recommended retake semester
 (current + 1).
 
@@ -228,13 +231,22 @@ student — never from a "gap" like SKS or Comserv:
 | `beelingua_status` | Badge | Meaning |
 |---|---|---|
 | `lulus` | **AMAN** | finished — the only state that may be *Aman* |
-| `proses` | **PERHATIAN** (or **MENDESAK** when ≤ 2 semesters left) | still in progress, not finished yet |
-| `belum_ambil` + target already due | **MENDESAK** | not started while the target is already due |
-| `belum_ambil` + target not due yet | **BELUM WAJIB** | not required this semester (neutral, does not affect the overall status) |
+| `proses` in semesters 1–3 | **PERHATIAN** | already running, but not finished |
+| `belum_ambil` in semesters 1–3 | **MENDESAK** | not started yet while the study is still early |
+| anything except `lulus` from semester 4 | **MENDESAK** | the target is 100% from semester 4 |
 
-So a student can never be reported as *Aman* while the Beelingua is still
-running. `BELUM WAJIB` is a neutral (`info`) status: it does not downgrade the
-student's overall status, but it is no longer displayed as *Aman* either.
+A student can never be reported as *Aman* while the Beelingua is still
+running.
+
+### Status Sertifikasi
+
+At least one certification must be obtained before graduation (semester 8):
+
+| Condition | Badge |
+|---|---|
+| at least 1 certification obtained | **AMAN** |
+| none obtained, more than 2 semesters left | **PERHATIAN** |
+| none obtained, 2 semesters or fewer left | **MENDESAK** |
 
 ## Notes
 

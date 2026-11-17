@@ -181,6 +181,14 @@ function beelinguaStatus(student, remainingSemesters, targetDue) {
   return "danger";
 }
 
+// Sertifikasi: syaratnya minimal satu sertifikat sebelum lulus, bukan
+// fraksi target per semester. Belum punya sertifikat tetap PERHATIAN selama
+// masih lebih dari 2 semester, lalu MENDESAK saat waktunya menipis.
+function sertifikasiStatus(obtained, remainingSemesters) {
+  if (obtained >= 1) return "safe";
+  return remainingSemesters <= 2 ? "danger" : "warn";
+}
+
 export const STATUS_RANK = { danger: 3, warn: 2, safe: 1, info: 0 };
 
 export function evaluateCategory(category, student, requirements, certifications) {
@@ -195,6 +203,7 @@ export function evaluateCategory(category, student, requirements, certifications
   const targetFraction = normativeTarget(req, semester);
 
   const isBeelingua = category === "beelingua";
+  const isSertifikasi = category === "sertifikasi";
   const beelinguaRaw = normalizeBeelinguaStatus(student.beelingua_status);
 
   const ctx = {
@@ -208,12 +217,14 @@ export function evaluateCategory(category, student, requirements, certifications
   };
   const { actual, total } = actualValue(category, student, ctx);
 
-  // The target is always a fraction of the category's curriculum total (for
-  // certification: the configured number of required certifications). It is
-  // deliberately NOT derived from the student's own rows, so duplicated or
-  // extra records can't inflate the requirement.
+  // Target is a fraction of the category's curriculum total, deliberately NOT
+  // derived from the student's own rows, so duplicated or extra records can't
+  // inflate the requirement. Sertifikasi is the exception: it needs at least
+  // one certificate by graduation, so its target is 1 while none is obtained.
   const targetBase = total;
-  const targetValue = targetFraction * targetBase;
+  const targetValue = isSertifikasi
+    ? (targetBase > 0 ? 1 : 0)
+    : targetFraction * targetBase;
 
   const beelinguaPassed = beelinguaRaw === "lulus";
 
@@ -232,6 +243,9 @@ export function evaluateCategory(category, student, requirements, certifications
   // (lulus / proses / belum_ambil), bukan dari gap — supaya "Sedang
   // Menjalankan" tidak pernah ikut tampil sebagai AMAN.
   if (isBeelingua) status = beelinguaStatus(student, remainingSemesters, targetValue > 0);
+  if (isSertifikasi) {
+    status = targetBase > 0 ? sertifikasiStatus(actual, remainingSemesters) : "safe";
+  }
 
   const urgency = gap > 0 ? (gapFraction * 100) / remainingSemesters : 0;
 
@@ -304,7 +318,7 @@ export function priorityReason(item) {
     return `Beelingua berstatus "${beelinguaLabel(item.raw.status)}". Perlu lulus untuk memenuhi target semester ${item.semester}.`;
   }
   if (item.category === "sertifikasi") {
-    return `Kurang ${item.gap} sertifikat dari target semester ini.`;
+    return `Wajib minimal 1 sertifikat sebelum lulus. Sisa ${item.remainingSemesters} semester.`;
   }
   return `Kurang ${item.gap}${unit} dari target semester ${item.semester} (${item.targetValue}${unit}). Sisa ${item.remainingSemesters} semester.`;
 }
@@ -319,7 +333,7 @@ export function recommendationSentence(result) {
       return `Prioritas ${i + 1}: Beelingua` + (p.gap > 0 ? " — belum lulus." : ".");
     }
     if (p.category === "sertifikasi") {
-      return `Prioritas ${i + 1}: Sertifikasi — kurang ${p.gap}.`;
+      return `Prioritas ${i + 1}: Sertifikasi — belum ada (minimal 1 sebelum lulus).`;
     }
     const unit = p.unit ? ` ${p.unit}` : "";
     return `Prioritas ${i + 1}: ${p.label} — kurang ${p.gap}${unit} dari target.`;
