@@ -488,7 +488,7 @@ a.binus-logo-wrap:focus-visible { outline: 3px solid var(--focus-ring); outline-
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .btn.sm { padding: 7px 12px; font-size: 12px; }
 
-/* format toggle (XLSX / CSV) */
+/* format toggle (XLSX / CSV / PDF) */
 .fmt-toggle { flex: 1; justify-content: center; }
 .fmt-toggle.is-active {
   background: var(--btn-bg);

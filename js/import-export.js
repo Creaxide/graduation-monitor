@@ -372,8 +372,6 @@ function populateExportFilters() {
   const semester = [...new Set(state.students.map((s) => s.current_semester))].sort((a, b) => a - b);
   if (angkatanEl) angkatanEl.innerHTML = `<option value="">Semua Angkatan</option>` + angkatan.map((a) => `<option value="${a}">${a}</option>`).join("");
   if (semesterEl) semesterEl.innerHTML = `<option value="">Semua Semester</option>` + semester.map((s) => `<option value="${s}">Semester ${s}</option>`).join("");
-  const angkatanOpts = angkatan.length ? "" : "<!-- no angkatan -->";
-  void angkatanOpts;
 }
 
 // ---------------------------------------------------------------- helpers ---
@@ -424,17 +422,18 @@ function setFile(file) {
 }
 
 function bindExportToggles() {
-  const xlsx = el("fmt-xlsx");
-  const csv = el("fmt-csv");
+  const buttons = {
+    xlsx: el("fmt-xlsx"),
+    csv: el("fmt-csv"),
+    pdf: el("fmt-pdf"),
+  };
   const fmt = el("x-format");
   const apply = (mode) => {
     if (!fmt) return;
     fmt.value = mode;
-    xlsx.classList.toggle("is-active", mode === "xlsx");
-    csv.classList.toggle("is-active", mode === "csv");
+    Object.entries(buttons).forEach(([key, button]) => button?.classList.toggle("is-active", key === mode));
   };
-  xlsx.addEventListener("click", () => apply("xlsx"));
-  csv.addEventListener("click", () => apply("csv"));
+  Object.entries(buttons).forEach(([key, button]) => button?.addEventListener("click", () => apply(key)));
   apply("xlsx");
 }
 
@@ -464,7 +463,7 @@ function pushRiwayat() {
   const entries = raw ? JSON.parse(raw) : [];
   const now = new Date();
   const date = now.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
-  const uploader = "Dr. Ahmad Fauzi (demo)";
+  const uploader = state.profile?.full_name || "Dosen AA";
   entries.push({ typeLabel: "Data Lengkap", date, uploader });
   sessionStorage.setItem("riwayat_import", JSON.stringify(entries));
   renderRiwayat();
