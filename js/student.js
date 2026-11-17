@@ -6,7 +6,6 @@ import { el, escapeHtml, formatNumber, toast, printHtmlDocument } from "./utils.
 
 const params = new URLSearchParams(window.location.search);
 const studentId = params.get("id");
-let current = null;
 // Petunjuk "pilih Simpan ke PDF" cukup ditampilkan sekali per halaman.
 let printHintShown = false;
 
@@ -349,7 +348,6 @@ function render(result) {
     const result = evaluateStudent(student, requirements.filter((r) => r.program_id === student.program_id), failed, certs);
     if (ctx && ctx.profile) result.profile = ctx.profile;
     render(result);
-    current = result;
     document.querySelectorAll("[data-download-report]").forEach((btn) => {
       btn.addEventListener("click", () => openStudentReport(result));
     });

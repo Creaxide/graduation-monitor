@@ -224,10 +224,10 @@ async function runImport() {
     }
     try {
       if (courseRows.length) { await insertFailedCourses(courseRows); stats.courses = courseRows.length; }
-    } catch (e) { errors.push(["MK", e.message]); }
+    } catch (e) { errors.push(["MK", `${courseRows.length} baris MK gagal tersimpan: ${e.message}`]); }
     try {
       if (certRows.length) { await insertCertifications(certRows); stats.certs = certRows.length; }
-    } catch (e) { errors.push(["Sertifikasi", e.message]); }
+    } catch (e) { errors.push(["Sertifikasi", `${certRows.length} baris sertifikasi gagal tersimpan: ${e.message}`]); }
 
     const okCount = records.length - badLines.size;
     logAudit({ entity: "students", action: "import", detail: { success: okCount, failed: errors.length, file: file.name, ...stats } });
