@@ -10,7 +10,7 @@
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-  <link rel="stylesheet" href="css/styles.css?v=mobile-7" />
+  <link rel="stylesheet" href="css/styles.css?v=late-1" />
   <script>
     /* Terapkan tema sebelum render supaya tidak ada kedipan (flash of unstyled theme) */
     (function () {
@@ -36,7 +36,7 @@
 
     <div id="alert" class="hidden"></div>
 
-    <section class="grid cols-4 mb-24" id="kpi-row">
+    <section class="grid cols-5 mb-24" id="kpi-row">
       <div class="figma-card stat-card stat-card--total">
         <div class="k-icon brown">👥</div>
         <div class="kpi">
@@ -63,6 +63,13 @@
         <div class="kpi">
           <div class="k-value" id="k-safe">-</div>
           <div class="k-label">Aman</div>
+        </div>
+      </div>
+      <div class="figma-card stat-card stat-card--late">
+        <div class="k-icon purple">⏰</div>
+        <div class="kpi">
+          <div class="k-value" id="k-late">-</div>
+          <div class="k-label">Terlambat</div>
         </div>
       </div>
     </section>
@@ -153,6 +160,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/dashboard.js?v=hold-1"></script>
+  <script type="module" src="js/dashboard.js?v=late-1"></script>
 </body>
 </html>

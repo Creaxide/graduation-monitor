@@ -1,4 +1,4 @@
-import { initLayout } from "./ui.js";
+import { initLayout } from "./ui.js?v=binusmaya-1";
 import {
   loadDashboard, listFailedCourses, listCertifications,
   studentIdsByNim, updateStudent, insertStudent,

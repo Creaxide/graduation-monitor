@@ -83,12 +83,15 @@
   --badge-info-fg: #ffffff;
   --badge-neutral-bg: rgba(255, 255, 255, 0.92);
   --badge-neutral-fg: #0c7fae;
+  --badge-late-bg: #7c3aed;
+  --badge-late-fg: #ffffff;
 
   /* stat accents (KPI angka) */
   --stat-total: #ffffff;
   --stat-danger: #ffffff;
   --stat-warn: #ffffff;
   --stat-safe: #ffffff;
+  --stat-late: #ffffff;
 
   /* alerts */
   --alert-info-bg: #eaf6ff;
@@ -176,11 +179,14 @@
   --badge-info-fg: #7aa7f5;
   --badge-neutral-bg: #2a3040;
   --badge-neutral-fg: #c3cbdb;
+  --badge-late-bg: #2b1f4d;
+  --badge-late-fg: #c4b5fd;
 
   --stat-total: #3b82f6;
   --stat-danger: #f87171;
   --stat-warn: #f0b429;
   --stat-safe: #4ade80;
+  --stat-late: #c084fc;
 
   --alert-info-bg: #202d46;
   --alert-info-fg: #d5e3fa;
@@ -311,6 +317,7 @@ a.binus-logo-wrap:focus-visible { outline: 3px solid var(--focus-ring); outline-
   white-space: nowrap;
 }
 .nav-pill .pill-ico { font-size: 12px; }
+.nav-pill .pill-ico img { display: block; width: 16px; height: 16px; }
 .nav-pill.active {
   background: #eaf6ff;
   color: #0b7fb8;
@@ -409,6 +416,7 @@ a.binus-logo-wrap:focus-visible { outline: 3px solid var(--focus-ring); outline-
 .page-title .sub, .page-subtitle { color: var(--text-accent); font-size: 13px; font-weight: 500; margin-top: 6px; }
 
 .grid { display: grid; gap: 22px; }
+.grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
 .grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
 .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
 .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
@@ -443,6 +451,7 @@ a.binus-logo-wrap:focus-visible { outline: 3px solid var(--focus-ring); outline-
 .stat-card--danger { --stat-accent: var(--stat-danger); }
 .stat-card--warn { --stat-accent: var(--stat-warn); }
 .stat-card--safe { --stat-accent: var(--stat-safe); }
+.stat-card--late { --stat-accent: var(--stat-late); }
 .stat-card .k-icon {
   position: absolute; top: 16px; right: 16px;
   width: 38px; height: 38px; border-radius: 999px;
@@ -452,10 +461,12 @@ a.binus-logo-wrap:focus-visible { outline: 3px solid var(--focus-ring); outline-
 .stat-card .k-icon.red { background: var(--danger); }
 .stat-card .k-icon.amber { background: var(--warn); }
 .stat-card .k-icon.green { background: var(--safe); }
+.stat-card .k-icon.purple { background: #7c3aed; }
 [data-theme="dark"] .stat-card .k-icon.brown { background: #202d46; color: #7aa7f5; }
 [data-theme="dark"] .stat-card .k-icon.red { background: #451014; color: #f87171; }
 [data-theme="dark"] .stat-card .k-icon.amber { background: #3e2b05; color: #f0b429; }
 [data-theme="dark"] .stat-card .k-icon.green { background: #063b2e; color: #6ee7b7; }
+[data-theme="dark"] .stat-card .k-icon.purple { background: #2b1f4d; color: #c4b5fd; }
 
 /* badges — Indonesian labels */
 .badge, .badge-fig {
@@ -469,6 +480,7 @@ a.binus-logo-wrap:focus-visible { outline: 3px solid var(--focus-ring); outline-
 .badge.danger, .badge-fig.mendesak { background: var(--badge-danger-bg); color: var(--badge-danger-fg); }
 .badge.info { background: var(--badge-info-bg); color: var(--badge-info-fg); }
 .badge.neutral { background: var(--badge-neutral-bg); color: var(--badge-neutral-fg); }
+.badge.late { background: var(--badge-late-bg); color: var(--badge-late-fg); }
 
 /* buttons — amber primary (blue on dark theme) */
 .btn {
@@ -774,6 +786,7 @@ table.data tbody td.sem { text-align: center; }
 
 /* Responsive */
 @media (max-width: 1040px) {
+  .grid.cols-5 { grid-template-columns: repeat(3, 1fr); }
   .grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
   .grid.cols-3 { grid-template-columns: repeat(2, 1fr); }
   .grid.cols-2 { grid-template-columns: 1fr; }
@@ -793,6 +806,7 @@ table.data tbody td.sem { text-align: center; }
   .prog-badge { min-width: 64px; }
 }
 @media (max-width: 560px) {
+  .grid.cols-5 { grid-template-columns: 1fr; }
   .grid.cols-4 { grid-template-columns: 1fr; }
   .nav-pills { gap: 6px; }
   .nav-pill { padding: 8px 12px; font-size: 12px; }
@@ -891,6 +905,8 @@ table.data tbody td.sem { text-align: center; }
   .header-user { margin-left: auto; gap: 8px; }
   .page-wrap, .content { padding: 20px 16px calc(40px + env(safe-area-inset-bottom)); }
   .page-title h1 { font-size: clamp(21px, 5vw, 27px); }
+  .grid.cols-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .grid.cols-5 > .stat-card:last-child { grid-column: 1 / -1; }
   .grid.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .grid.cols-3 { gap: 12px; }
   .stat-card { min-width: 0; padding: 17px 14px; }
@@ -1121,6 +1137,7 @@ table.data tbody td.sem { text-align: center; }
 
 @media (max-width: 420px) {
   .page-wrap, .content { padding-right: 12px; padding-left: 12px; }
+  .grid.cols-5 { gap: 9px; }
   .grid.cols-4 { gap: 9px; }
   .stat-card { padding: 14px 11px; }
   .stat-card .k-icon { display: none; }

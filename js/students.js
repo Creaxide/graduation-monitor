@@ -1,4 +1,4 @@
-import { initLayout } from "./ui.js";
+import { initLayout } from "./ui.js?v=binusmaya-1";
 import { listStudents } from "./data.js";
 import { el, escapeHtml, debounce, isActive } from "./utils.js";
 import { beelinguaLabel, normalizeBeelinguaStatus } from "./engine.js";

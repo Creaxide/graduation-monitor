@@ -1,4 +1,4 @@
-import { initLayout } from "./ui.js";
+import { initLayout } from "./ui.js?v=binusmaya-1";
 import { loadStudentBundle } from "./data.js";
 import { evaluateStudent, recommendationSentence, beelinguaLabel } from "./engine.js";
 import { buildStudentReportHtml, priorityText, riskTextFor } from "./report.js";

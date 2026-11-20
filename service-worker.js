@@ -15,6 +15,7 @@ const APP_FILES = [
   "./icons/app-icon-192.png",
   "./icons/app-icon-512.png",
   "./icons/apple-touch-icon.png",
+  "./icons/binusmaya.png",
   "./css/styles.css",
   "./Binusian_logolightmode.png",
   "./Binusian_logodarkmode.png",

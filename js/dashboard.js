@@ -1,8 +1,8 @@
-import { initLayout } from "./ui.js";
+import { initLayout } from "./ui.js?v=binusmaya-1";
 import {
   loadDashboard, listFailedCourses, listCertifications, setStudentsActive,
 } from "./data.js";
-import { evaluateStudent, STATUS_RANK } from "./engine.js";
+import { evaluateStudent, STATUS_RANK, GRADUATION_SEMESTER } from "./engine.js";
 import {
   el, escapeHtml, debounce, toast, isActive,
 } from "./utils.js";
@@ -78,6 +78,12 @@ function catStatus(row, category) {
 
 function urgencyOf(row) {
   return row.priorities[0]?.urgency || 0;
+}
+
+// Melewati semester 8 = lewat masa studi normal, perlu tindakan terpisah
+// dari tingkat risiko syarat kelulusan.
+function isLate(student) {
+  return (Number(student.current_semester) || 0) > GRADUATION_SEMESTER;
 }
 
 function sortValue(row) {
@@ -182,6 +188,7 @@ function renderTable(rows, counts) {
           } aria-label="Pilih ${escapeHtml(s.name)}"></td>`
         : "";
       const offBadge = active ? "" : ' <span class="badge off">NONAKTIF</span>';
+      const lateBadge = isLate(s) ? ' <span class="badge late">TERLAMBAT</span>' : "";
       // Alasan nonaktif ditampilkan langsung di tabel supaya tidak perlu
       // membuka detail tiap mahasiswa.
       const reasonCell = active
@@ -194,7 +201,7 @@ function renderTable(rows, counts) {
         <tr data-id="${s.id}" class="${active ? "" : "is-inactive"}${checked ? " is-selected" : ""}">
           ${checkCell}
           <td class="nim" data-label="NIM">${escapeHtml(s.nim)}</td>
-          <td class="cell-name" style="font-weight:700">${escapeHtml(s.name)}${offBadge}${reasonCell}</td>
+          <td class="cell-name" style="font-weight:700">${escapeHtml(s.name)}${offBadge}${lateBadge}${reasonCell}</td>
           <td class="sem" data-label="Semester">${s.current_semester}</td>
           <td data-label="SKS">${renderFigmaBadge(catStatus(r, "sks"))}</td>
           <td data-label="Comserv">${renderFigmaBadge(catStatus(r, "comserv"))}</td>
@@ -582,6 +589,7 @@ function updateKpis() {
   el("k-danger").textContent = counts.danger || 0;
   el("k-warn").textContent = counts.warn || 0;
   el("k-safe").textContent = counts.safe || 0;
+  el("k-late").textContent = active.filter((r) => isLate(r.student)).length;
 }
 
 function render() {

@@ -7,11 +7,14 @@ const ICON = {
     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>',
   transfer:
     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v13"></path><polyline points="3 13 7 17 11 13"></polyline><path d="M17 20V7"></path><polyline points="13 11 17 7 21 11"></polyline></svg>',
+  // Ikon resmi BINUSMAYA (favicon 16x16 dari binusmaya.binus.ac.id).
+  binusmaya: '<img src="icons/binusmaya.png" alt="" width="16" height="16" />',
 };
 
 const NAV = [
   { href: "dashboard.html", label: "Dashboard", id: "dashboard", match: ["dashboard.html"], icon: ICON.dashboard },
   { href: "import-export.html", label: "Import / Export", id: "import-export", match: ["import-export.html"], icon: ICON.transfer },
+  { href: "https://binusmaya.binus.ac.id", label: "BINUSMAYA", id: "binusmaya", external: true, icon: ICON.binusmaya },
 ];
 
 export async function initLayout({ active, title, subtitle }) {
@@ -50,9 +53,10 @@ function renderHeader(profile, active) {
   }
 
   const pills = NAV.map((n) => {
-    const isActive = n.match ? n.match.includes(active) : n.href === active;
+    const isActive = !n.external && (n.match ? n.match.includes(active) : n.href === active);
+    const external = n.external ? ' target="_blank" rel="noopener noreferrer" title="Buka BINUSMAYA di tab baru"' : "";
     return `
-      <a href="${n.href}" class="nav-pill ${isActive ? "active" : ""}"${isActive ? ' aria-current="page"' : ""}>
+      <a href="${n.href}" class="nav-pill ${isActive ? "active" : ""}"${isActive ? ' aria-current="page"' : ""}${external}>
         ${n.icon ? `<span class="pill-ico">${n.icon}</span>` : ""}
         <span>${escapeHtml(n.label)}</span>
       </a>`;
