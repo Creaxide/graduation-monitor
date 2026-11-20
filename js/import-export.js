@@ -21,7 +21,6 @@ const TEMPLATE = {
   sample: [
     ["2702314921", "Bella Kartika", "CS", "D001", "2023", "6", "aktif", "110", "24", "18", "proses", "450", "true", "", "COMP6047", "Algoritma dan Pemrograman", "4", "D", "2", "Sertifikasi Kompetensi Pemrograman", "true", "true", "2025-06-01"],
   ],
-  hint: "Satu file untuk semua data. Wajib: nim (mahasiswa baru juga wajib name). Kolom MK tidak lulus (kode_mk, nama_mk wajib bila diisi) dan sertifikasi (cert_name wajib bila diisi) boleh dikosongkan. Untuk banyak MK/sertifikasi per mahasiswa, ulangi NIM di baris baru. cert_required/cert_obtained/is_active menerima true/false atau 1/0. deactivate_reason diisi kalau is_active=false (alasan mahasiswa dinonaktifkan dari pemantauan).",
 };
 
 let state = { students: [], requirements: [], programs: [], advisors: [], selectedFile: null, profile: null };
@@ -380,10 +379,6 @@ function toInt(v) { const n = parseInt(v, 10); return Number.isNaN(n) ? 0 : n; }
 function toNum(v) { const n = Number(v); return Number.isNaN(n) ? 0 : n; }
 function clampInt(v, min, max) { return Math.min(max, Math.max(min, toInt(v))); }
 
-function updateTemplateUI() {
-  el("template-hint").textContent = `${TEMPLATE.hint} Kolom: ${TEMPLATE.headers.join(", ")}`;
-}
-
 function wire() {
 
   el("download-template").addEventListener("click", () => {
@@ -476,7 +471,6 @@ function pushRiwayat() {
   wire();
   bindExportToggles();
   renderRiwayat();
-  updateTemplateUI();
   try {
     const { students, requirements } = await loadDashboard();
     state.students = students;
