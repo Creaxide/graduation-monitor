@@ -262,13 +262,12 @@ a:hover { text-decoration: underline; }
   gap: 14px;
   flex-shrink: 0;
 }
-/* Logo dipotong otomatis ke area artwork (1.68:1) supaya tidak ada ruang kosong. */
+/* Logo dipotong otomatis ke area artwork (1.6:1) supaya tidak ada ruang kosong,
+   tapi tetap menyisakan margin vertikal agar descender huruf "y" tidak terpotong. */
 .binus-logo-box {
   position: relative;
-  width: 132px; height: 79px;
+  width: 132px; aspect-ratio: 1.6;
   flex-shrink: 0;
-  border-radius: 10px;
-  overflow: hidden;
 }
 .binus-logo {
   position: absolute; inset: 0;
@@ -812,7 +811,7 @@ table.data tbody td.sem { text-align: center; }
   .nav-pill { padding: 8px 12px; font-size: 12px; }
   .site-header { height: 72px; }
   .site-header--slim { height: 72px; }
-  .binus-logo-box { width: 92px; height: 55px; }
+  .binus-logo-box { width: 92px; }
   .btn-keluar span { display: none; }
   .login-screen { padding: 40px 16px 64px; }
 }
