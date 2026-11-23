@@ -24,7 +24,7 @@ const SORT_COLUMNS = {
 let state = {
   rows: [],
   requirements: [],
-  filter: { q: "", semester: "", status: "", active: "semua" },
+  filter: { q: "", semester: "", status: "", active: "semua", kpi: "" },
   sort: { key: "risk", dir: "desc" },
   selected: new Set(),
   canEdit: false,
@@ -121,8 +121,16 @@ function sortRows(rows) {
   });
 }
 
+// Predikat kartu KPI: hanya mahasiswa aktif yang cocok dengan kartu yang diklik.
+// "total" = semua aktif; danger/warn/safe = overall status; late = melewati semester 8.
+function kpiMatch(r, kpi) {
+  if (kpi === "total") return true;
+  if (kpi === "late") return isLate(r.student);
+  return r.overall === kpi;
+}
+
 function collectRows() {
-  const { q, semester, status, active } = state.filter;
+  const { q, semester, status, active, kpi } = state.filter;
   const term = q.trim().toLowerCase();
 
   const base = state.rows.filter((r) => {
@@ -130,6 +138,7 @@ function collectRows() {
     if (term && !(String(s.name).toLowerCase().includes(term) || String(s.nim).toLowerCase().includes(term))) return false;
     if (semester && String(s.current_semester) !== String(semester)) return false;
     if (status && r.overall !== status) return false;
+    if (kpi && (!isActive(r.student) || !kpiMatch(r, kpi))) return false;
     return true;
   });
 
@@ -145,12 +154,20 @@ function collectRows() {
   return { rows: sorted, aktif: aktif.length, nonaktif: nonaktif.length };
 }
 
+function kpiFilterLabel() {
+  const k = state.filter.kpi;
+  if (!k) return "";
+  const labels = { total: "Total Mahasiswa", danger: "Mendesak", warn: "Perlu Perhatian", safe: "Aman", late: "Terlambat" };
+  return ` · ${labels[k] || k}`;
+}
+
 function countLabel({ aktif, nonaktif }) {
-  if (state.filter.active === "nonaktif") return `${nonaktif} mahasiswa nonaktif`;
+  const kpi = kpiFilterLabel();
+  if (state.filter.active === "nonaktif") return `${nonaktif} mahasiswa nonaktif${kpi}`;
   if (state.filter.active === "aktif") {
-    return nonaktif ? `${aktif} mahasiswa aktif · ${nonaktif} nonaktif disembunyikan` : `${aktif} mahasiswa aktif`;
+    return nonaktif ? `${aktif} mahasiswa aktif · ${nonaktif} nonaktif disembunyikan${kpi}` : `${aktif} mahasiswa aktif${kpi}`;
   }
-  return `${aktif} mahasiswa aktif · ${nonaktif} nonaktif`;
+  return `${aktif} mahasiswa aktif · ${nonaktif} nonaktif${kpi}`;
 }
 
 function sortableTh(key, label, extra = "") {
@@ -600,6 +617,7 @@ function render() {
     if (!validIds.has(id)) state.selected.delete(id);
   });
   renderTable(rows, { aktif, nonaktif });
+  syncKpiCards();
 }
 
 async function loadAllStudents(students, requirements) {
@@ -633,6 +651,62 @@ function wireFilters() {
   });
 }
 
+// Kartu KPI dapat diklik untuk memfilter tabel ke populasi yang dihitung kartu itu.
+// Klik kartu yang sama lagi menghapus filter. Hanya satu filter KPI aktif sekaligus,
+// dan berdampingan dengan filter status/semester/keaktifan yang sudah ada.
+function kpiKeyOf(card) {
+  // Kunci diambil dari kelas modifikator (stat-card--total → total), bukan
+  // dari id: id="k-total" menempel pada .k-value di dalam kartu, bukan pada
+  // .stat-card itu sendiri.
+  return [...card.classList]
+    .find((c) => c.startsWith("stat-card--"))
+    ?.replace("stat-card--", "") || "";
+}
+
+// Status aktif kartu KPI diturunkan langsung dari state.filter.kpi, jadi
+// border hanya menyala saat filter-nya memang sedang aktif — bukan karena
+// bekas fokus sesudah diklik.
+function syncKpiCards() {
+  const row = el("kpi-row");
+  if (!row) return;
+  const active = state.filter.kpi;
+  row.querySelectorAll(".stat-card").forEach((card) => {
+    const on = active !== "" && kpiKeyOf(card) === active;
+    card.classList.toggle("is-active", on);
+    card.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+}
+
+function wireKpiCards() {
+  const row = el("kpi-row");
+  if (!row) return;
+  row.querySelectorAll(".stat-card").forEach((card) => {
+    const key = kpiKeyOf(card);
+    card.setAttribute("role", "button");
+    card.tabIndex = 0;
+    card.setAttribute("aria-pressed", "false");
+
+    const toggle = () => {
+      state.filter.kpi = state.filter.kpi === key ? "" : key;
+      render();
+    };
+
+    card.addEventListener("click", (e) => {
+      toggle();
+      // Klik mouse tidak perlu menyisakan fokus (biar cincin fokus tidak
+      // tertinggal seperti border). Pengguna keyboard tetap mempertahankan fokus.
+      if (e.detail > 0) card.blur();
+    });
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        toggle();
+      }
+    });
+  });
+  syncKpiCards();
+}
+
 (async function main() {
   const session = await initLayout({
     active: "dashboard.html",
@@ -645,6 +719,7 @@ function wireFilters() {
   state.canEdit = session.profile?.role !== "kaprodi";
 
   wireFilters();
+  wireKpiCards();
   wireBulkBar();
   wireDeactivateModal();
   try {

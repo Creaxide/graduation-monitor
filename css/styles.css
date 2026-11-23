@@ -445,7 +445,7 @@ a.binus-logo-wrap:focus-visible { outline: 3px solid var(--focus-ring); outline-
 .kpi .k-label { font-size: 12px; font-weight: 600; opacity: 0.95; }
 .kpi .k-value { font-size: 29px; font-weight: 800; line-height: 1.05; color: var(--stat-accent, var(--on-card)); }
 .kpi .k-foot { font-size: 12px; opacity: 0.92; }
-.stat-card { position: relative; overflow: hidden; padding: 22px 22px 20px; }
+.stat-card { position: relative; overflow: hidden; padding: 22px 22px 20px; cursor: pointer; }
 .stat-card--total { --stat-accent: var(--stat-total); }
 .stat-card--danger { --stat-accent: var(--stat-danger); }
 .stat-card--warn { --stat-accent: var(--stat-warn); }
@@ -466,6 +466,24 @@ a.binus-logo-wrap:focus-visible { outline: 3px solid var(--focus-ring); outline-
 [data-theme="dark"] .stat-card .k-icon.amber { background: #3e2b05; color: #f0b429; }
 [data-theme="dark"] .stat-card .k-icon.green { background: #063b2e; color: #6ee7b7; }
 [data-theme="dark"] .stat-card .k-icon.purple { background: #2b1f4d; color: #c4b5fd; }
+
+/* KPI cards are clickable filters */
+.stat-card:hover { filter: brightness(1.05); }
+/* Cincin fokus (keyboard) sengaja dibedakan dari border aktif: garis putus-putus
+   tipis, supaya fokus yang tertinggal tidak terlihat seperti filter yang masih
+   menyala. */
+.stat-card:focus-visible {
+  outline: 2px dashed var(--focus-ring, var(--text-accent));
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+/* Border penanda filter aktif — satu-satunya indikator "filter sedang on". */
+.stat-card.is-active {
+  outline: 3px solid var(--stat-accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+  filter: brightness(1.03);
+}
 
 /* badges — Indonesian labels */
 .badge, .badge-fig {
